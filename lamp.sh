@@ -73,7 +73,7 @@ function hasCMD() {
   fi
 }
 
-function install() {
+function install {
   local OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends) \
         APTUPDATE=(apt-get "${OPTIONS[@]}" update) \
         APTINSTALL=(apt-get "${OPTIONS[@]}" install) \

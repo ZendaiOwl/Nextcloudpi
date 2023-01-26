@@ -902,6 +902,11 @@ function isLXC {
   grep --quiet container=lxc /proc/1/environ &>/dev/null
 }
 
+# Checks for Docker build
+function is_docker() {
+  [[ -f /.dockerenv ]] || [[ -f /.docker-image ]] || [[ "$DOCKERBUILD" == 1 ]]
+}
+
 # Gets a configuration value
 function getNextcloudConfigValue {
   sudo -u www-data php -r "include(\"/var/www/nextcloud/config/config.php\"); \

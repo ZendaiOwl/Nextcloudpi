@@ -8,30 +8,42 @@
 # More at https://nextcloudpi.com
 #
 
-WEBADMIN=ncp
-WEBPASSWD=ownyourbits
+# Unsets variables used during installation for cleanup
+function unsetNextcloudpiScriptVariables() {
+  unset BRANCH
+}
+
 BRANCH="${BRANCH:-master}"
 
-BINDIR=/usr/local/bin/ncp
-CONFDIR=/usr/local/etc/ncp-config.d/
-APTINSTALL="apt-get install -y --no-install-recommends"
-export DEBIAN_FRONTEND=noninteractive
+#APTINSTALL="apt-get install -y --no-install-recommends"
+#export DEBIAN_FRONTEND=noninteractive
 
+# 0) EXIT    1) SIGHUP	 2) SIGINT	 3) SIGQUIT
+# 4) SIGILL  5) SIGTRAP 6) SIGABRT	15) SIGTERM
+trap 'unsetNextcloudpiScriptVariables' EXIT SIGHUP SIGINT SIGQUIT SIGABRT SIGTERM
 
-install()
-{
+function install {
+  local OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends) \
+        APTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+        APTINSTALL=(apt-get "${OPTIONS[@]}" install) \
+        PACKAGES=(git dialog whiptail jq file lsb-release libapache2-mod-authnz-external pwauth) \
+        RASPICONFIG='/usr/bin/raspi-config' \
+        WEBADMIN='ncp' \
+        WEBPASSWD='ownyourbits' \
+        BINDIR='/usr/local/bin/ncp' \
+        CONFDIR='/usr/local/etc/ncp-config.d'
   # NCP-CONFIG
-  apt-get update
-  $APTINSTALL git dialog whiptail jq file lsb-release
-  mkdir -p "$CONFDIR" "$BINDIR"
+  DEBIAN_FRONTEND=noninteractive "${APTUPDATE[@]}"
+  DEBIAN_FRONTEND=noninteractive "${APTINSTALL[@]}" "${PACKAGES[@]}"
+  mkdir --parents "$CONFDIR" "$BINDIR"
 
   # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
   # The raspi-config layout and options have also changed
   # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-  test -f /usr/bin/raspi-config && {
+  [[ -f "$RASPICONFIG" ]] && {
     # shellcheck disable=SC1003
-    sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' /usr/bin/raspi-config
-    sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             /usr/bin/raspi-config
+    sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' "$RASPICONFIG"
+    sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             "$RASPICONFIG"
   }
 
   # add the ncc shortcut
@@ -124,7 +136,6 @@ Listen 4443
 </Directory>
 EOF
 
-  $APTINSTALL libapache2-mod-authnz-external pwauth
   a2enmod authnz_external authn_core auth_basic
   a2dissite nextcloud
   a2ensite ncp-activation
@@ -246,11 +257,11 @@ EOF
 
     ## HOSTNAME AND mDNS
     [[ -f /.docker-image ]] || {
-      $APTINSTALL avahi-daemon
-      sed -i '/^127.0.1.1/d'           /etc/hosts
+      DEBIAN_FRONTEND=noninteractive "${APTINSTALL[@]}" avahi-daemon
+      sed -i '/^127.0.1.1/d'                        /etc/hosts
       sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" /etc/hosts
     }
-    echo nextcloudpi > /etc/hostname
+    echo 'nextcloudpi' > /etc/hostname
 
     ## tag image
     is_docker && local DOCKER_TAG="_docker"
@@ -295,7 +306,7 @@ EOF
   fi
 }
 
-configure() { :; }
+function configure { :; }
 
 
 # License
