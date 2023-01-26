@@ -24,7 +24,7 @@ Do you want to continue? [y/N]"
 read key
 [[ "$key" == y ]] || exit 0
 
-source /usr/local/etc/library.sh # sets NCPCFG RELEASE PHPVER
+source /usr/local/etc/library.sh # sets NCPCFG RELEASE PHP_VERSION
 old_cfg="${NCPCFG}"
 
 trap "echo 'Something went wrong. Fix it and try again'" EXIT
@@ -41,15 +41,15 @@ apt-get upgrade -y
 
 # remove old PHP version
 set +e
-apt-get purge -y php${PHPVER} php${PHPVER}-curl php${PHPVER}-gd php${PHPVER}-fpm php${PHPVER}-cli php${PHPVER}-opcache \
-	php${PHPVER}-mbstring php${PHPVER}-xml php${PHPVER}-zip php${PHPVER}-fileinfo php${PHPVER}-ldap \
-	php${PHPVER}-intl php${PHPVER}-bz2 php${PHPVER}-json
-apt-get purge -y php${PHPVER}-mysql
-apt-get purge -y php${PHPVER}-redis
-apt-get purge -y php${PHPVER}-exif
-apt-get purge -y php${PHPVER}-bcmath
-apt-get purge -y php${PHPVER}-gmp
-apt-get purge -y php${PHPVER}-imagick
+apt-get purge -y php${PHP_VERSION} php${PHP_VERSION}-curl php${PHP_VERSION}-gd php${PHP_VERSION}-fpm php${PHP_VERSION}-cli php${PHP_VERSION}-opcache \
+	php${PHP_VERSION}-mbstring php${PHP_VERSION}-xml php${PHP_VERSION}-zip php${PHP_VERSION}-fileinfo php${PHP_VERSION}-ldap \
+	php${PHP_VERSION}-intl php${PHP_VERSION}-bz2 php${PHP_VERSION}-json
+apt-get purge -y php${PHP_VERSION}-mysql
+apt-get purge -y php${PHP_VERSION}-redis
+apt-get purge -y php${PHP_VERSION}-exif
+apt-get purge -y php${PHP_VERSION}-bcmath
+apt-get purge -y php${PHP_VERSION}-gmp
+apt-get purge -y php${PHP_VERSION}-imagick
 set -e
 
 # update sources
@@ -120,15 +120,15 @@ service php${php_ver_new}-fpm restart
 a2enconf php${php_ver_new}-fpm
 service apache2 restart
 
-is_active_app unattended-upgrades && run_app unattended-upgrades || true
+isActiveApp unattended-upgrades && runApp unattended-upgrades || true
 
 # mark as successful
 mv "${new_cfg}" "${old_cfg}"
-install_template "php/opcache.ini.sh" "/etc/php/${php_ver_new}/mods-available/opcache.ini" --defaults
-clear_opcache
+installTemplate "php/opcache.ini.sh" "/etc/php/${php_ver_new}/mods-available/opcache.ini" --defaults
+clearOPCache
 
-source /usr/local/etc/library.sh # refresh NCPCFG RELEASE PHPVER
-run_app nc-limits
+source /usr/local/etc/library.sh # refresh NCPCFG RELEASE PHP_VERSION
+runApp nc-limits
 restore_maintenance_mode
 
 rm -f /etc/update-motd.d/30ncp-dist-upgrade

@@ -119,14 +119,14 @@ $CFG_STEP
   launch_installation "$IP" # uses $INSTALLATION_CODE
 }
 
-function prepare_dirs()
+function prepareDirectories()
 {
   [[ "$CLEAN" == "0" ]] || rm -rf cache
   rm -rf tmp
   mkdir -p tmp output cache
 }
 
-function mount_raspbian()
+function mountRPi()
 {
   local IMG="$1"
   local MP=raspbian_root
@@ -141,7 +141,7 @@ function mount_raspbian()
   echo "RaspiOS image mounted"
 }
 
-function mount_raspbian_boot()
+function mountRPi_boot()
 {
   local IMG="$1"
   local MP=raspbian_boot
@@ -156,7 +156,7 @@ function mount_raspbian_boot()
   echo "RaspiOS image mounted"
 }
 
-function umount_raspbian()
+function umountRPi()
 {
   [[ -d raspbian_root ]] || [[ -d raspbian_boot ]] || { echo "Nothing to umount"; return 0; }
   [[ -d raspbian_root ]] && { sudo umount -l raspbian_root; rmdir raspbian_root || return 1; }
@@ -164,10 +164,10 @@ function umount_raspbian()
   echo "RaspiOS image umounted"
 }
 
-function prepare_chroot_raspbian()
+function prepareChrootRPi()
 {
   local IMG="$1"
-  mount_raspbian "$IMG" || return 1
+  mountRPi "$IMG" || return 1
   sudo mount -t proc proc     raspbian_root/proc/
   sudo mount -t sysfs sys     raspbian_root/sys/
   sudo mount -o bind /dev     raspbian_root/dev/
@@ -185,16 +185,16 @@ function prepare_chroot_raspbian()
   sudo chmod +x raspbian_root/usr/sbin/policy-rc.d
 }
 
-function clean_chroot_raspbian()
+function cleanChrootRPi()
 {
   sudo rm -f raspbian_root/usr/bin/qemu-aarch64-static
   sudo rm -f raspbian_root/usr/sbin/policy-rc.d
   sudo umount -l raspbian_root/{proc,sys,dev/pts,dev}
-  umount_raspbian
+  umountRPi
 }
 
 # sets DEV
-function resize_image()
+function resizeIMG()
 {
   local IMG="$1"
   local SIZE="$2"
@@ -203,43 +203,43 @@ function resize_image()
   fallocate -l$SIZE "$IMG"
   parted "$IMG" -- resizepart 2 -1s
   DEV="$( sudo losetup -f )"
-  mount_raspbian "$IMG"
+  mountRPi "$IMG"
   sudo resize2fs -f "$DEV"
   echo "Image resized"
-  umount_raspbian
+  umountRPi
 }
 
-function update_boot_uuid()
+function updateBootUUID()
 {
   local IMG="$1"
   local PTUUID="$( sudo blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||' )"
 
   echo -e "\n\e[1m[ Update Raspbian Boot UUIDS ]\e[0m"
-  mount_raspbian "$IMG" || return 1
+  mountRPi "$IMG" || return 1
   sudo bash -c "cat > raspbian_root/etc/fstab" <<EOF
 PARTUUID=${PTUUID}-01  /boot           vfat    defaults          0       2
 PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
 EOF
-  umount_raspbian
+  umountRPi
 
-  mount_raspbian_boot "$IMG"
+  mountRPi_boot "$IMG"
   sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' raspbian_boot/cmdline.txt"
-  umount_raspbian
+  umountRPi
 }
 
 function prepare_sshd_raspbian()
 {
   local IMG="$1"
-  mount_raspbian_boot "$IMG" || return 1
+  mountRPi_boot "$IMG" || return 1
   sudo touch raspbian_boot/ssh   # this enables ssh
-  umount_raspbian
+  umountRPi
 }
 
 function set_static_IP()
 {
   local IMG="$1"
   local IP="$2"
-  mount_raspbian "$IMG" || return 1
+  mountRPi "$IMG" || return 1
   sudo bash -c "cat > raspbian_root/etc/dhcpcd.conf" <<EOF
 interface eth0
 static ip_address=$IP/24
@@ -250,7 +250,7 @@ static domain_name_servers=8.8.8.8
 auto lo
 iface lo inet loopback
 EOF
-  umount_raspbian
+  umountRPi
 }
 
 function copy_to_image()
@@ -259,22 +259,22 @@ function copy_to_image()
   local DST=$2
   local SRC=${@: 3 }
 
-  mount_raspbian "$IMG" || return 1
+  mountRPi "$IMG" || return 1
   sudo cp --reflink=auto -v "$SRC" raspbian_root/"$DST" || return 1
   sync
-  umount_raspbian
+  umountRPi
 }
 
 function deactivate_unattended_upgrades()
 {
   local IMG=$1
 
-  mount_raspbian "$IMG" || return 1
+  mountRPi "$IMG" || return 1
   sudo rm -f raspbian_root/etc/apt/apt.conf.d/20ncp-upgrades
-  umount_raspbian
+  umountRPi
 }
 
-function download_raspbian()
+function downloadRPiOS()
 {
   local URL=$1
   local IMGFILE=$2
@@ -298,7 +298,7 @@ function download_raspbian()
     cp -v --reflink=auto $IMG_CACHE "$IMGFILE"
 }
 
-function pack_image()
+function packIMG()
 {
   local IMG="$1"
   local TAR="$2"
@@ -320,7 +320,7 @@ function create_torrent()
   [[ -d "$DIR" ]] && { echo "dir $DIR already exists"; return 1; }
   mkdir -p torrent/"$IMGNAME" && cp -v --reflink=auto "$TAR" torrent/"$IMGNAME"
   md5sum "$DIR"/*.bz2 > "$DIR"/md5sum
-  createtorrent -a udp://tracker.opentrackr.org -p 1337 -c "NextCloudPi. Nextcloud ready to use image" "$DIR" "$DIR".torrent
+  createtorrent -a udp://tracker.opentrackr.org -p 1337 -c "NextcloudPi. Nextcloud ready to use image" "$DIR" "$DIR".torrent
   transmission-remote -w $(pwd)/torrent -a "$DIR".torrent
 }
 
@@ -458,7 +458,7 @@ function test_lxc()
   lxc stop ncp || true
   lxc start ncp
   lxc exec ncp -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
-  ip="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && get_ip')"
+  ip="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && getIP')"
   tests/activation_tests.py "${ip}"
   tests/nextcloud_tests.py  "${ip}"
   tests/system_tests.py

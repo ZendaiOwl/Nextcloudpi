@@ -144,7 +144,7 @@ EOF
 #!/bin/bash
 grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
-run_app $1
+runApp $1
 EOF
   chmod 700 /home/www/ncp-launcher.sh
 
@@ -254,7 +254,7 @@ EOF
 
     ## tag image
     is_docker && local DOCKER_TAG="_docker"
-    is_lxc && local DOCKER_TAG="_lxc"
+    isLXC && local DOCKER_TAG="_lxc"
     echo "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
 
     ## SSH hardening

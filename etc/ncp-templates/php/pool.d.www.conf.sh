@@ -3,7 +3,7 @@
 set -e
 source /usr/local/etc/library.sh
 
-PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
+PHP_VERSION="${PHP_VERSION?ERROR: PHP_VERSION variable unset!}"
 
 if [[ "$1" == "--defaults" ]] || ! [[ -f "${BINDIR}/CONFIG/nc-limits.sh" ]]
 then
@@ -19,7 +19,7 @@ cat <<EOF
 [www]
 user = www-data
 group = www-data
-listen = /run/php/php${PHPVER}-fpm.sock
+listen = /run/php/php${PHP_VERSION}-fpm.sock
 listen.owner = www-data
 listen.group = www-data
 pm = static

@@ -1,4 +1,4 @@
-# Batch-build docker container layers for NextCloudPi
+# Batch-build docker container layers for NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -6,7 +6,7 @@
 
 set -e
 
-source build/buildlib.sh
+source etc/library.sh
 release=$(jq -r .release < etc/ncp.cfg)
 
 function docker_build() { DOCKER_BUILDKIT=1 docker build --progress=plain . "$@"; }

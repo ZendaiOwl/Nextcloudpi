@@ -8,36 +8,93 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-DBADMIN=ncadmin
+# A log function that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log {
+  if [[ "$#" -gt 0 ]]
+  then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+    then
+      case "$LOGLEVEL" in
+        -2)
+          local -r CYAN='\e[1;36m'
+          printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+          ;;
+        -1)
+          local -r BLUE='\e[1;34m'
+          printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+          ;;
+        0)
+          local -r GREEN='\e[1;32m'
+          printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+          ;;
+        1)
+          local -r YELLOW='\e[1;33m'
+          printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+          ;;
+        2)
+          local -r RED='\e[1;31m'
+          printf "${RED}ERROR${Z} %s\n" "$TEXT"
+          ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
 
-configure()
-{
+function configure {
+  local DBADMIN='ncadmin' REDISPASS REDIS_CONF='/etc/redis/redis.conf' \
+        MYSQLD_PID='/run/mysqld/mysqld.pid' \
+        MYSQLD_SOCKET='/var/run/mysqld/mysqld.sock' \
+        DB_PID DBPASSWD DBNAME='nextcloud' DBTYPE='mysql' \
+        UPLOADTMPDIR='/var/www/nextcloud/data/tmp' \
+        HTTP_USER='www-data' NCVER NCPREV ID \
+        NEXTCLOUD_DIRECTORY='/var/www/nextcloud' \
+        REDIS_USER='redis' REDIS_DIR='/var/run/redis' \
+        REDIS_CONF='/etc/redis/redis.conf' \
+        REDIS_SOCKET='/run/redis/redis.sock'
   echo "Setting up a clean Nextcloud instance... wait until message 'NC init done'"
 
-  # checks
-  local REDISPASS=$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )
-  [[ "$REDISPASS" == "" ]] && { echo "redis server without a password. Abort"; return 1; }
+  # Checks
+  REDISPASS="$(grep "^requirepass" "$REDIS_CONF" | cut -d' ' -f2)"
+  [[ "$REDISPASS" == "" ]] && {
+    log 2 "Redis server without a password"
+    return 1
+  }
 
   ## RE-CREATE DATABASE TABLE
+  log -1 "Setting up database"
 
-  echo "Setting up database..."
-
-  # launch mariadb if not already running
-  if ! [[ -f /run/mysqld/mysqld.pid ]]; then
-    echo "Starting mariaDB"
+  # Launch MariaDB if not already running
+  if [[ ! -f "$MYSQLD_PID" ]]
+  then
+    log -1 "Starting MariaDB"
     mysqld &
-    local db_pid=$!
+    DB_PID="$!"
   fi
 
-  # wait for mariadb
-  while :; do
-    [[ -S /run/mysqld/mysqld.sock ]] && break
-    sleep 0.5
+  # Wait for MariaDB
+  while :
+  do
+    if [[ -S "$MYSQLD_SOCKET" ]]
+    then
+      log -1 "MariaDB started"
+      break
+    else
+      log -1 "Waiting on MariaDB"
+      sleep 1
+    fi
   done
-  sleep 1
 
-  # workaround to emulate DROP USER IF EXISTS ..;)
-  local DBPASSWD=$( grep password /root/.my.cnf | sed 's|password=||' )
+  # Workaround to emulate DROP USER IF EXISTS
+  DBPASSWD="$(grep 'password' /root/.my.cnf | sed 's|password=||')"
   mysql <<EOF
 DROP DATABASE IF EXISTS nextcloud;
 CREATE DATABASE nextcloud
@@ -54,24 +111,28 @@ EOF
 
   # make sure redis is running first
   if ! pgrep -c redis-server &>/dev/null; then
-    mkdir -p /var/run/redis
-    chown redis /var/run/redis
-    sudo -u redis redis-server /etc/redis/redis.conf &
+    mkdir --parents "$REDIS_DIR"
+    chown redis "$REDIS_DIR"
+    sudo -u "$REDIS_USER" redis-server "$REDIS_CONF" &
   fi
 
-  while :; do
-    [[ -S /run/redis/redis.sock ]] && break
-    sleep 0.5
+  while :
+  do
+    [[ -S "$REDIS_SOCKET" ]] && break
+    sleep 1
   done
 
 
-  echo "Setting up Nextcloud..."
+  log -1 "Setting up Nextcloud"
 
-  cd /var/www/nextcloud/
-  rm -f config/config.php
-  ncc maintenance:install --database \
-    "mysql" --database-name "nextcloud"  --database-user "$DBADMIN" --database-pass \
-    "$DBPASSWD" --admin-user "$ADMINUSER" --admin-pass "$ADMINPASS"
+  cd "$NEXTCLOUD_DIRECTORY" || return 1
+  rm --force config/config.php
+  ncc maintenance:install --database      "$DBTYPE" \
+                          --database-name "$DBNAME" \
+                          --database-user "$DBADMIN" \
+                          --database-pass "$DBPASSWD" \
+                          --admin-user    "$ADMINUSER" \
+                          --admin-pass    "$ADMINPASS"
 
   # cron jobs
   ncc background:cron
@@ -83,7 +144,7 @@ EOF
   'memcache.locking' => '\\OC\\Memcache\\Redis',
   'redis' =>
   array (
-    'host' => '/var/run/redis/redis.sock',
+    'host' => '$REDIS_SOCKET',
     'port' => 0,
     'timeout' => 0.0,
     'password' => '$REDISPASS',
@@ -92,13 +153,12 @@ EOF
 EOF
 
   # tmp upload dir
-  local UPLOADTMPDIR=/var/www/nextcloud/data/tmp
-  mkdir -p "$UPLOADTMPDIR"
-  chown www-data:www-data "$UPLOADTMPDIR"
+  mkdir --parents "$UPLOADTMPDIR"
+  chown "${HTTP_USER}:${HTTP_USER}" "$UPLOADTMPDIR"
   ncc config:system:set tempdirectory --value "$UPLOADTMPDIR"
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/${PHPVER}/cli/php.ini
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/${PHPVER}/fpm/php.ini
-  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/${PHPVER}/fpm/php.ini
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" "/etc/php/${PHP_VERSION}/cli/php.ini"
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" "/etc/php/${PHP_VERSION}/fpm/php.ini"
+  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     "/etc/php/${PHP_VERSION}/fpm/php.ini"
 
   # 4 Byte UTF8 support
   ncc config:system:set mysql.utf8mb4 --type boolean --value="true"
@@ -112,64 +172,58 @@ EOF
   ncc config:system:set mail_smtpmode     --value="sendmail"
   ncc config:system:set mail_smtpauthtype --value="LOGIN"
   ncc config:system:set mail_from_address --value="admin"
-  ncc config:system:set mail_domain       --value="ownyourbits.com"
+  ncc config:system:set mail_domain       --value="nextcloudpi.com"
 
   # NCP theme
   [[ -e /usr/local/etc/logo ]] && {
-    local ID=$( grep instanceid config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )
-    [[ "$ID" == "" ]] && { echo "failed to get ID"; return 1; }
-    mkdir -p data/appdata_${ID}/theming/images
-    cp /usr/local/etc/background data/appdata_${ID}/theming/images
-    cp /usr/local/etc/logo data/appdata_${ID}/theming/images/logo
-    cp /usr/local/etc/logo data/appdata_${ID}/theming/images/logoheader
-    chown -R www-data:www-data data/appdata_${ID}
+    ID="$(grep 'instanceid' config/config.php | awk -F "=> " '{print $2}' | sed "s|[,']||g" )"
+    [[ "$ID" == "" ]] && {
+      log 2 "Failed to get ID"
+      return 1
+    }
+    mkdir --parents                      "data/appdata_${ID}/theming/images"
+    cp '/usr/local/etc/background'       "data/appdata_${ID}/theming/images"
+    cp '/usr/local/etc/logo'             "data/appdata_${ID}/theming/images/logo"
+    cp '/usr/local/etc/logo'             "data/appdata_${ID}/theming/images/logoheader"
+    chown -R "${HTTP_USER}:${HTTP_USER}" "data/appdata_${ID}"
   }
 
   mysql nextcloud <<EOF
-replace into  oc_appconfig values ( 'theming', 'name'          , "NextCloudPi"             );
+replace into  oc_appconfig values ( 'theming', 'name'          , "NextcloudPi"             );
 replace into  oc_appconfig values ( 'theming', 'slogan'        , "keep your data close"    );
-replace into  oc_appconfig values ( 'theming', 'url'           , "https://ownyourbits.com" );
+replace into  oc_appconfig values ( 'theming', 'url'           , "https://nextcloudpi.com" );
 replace into  oc_appconfig values ( 'theming', 'logoMime'      , "image/svg+xml"           );
 replace into  oc_appconfig values ( 'theming', 'backgroundMime', "image/png"               );
 EOF
 
   # NCP app
-  cp -r /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
-  chown -R www-data:     /var/www/nextcloud/apps/nextcloudpi
+  cp -r /var/www/ncp-app "${NEXTCLOUD_DIRECTORY}/apps/nextcloudpi"
+  chown -R "$HTTP_USER": "${NEXTCLOUD_DIRECTORY}/apps/nextcloudpi"
   ncc app:enable nextcloudpi
-
-  # enable some apps by default
+  # Enable some apps by default
   ncc app:install calendar
-  ncc app:enable  calendar
   ncc app:install contacts
-  ncc app:enable  contacts
   ncc app:install notes
-  ncc app:enable  notes
   ncc app:install tasks
-  ncc app:enable  tasks
-
-  # we handle this ourselves
+  # We handle this ourselves
   ncc app:disable updatenotification
 
   # News dropped support for 32-bit -> https://github.com/nextcloud/news/issues/1423
-  if ! [[ "$ARCH" =~ armv7 ]]; then
+  if ! [[ "$ARCH" == "armv7" ]]; then
     ncc app:install news
-    ncc app:enable  news
   fi
 
   # ncp-previewgenerator
-  local ncver
-  ncver="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-  if is_more_recent_than "21.0.0" "${ncver}"; then
-    local ncprev=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20
+  NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{print $3}')"
+  if is_more_recent_than "21.0.0" "$NCVER"; then
+    NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
   else
     ncc app:install notify_push
-    ncc app:enable  notify_push
-    test -f /.ncp-image || start_notify_push # don't start during build
-    local ncprev=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21
+    [[ -f /.ncp-image ]] || startNotifyPush # don't start during build
+    NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
   fi
-  ln -snf "${ncprev}" /var/www/nextcloud/apps/previewgenerator
-  chown -R www-data: /var/www/nextcloud/apps/previewgenerator
+  ln -snf "$NCPREV" /var/www/nextcloud/apps/previewgenerator
+  chown -R "$HTTP_USER": /var/www/nextcloud/apps/previewgenerator
   ncc app:enable previewgenerator
 
   # previews
@@ -182,11 +236,11 @@ EOF
   ncc config:app:set preview jpeg_quality --value="60"
 
   # other
-  ncc config:system:set overwriteprotocol --value=https
+  ncc config:system:set overwriteprotocol --value='https'
   ncc config:system:set overwrite.cli.url --value="https://nextcloudpi/"
 
   # bash completion for ncc
-  apt_install bash-completion
+  installPKG bash-completion
   ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
   echo ". /etc/bash_completion" >> /etc/bash.bashrc
   echo ". /usr/share/bash-completion/completions/ncp" >> /etc/bash.bashrc
@@ -196,21 +250,21 @@ EOF
   ncc db:add-missing-indices
 
   # Default trusted domain (only from ncp-config)
-  test -f /usr/local/bin/nextcloud-domain.sh && {
-    test -f /.ncp-image || bash /usr/local/bin/nextcloud-domain.sh
+  [[ -f /usr/local/bin/nextcloud-domain.sh ]] && {
+    [[ -f /.ncp-image ]] || bash /usr/local/bin/nextcloud-domain.sh
   }
 
   # dettach mysql during the build
-  if [[ "${db_pid}" != "" ]]; then
-    echo "Shutting down mariaDB (${db_pid})"
+  if [[ "$DB_PID" != "" ]]; then
+    log -1 "Shutting down MariaDB ( $DB_PID )"
     mysqladmin -u root shutdown
-    wait "${db_pid}"
+    wait "$DB_PID"
   fi
 
-  echo "NC init done"
+  log 0 "Nextcloud init is done"
 }
 
-install(){ :; }
+function install { :; }
 
 # License
 #

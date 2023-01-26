@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /usr/local/etc/library.sh # sets PHPVER
+source /usr/local/etc/library.sh # sets PHP_VERSION
 
 set -e
 
@@ -26,13 +26,13 @@ if [[ -f /usr/local/bin/ncp-docker-hook ]]; then
 fi
 
 echo "Starting PHP-fpm"
-php-fpm"${PHPVER}"
+php-fpm"${PHP_VERSION}"
 
 echo "Starting Apache"
 /usr/sbin/apache2ctl start
 
 # adjust the dbdir to the persistent storage
-install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" || exit 1
+installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" || exit 1
 
 # start
 echo "Starting mariaDB"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Updater for NextCloudPi
+# Updater for NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -74,7 +74,7 @@ source /usr/local/etc/library.sh
 mkdir -p "$CONFDIR"
 
 # prevent installing some ncp-apps in the containerized versions
-if is_docker || is_lxc; then
+if is_docker || isLXC; then
   for opt in $EXCL_DOCKER; do
     touch $CONFDIR/$opt.cfg
   done
@@ -92,7 +92,7 @@ for file in etc/ncp-config.d/*; do
 
   # install new ncp_apps
   [ -f /usr/local/"$file" ] || {
-    install_app "$(basename "$file" .cfg)"
+    installApp "$(basename "$file" .cfg)"
   }
 
   # keep saved cfg values
@@ -119,7 +119,7 @@ for file in etc/ncp-config.d/*; do
     [[ "$(jq -r ".params[0].id"    "$file")" == "ACTIVE" ]] && \
     [[ "$(jq -r ".params[0].value" "$file")" == "yes"    ]] && {
       cp "$file" /usr/local/"$file"
-      run_app "$(basename "$file" .cfg)"
+      runApp "$(basename "$file" .cfg)"
     }
   }
 
@@ -128,13 +128,13 @@ for file in etc/ncp-config.d/*; do
 done
 
 # update NCVER in ncp.cfg and nc-nextcloud.cfg (for nc-autoupdate-nc and nc-update-nextcloud)
-nc_version=$(jq -r .nextcloud_version < etc/ncp.cfg)
+getNextcloudVersion=$(jq -r .nextcloud_version < etc/ncp.cfg)
 cfg="$(jq '.' /usr/local/etc/ncp.cfg)"
-cfg="$(jq ".nextcloud_version = \"$nc_version\"" <<<"$cfg")"
+cfg="$(jq ".nextcloud_version = \"$getNextcloudVersion\"" <<<"$cfg")"
 echo "$cfg" > /usr/local/etc/ncp.cfg
 
 cfg="$(jq '.' etc/ncp-config.d/nc-nextcloud.cfg)"
-cfg="$(jq ".params[0].value = \"$nc_version\"" <<<"$cfg")"
+cfg="$(jq ".params[0].value = \"$getNextcloudVersion\"" <<<"$cfg")"
 echo "$cfg" > /usr/local/etc/ncp-config.d/nc-nextcloud.cfg
 
 # install localization files
@@ -165,7 +165,7 @@ cp -r /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
 chown -R www-data:     /var/www/nextcloud/apps/nextcloudpi
 
 # remove unwanted ncp-apps for containerized versions
-if is_docker || is_lxc; then
+if is_docker || isLXC; then
   for opt in $EXCL_DOCKER; do
     rm $CONFDIR/$opt.cfg
     find /usr/local/bin/ncp -name "$opt.sh" -exec rm '{}' \;
@@ -184,15 +184,15 @@ fi
 ./run_update_history.sh "$UPDATESDIR"
 
 # update to the latest NC version
-is_active_app nc-autoupdate-nc && run_app nc-autoupdate-nc
+isActiveApp nc-autoupdate-nc && runApp nc-autoupdate-nc
 
-start_notify_push
+startNotifyPush
 
 # Refresh ncp config values
 source /usr/local/etc/library.sh
 
 # check dist-upgrade
-check_distro "$NCPCFG" && check_distro etc/ncp.cfg || {
+checkDistro "$NCPCFG" && checkDistro etc/ncp.cfg || {
   php_ver_new=$(jq -r '.php_version'   < etc/ncp.cfg)
   release_new=$(jq -r '.release'       < etc/ncp.cfg)
 
@@ -219,8 +219,8 @@ chmod +x /etc/update-motd.d/30ncp-dist-upgrade
 # Remove redundant opcache configuration.
 # Related to https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=815968
 # Bug #416 reappeared after we moved to php7.3 and debian buster packages.
-[[ "$( ls -l /etc/php/"${PHPVER}"/fpm/conf.d/*-opcache.ini 2> /dev/null |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/"${PHPVER}"/fpm/conf.d/*-opcache.ini | tail -1 )"
-[[ "$( ls -l /etc/php/"${PHPVER}"/cli/conf.d/*-opcache.ini 2> /dev/null |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/"${PHPVER}"/cli/conf.d/*-opcache.ini | tail -1 )"
+[[ "$( ls -l /etc/php/"${PHP_VERSION}"/fpm/conf.d/*-opcache.ini 2> /dev/null |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/"${PHP_VERSION}"/fpm/conf.d/*-opcache.ini | tail -1 )"
+[[ "$( ls -l /etc/php/"${PHP_VERSION}"/cli/conf.d/*-opcache.ini 2> /dev/null |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/"${PHP_VERSION}"/cli/conf.d/*-opcache.ini | tail -1 )"
 
 exit 0
 

@@ -12,7 +12,7 @@
 configure()
 {
   local DATADIR
-  DATADIR=$( get_nc_config_value datadirectory ) || {
+  DATADIR=$( getNextcloudConfigValue datadirectory ) || {
     echo "data directory not found";
     return 1;
   }

@@ -18,7 +18,7 @@ configure()
 
   [[ "$CLEAN" == "yes" ]] && {
     local datadir
-    datadir=$( get_nc_config_value datadirectory ) || {
+    datadir=$( getNextcloudConfigValue datadirectory ) || {
       echo "data directory not found";
       return 1;
     }

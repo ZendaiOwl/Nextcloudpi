@@ -3,7 +3,7 @@
 set -e
 source /usr/local/etc/library.sh
 
-PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
+PHP_VERSION="${PHP_VERSION?ERROR: PHP_VERSION variable unset!}"
 
 if [[ "$1" == "--defaults" ]] || ! [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker
 then
@@ -13,7 +13,7 @@ then
 elif is_docker
 then
   DATADIR="/data-ro/ncdata/data"
-  [[ "$DOCKERBUILD" == 1 ]] || DATADIR="$(get_nc_config_value datadirectory || echo '/data/ncdata/data')"
+  [[ "$DOCKERBUILD" == 1 ]] || DATADIR="$(getNextcloudConfigValue datadirectory || echo '/data/ncdata/data')"
   TMP_DIR="$DATADIR/.opcache"
 else
   TMP_DIR="$(source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir)"

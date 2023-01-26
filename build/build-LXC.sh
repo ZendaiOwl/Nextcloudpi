@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Batch creation of NextCloudPi LXC image
+# Batch creation of NextcloudPi LXC image
 #
 # Copyleft 2021 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -9,12 +9,12 @@
 #
 
 set -e
-source build/buildlib.sh
+source etc/library.sh
 
 echo -e "\e[1m\n[ Build NCP LXC ]\e[0m"
 
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
-IMG="NextCloudPi_LXC_$( date  "+%m-%d-%y" ).img"
+IMG="NextcloudPi_LXC_$( date  "+%m-%d-%y" ).img"
 IMG=tmp/"$IMG"
 
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
@@ -27,7 +27,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 set -e
-prepare_dirs                   # tmp cache output
+prepareDirectories                   # tmp cache output
 
 ## BUILD NCP
 
@@ -38,14 +38,14 @@ sudo cp lxc_config /var/lib/lxc/ncp/config
 sudo lxc-start -n ncp
 sudo lxc-attach -n ncp --clear-env -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
 sudo lxc-attach -n ncp --clear-env -- CODE_DIR="$(pwd)" bash /build/install.sh
-sudo lxc-attach -n ncp --clear-env -- bash -c 'source /build/etc/library.sh; run_app_unsafe /build/post-inst.sh'
+sudo lxc-attach -n ncp --clear-env -- bash -c 'source /build/etc/library.sh; runApp_unsafe /build/post-inst.sh'
 sudo lxc-attach -n ncp --clear-env -- bash -c "echo '$(basename "$IMG")' > /usr/local/etc/ncp-baseimage"
 sudo lxc-attach -n ncp --clear-env -- poweroff
 
 exit 0 # TODO
 
 ## pack
-pack_image "$IMG" "$TAR"
+packIMG "$IMG" "$TAR"
 
 ## test
 #set_static_IP "$IMG" "$IP"

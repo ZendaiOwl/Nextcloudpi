@@ -4,15 +4,15 @@ set -e
 
 ## BACKWARD FIXES ( for older images )
 
-source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
+source /usr/local/etc/library.sh # sets NEXTCLOUD_VERSION_LATEST PHP_VERSION RELEASE
 
 # all images
 
 # update ncp-restore
-install_app nc-restore
+installApp nc-restore
 
 # fix ncp.conf bug if LE is disabled
-if ! is_active_app letsencrypt; then
+if ! isActiveApp letsencrypt; then
   if [[ -f /etc/apache2/sites-enabled/ncp.conf ]]; then
     sed -i "s|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem|"         /etc/apache2/sites-enabled/ncp.conf
     sed -i "s|SSLCertificateKeyFile.*|SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key|" /etc/apache2/sites-enabled/ncp.conf
@@ -42,7 +42,7 @@ EOF
   apachectl -k graceful
 
 # fix issue with reverse proxy infinite redirections
-run_app nc-httpsonly
+runApp nc-httpsonly
 ncc config:system:set overwriteprotocol --value="https"
 
 # bash completion for `ncc`
@@ -60,7 +60,7 @@ fi
 
 # we handle this ourselves now
 ncc app:disable updatenotification
-run_app nc-notify-updates
+runApp nc-notify-updates
 
 # docker images only
 [[ -f /.docker-image ]] && {

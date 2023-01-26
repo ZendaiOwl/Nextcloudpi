@@ -10,7 +10,7 @@ set -e
 ncc notify_push:self-test || {
   killall notify_push
   sleep 1
-  start_notify_push
+  startNotifyPush
 }
 EOF
   chmod +x /etc/cron.daily/refresh_notify_push

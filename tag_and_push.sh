@@ -18,7 +18,7 @@ set -e
 
 TAG="$*"
  
-source build/buildlib.sh
+source etc/library.sh
 git tag -f "$TAG"
 generate_changelog
 git add changelog.md

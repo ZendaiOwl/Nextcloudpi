@@ -8,7 +8,7 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-LATEST="$NCLATESTVER"
+LATEST="$NEXTCLOUD_VERSION_LATEST"
 
 configure()
 {

@@ -6,7 +6,7 @@ BACKUPFILE="$1"
 DBADMIN=ncadmin
 DBPASSWD="$( grep password /root/.my.cnf | sed 's|password=||' )"
 
-source /usr/local/etc/library.sh # sets PHPVER
+source /usr/local/etc/library.sh # sets PHP_VERSION
 
 DIR="$( cd "$( dirname "$BACKUPFILE" )" &>/dev/null && pwd )" #abspath
 
@@ -95,7 +95,7 @@ mysql -u root nextcloud <  "$TMPDIR"/nextcloud-sqlbkp_*.bak || { echo "Error res
 
 ## RESTORE DATADIR
 
-DATADIR="$(get_nc_config_value datadirectory)"
+DATADIR="$(getNextcloudConfigValue datadirectory)"
 if is_docker && [[ "$DATADIR" == "/var/www/nextcloud/data" ]]; then
   DATADIR=/data/nextcloud/data
 fi
@@ -151,15 +151,15 @@ fi
 sed -i "s|'datadirectory' =>.*|'datadirectory' => '${DATADIR}',|" "${NCDIR}"/config/config.php
 
 # Just in case we moved the opcache dir
-install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+installTemplate "php/opcache.ini.sh" "/etc/php/${PHP_VERSION}/mods-available/opcache.ini"
 
 # tmp upload dir
 mkdir -p "$DATADIR/tmp"
 chown www-data: "$DATADIR/tmp"
 ncc config:system:set tempdirectory --value "$DATADIR/tmp"
-sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" "/etc/php/${PHPVER}/cli/php.ini"
-sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" "/etc/php/${PHPVER}/fpm/php.ini"
-sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $DATADIR/tmp|"     "/etc/php/${PHPVER}/fpm/php.ini"
+sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" "/etc/php/${PHP_VERSION}/cli/php.ini"
+sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" "/etc/php/${PHP_VERSION}/fpm/php.ini"
+sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $DATADIR/tmp|"     "/etc/php/${PHP_VERSION}/fpm/php.ini"
 
 # logs
 ncc config:system:set logfile --value="$DATADIR/nextcloud.log"
@@ -181,5 +181,5 @@ ncc files:scan-app-data
 
 # restart PHP if needed
 [[ "$NEED_RESTART" == "1" ]] && {
-  bash -c "sleep 5; source /usr/local/etc/library.sh; clear_opcache; service php${PHPVER}-fpm restart" &>/dev/null &
+  bash -c "sleep 5; source /usr/local/etc/library.sh; clearOPCache; service php${PHP_VERSION}-fpm restart" &>/dev/null &
 }

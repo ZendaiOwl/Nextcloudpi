@@ -1,110 +1,178 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# A log function that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log() {
+  if [[ "$#" -gt 0 ]]
+  then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+    then
+      case "$LOGLEVEL" in
+        -2)
+          local -r CYAN='\e[1;36m'
+          printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+          ;;
+        -1)
+          local -r BLUE='\e[1;34m'
+          printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+          ;;
+        0)
+          local -r GREEN='\e[1;32m'
+          printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+          ;;
+        1)
+          local -r YELLOW='\e[1;33m'
+          printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+          ;;
+        2)
+          local -r RED='\e[1;31m'
+          printf "${RED}ERROR${Z} %s\n" "$TEXT"
+          ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
 
-# Nextcloud LAMP base installation on Raspbian
-#
-# Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
-# GPL licensed (see end of file) * Use at your own risk!
-#
-# Usage:
-#
-#   ./installer.sh lamp.sh <IP> (<img>)
-#
-# See installer.sh instructions for details
-#
-# Notes:
-#   Upon each necessary restart, the system will cut the SSH session, therefore
-#   it is required to save the state of the installation. See variable $STATE_FILE
-#   It will be necessary to invoke this a number of times for a complete installation
-#
-# More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
-#
+# Checks if user running script is root or not
+# Return codes
+# 0: Is root
+# 1: Not root
+function isRoot() {
+  if [[ "$EUID" -eq 0 ]]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
 
-APTINSTALL="apt-get install -y --no-install-recommends"
-export DEBIAN_FRONTEND=noninteractive
+# Checks if a command exists on the system
+# Return status codes
+# 0: Command exists on the system
+# 1: Command is unavailable on the system
+# 2: Missing command argument to check
+function hasCMD() {
+  if [[ "$#" -eq 1 ]]
+  then
+    local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null
+    then
+      return 0
+    else
+      return 1
+    fi
+  else
+    return 2
+  fi
+}
 
-install()
-{
-    set -x
-    # Setup apt repository for php 8
+function install() {
+  local OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends) \
+        APTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+        APTINSTALL=(apt-get "${OPTIONS[@]}" install) \
+        PACKAGES=(apt-utils cron curl ssl-cert apache2 mariadb-server) \
+        GROUP_OPTIONS=(--quiet --system) \
+        USER_OPTIONS=(--quiet --uid 180 --system --group --no-create-home --home /run/systemd --gecos "systemd Network Management") \
+        DBPASSWD="default" \
+        MARIADB_CNF='/root/.my.cnf' \
+        RUN_LOCK='/run/lock' \
+        RUN_PHP='/run/php' \
+        RUN_MYSQLD='/run/mysqld' \
+        APACHE2_CONF='/etc/apache2/apache2.conf' \
+        MYSQLD_PID='/run/mysqld/mysqld.pid' \
+        MYSQLD_SOCK='/run/mysqld/mysqld.sock'
+
+  set -x
+  if hasCMD wget
+  then
+    # Sury's PHP Repository
+    #######################
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
     echo "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
-    apt-get update
-    $APTINSTALL apt-utils cron curl
-    ls -l /var/lock || true
-    $APTINSTALL apache2
-    # Fix missing lock directory
-    mkdir -p /run/lock
-    apache2ctl -V || true
+    DEBIAN_FRONTEND=noninteractive "${APTUPDATE[@]}"
+  else
+    log 2 "Missing command: wget"
+    exit 1
+  fi
 
-    # Create systemd users to keep uids persistent between containers
-    id -u systemd-resolve || {
-      addgroup --quiet --system systemd-journal
-      adduser --quiet -u 180 --system --group --no-create-home --home /run/systemd \
-        --gecos "systemd Network Management" systemd-network
-      adduser --quiet -u 181 --system --group --no-create-home --home /run/systemd \
-        --gecos "systemd Resolver" systemd-resolve
-    }
-    install_with_shadow_workaround --no-install-recommends systemd
-    $APTINSTALL -t $RELEASE php${PHPVER} php${PHPVER}-curl php${PHPVER}-gd php${PHPVER}-fpm php${PHPVER}-cli php${PHPVER}-opcache \
-                            php${PHPVER}-mbstring php${PHPVER}-xml php${PHPVER}-zip php${PHPVER}-fileinfo php${PHPVER}-ldap \
-                            php${PHPVER}-intl php${PHPVER}-bz2
+  # Packages Installation
+  #######################
+  DEBIAN_FRONTEND=noninteractive "${APTINSTALL[@]}" "${PACKAGES[@]}"
 
-    mkdir -p /run/php
+  mkdir --parents "$RUN_LOCK"
 
-    # mariaDB password
-    local DBPASSWD="default"
-    echo -e "[client]\npassword=$DBPASSWD" > /root/.my.cnf
-    chmod 600 /root/.my.cnf
+  apache2ctl -V || true
 
-    debconf-set-selections <<< "mariadb-server-5.5 mysql-server/root_password password $DBPASSWD"
-    debconf-set-selections <<< "mariadb-server-5.5 mysql-server/root_password_again password $DBPASSWD"
-    $APTINSTALL mariadb-server php${PHPVER}-mysql
-    mkdir -p /run/mysqld
-    chown mysql /run/mysqld
+  if ! id --user systemd-resolve
+  then
+    addgroup "${GROUP_OPTIONS[@]}" systemd-journal
+    adduser  "${USER_OPTIONS[@]}"  systemd-resolve
+  fi
+  
+  installWithShadowWorkaround systemd
 
-    # CONFIGURE APACHE
-    ##########################################
+  # PHP Installation
+  ##################
+  DEBIAN_FRONTEND=noninteractive "${APTINSTALL[@]}" --target-release "$RELEASE" \
+  php"$PHP_VERSION" php"$PHP_VERSION"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql}
 
-    install_template apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
+  mkdir --parents "$RUN_PHP"
 
-    # CONFIGURE PHP7
-    ##########################################
+  # MariaDB Password
+  ##################
+  echo -e "[client]\npassword=$DBPASSWD" > "$MARIADB_CNF"
+  chmod 600                                "$MARIADB_CNF"
 
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+  debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
+  debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
+  
+  mkdir --parents "$RUN_MYSQLD"
+  chown mysql     "$RUN_MYSQLD"
 
-    a2enmod http2
-    a2enconf http2
-    a2enmod proxy_fcgi setenvif
-    a2enconf php${PHPVER}-fpm
-    a2enmod rewrite
-    a2enmod headers
-    a2enmod dir
-    a2enmod mime
-    a2enmod ssl
+  # Apache Configuration
+  ######################
+  installTemplate apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
 
-    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+  # PHP Configuration
+  ###################
+  installTemplate "php/opcache.ini.sh" "/etc/php/${PHP_VERSION}/mods-available/opcache.ini" --defaults
+  
+  a2enmod http2
+  a2enconf http2
+  
+  a2enmod proxy_fcgi setenvif
+  a2enconf php"$PHP_VERSION"-fpm
+  
+  a2enmod rewrite headers dir mime ssl
 
+  echo "ServerName localhost" >> "$APACHE2_CONF"
+  
+  # Lamp Configuration
+  ####################
+  installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
+  installTemplate "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
 
-    # CONFIGURE LAMP FOR NEXTCLOUD
-    ##########################################
-
-    $APTINSTALL ssl-cert # self signed snakeoil certs
-
-    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
-
-    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
-
-  # launch mariadb if not already running
-  if ! [[ -f /run/mysqld/mysqld.pid ]]; then
-    echo "Starting mariaDB"
+  if [[ ! -f "$MYSQLD_PID" ]]
+  then
+    log -1 "Starting MariaDB"
     mysqld &
   fi
 
-  # wait for mariadb
-  while :; do
-    [[ -S /run/mysqld/mysqld.sock ]] && break
+  log -1 "Waiting for MariaDB to start"
+  while :
+  do
+    # True if file exists and is socket
+    [[ -S "$MYSQLD_SOCK" ]] && break
     sleep 0.5
   done
+  log 0 "MariaDB started"
 
   cd /tmp
   mysql_secure_installation <<EOF
@@ -117,25 +185,7 @@ y
 y
 y
 EOF
+log 0 "Lamp installation complete"
 }
 
-configure() { :; }
-
-
-# License
-#
-# This script is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This script is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this script; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place, Suite 330,
-# Boston, MA  02111-1307  USA
-
+function configure() { :; }

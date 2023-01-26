@@ -9,12 +9,12 @@
 #
 
 set -e
-source build/buildlib.sh
+source etc/library.sh
 
 echo -e "\e[1m\n[ Build NCP Berryboot ]\e[0m"
 
 SRC="$1"
-IMG="NextCloudPi_RPi_Berryboot_$( date  "+%m-%d-%y" ).img"
+IMG="NextcloudPi_RPi_Berryboot_$( date  "+%m-%d-%y" ).img"
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
 
 test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
@@ -23,7 +23,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 # convert to Berryboot
 
-mount_raspbian "$SRC"
+mountRPi "$SRC"
   sudo bash -c "cat > raspbian_root/etc/fstab" <<EOF
 /dev/mmcblk0p1  /boot           vfat    defaults          0       2
 /dev/mmcblk0p2  /               ext4    defaults,noatime  0       1
@@ -32,10 +32,10 @@ EOF
 
 
 sudo mksquashfs raspbian_root "$IMG"  -comp lzo -e lib/modules
-umount_raspbian
+umountRPi
 
 ## pack
-pack_image "$IMG" "$TAR"
+packIMG "$IMG" "$TAR"
 
 # upload
 create_torrent "$TAR"

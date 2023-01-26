@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Data dir configuration script for NextCloudPi
+# Data dir configuration script for NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -8,95 +8,139 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
-is_active()
-{
+# A log function that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log {
+  if [[ "$#" -gt 0 ]]
+  then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+    then
+      case "$LOGLEVEL" in
+        -2)
+          local -r CYAN='\e[1;36m'
+          printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+          ;;
+        -1)
+          local -r BLUE='\e[1;34m'
+          printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+          ;;
+        0)
+          local -r GREEN='\e[1;32m'
+          printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+          ;;
+        1)
+          local -r YELLOW='\e[1;33m'
+          printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+          ;;
+        2)
+          local -r RED='\e[1;31m'
+          printf "${RED}ERROR${Z} %s\n" "$TEXT"
+          ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
+
+function is_active {
   local SRCDIR
-  SRCDIR="$( grep datadirectory /var/www/nextcloud/config/config.php | awk '{ print $3 }' | grep -oP "[^']*[^']" | head -1 )" || return 1
+  SRCDIR="$(grep datadirectory /var/www/nextcloud/config/config.php | \
+            awk '{print $3}' | grep -oP "[^']*[^']" | \
+            head -1 )" || return 1
   [[ "$SRCDIR" != "/var/www/nextcloud/data" ]]
 }
 
-install()
-{
-  apt_install btrfs-progs
+function install {
+  installPKG btrfs-progs
 }
 
-tmpl_opcache_dir() {
-  DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
+function tmpl_opcache_dir {
+  local DATADIR
+  DATADIR="$(getNextcloudConfigValue datadirectory || findAppParameter nc-datadir DATADIR)"
   echo -n "${DATADIR}/.opcache"
   #[[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo "/tmp" || echo "${DATADIR}/.opcache"
 }
 
-tmpl_tmp_upload_dir() {
-  DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
+function tmpl_tmp_upload_dir {
+  local DATADIR
+  DATADIR="$(getNextcloudConfigValue datadirectory || findAppParameter nc-datadir DATADIR)"
   echo -n "${DATADIR}/tmp"
 }
 
-create_opcache_dir() {
+function create_opcache_dir {
+  local OPCACHE_DIR HTTP_USER='www-data'
   OPCACHE_DIR="$(tmpl_opcache_dir)"
   mkdir -p "$OPCACHE_DIR"
-  chown -R www-data:www-data "$OPCACHE_DIR"
+  chown -R "${HTTP_USER}:${HTTP_USER}" "$OPCACHE_DIR"
   if [[ "$(stat -fc%T "${BASEDIR}")" == "btrfs" ]]
   then
     chattr -R +C "$OPCACHE_DIR"
   fi
 }
 
-create_tmp_upload_dir() {
+function create_tmp_upload_dir {
+  local UPLOAD_DIR HTTP_USER='www-data'
   UPLOAD_DIR="$(tmpl_tmp_upload_dir)"
   mkdir -p "${UPLOAD_DIR}"
-  chown www-data:www-data "${UPLOAD_DIR}"
+  chown "${HTTP_USER}:${HTTP_USER}" "${UPLOAD_DIR}"
   if [[ "$(stat -fc%T "${BASEDIR}")" == "btrfs" ]]
   then
     chattr +C "${UPLOAD_DIR}"
   fi
 }
 
-configure()
-{
+function configure {
   set -e -o pipefail
   shopt -s dotglob # includes dot files
 
   ## CHECKS
   local SRCDIR BASEDIR ENCDIR
-  SRCDIR=$( get_nc_config_value datadirectory ) || {
-    echo -e "Error reading data directory. Is NextCloud running and configured?";
+  SRCDIR="$(getNextcloudConfigValue datadirectory)" || {
+    echo -e "Error reading data directory. Is Nextcloud running and configured?";
     return 1;
   }
-  [ -d "${SRCDIR?}" ] || { echo -e "data directory $SRCDIR not found"; return 1; }
+  [ -d "${SRCDIR?}" ] || { echo -e "Data directory not found: [$SRCDIR]"; return 1; }
 
   [[ "$SRCDIR" == "${DATADIR?}"      ]] && { echo -e "INFO: data already there"; return 0; }
-  [[ "$SRCDIR" == "${DATADIR}"/data ]] && { echo -e "INFO: data already there"; return 0; }
+  [[ "$SRCDIR" == "${DATADIR}/data" ]] && { echo -e "INFO: data already there"; return 0; }
 
   BASEDIR="${DATADIR}"
   # If the user chooses the root of the mountpoint, force a folder
   mountpoint -q "${BASEDIR?}" && {
-    BASEDIR="${BASEDIR}"/ncdata
+    BASEDIR="${BASEDIR}/ncdata"
   }
 
-  mkdir -p "${BASEDIR}"
-  BASEDIR="$(cd "${BASEDIR}" && pwd -P)" # resolve symlinks and use the real path
-  DATADIR="${BASEDIR}"/data
-  ENCDIR="${BASEDIR}"/ncdata_enc
+  mkdir --parents "$BASEDIR"
+  BASEDIR="$(cd "$BASEDIR" && pwd -P)" # resolve symlinks and use the real path
+  DATADIR="${BASEDIR}/data"
+  ENCDIR="${BASEDIR}/ncdata_enc"
 
   # checks
-  [[ "$DISABLE_FS_CHECK" == 1 ]] || grep -q -e ext -e btrfs <( stat -fc%T "${BASEDIR}" ) || {
-    echo -e "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "${BASEDIR}")')"
+  [[ "$DISABLE_FS_CHECK" == 1 ]] || grep -q -e ext -e btrfs <( stat -fc%T "$BASEDIR" ) || {
+    echo -e "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
     return 1
   }
 
-  sudo -u www-data test -x "${BASEDIR}" || {
-    echo -e "ERROR: the user www-data does not have access permissions over ${BASEDIR}"
+  sudo -u www-data test -x "$BASEDIR" || {
+    echo -e "ERROR: the user www-data does not have access permissions over $BASEDIR"
     return 1
   }
 
   # backup possibly existing datadir
-  [ -d "${BASEDIR}" ] && {
-    rmdir "${BASEDIR}" &>/dev/null || {
+  [ -d "$BASEDIR" ] && {
+    rmdir "$BASEDIR" &>/dev/null || {
       local BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
-      echo "INFO: ${BASEDIR} is not empty. Creating backup ${BKP?}"
-      mv "${BASEDIR}" "${BKP}"
+      echo "INFO: $BASEDIR is not empty. Creating backup ${BKP?}"
+      mv "$BASEDIR" "$BKP"
     }
-    mkdir -p "${BASEDIR}"
+    mkdir --parents "$BASEDIR"
   }
 
   ## COPY
@@ -106,42 +150,42 @@ configure()
   echo "moving data directory from ${SRCDIR} to ${BASEDIR}..."
 
   # use subvolumes, if BTRFS
-  [[ "$(stat -fc%T "${BASEDIR}")" == "btrfs" ]] && ! is_docker && {
+  [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]] && ! is_docker && {
     echo "BTRFS filesystem detected"
-    rmdir "${BASEDIR}"
-    btrfs subvolume create "${BASEDIR}"
+    rmdir "$BASEDIR"
+    btrfs subvolume create "$BASEDIR"
   }
 
   # use encryption, if selected
-  if is_active_app nc-encrypt; then
+  if isActiveApp nc-encrypt; then
     # if we have encryption AND BTRFS, then store ncdata_enc in the subvolume
-    mv "$(dirname "${SRCDIR}")"/ncdata_enc "${ENCDIR?}"
-    mkdir "${DATADIR}"                        && mount --bind "${SRCDIR}" "${DATADIR}"
-    mkdir "$(dirname "${SRCDIR}")"/ncdata_enc && mount --bind "${ENCDIR}" "$(dirname "${SRCDIR}")"/ncdata_enc
+    mv "$(dirname "$SRCDIR")/ncdata_enc" "${ENCDIR?}"
+    mkdir "$DATADIR"                          && mount --bind "$SRCDIR" "$DATADIR"
+    mkdir "$(dirname "${SRCDIR}")/ncdata_enc" && mount --bind "$ENCDIR" "$(dirname "$SRCDIR")/ncdata_enc"
   else
-    mv "${SRCDIR}" "${DATADIR}"
+    mv "$SRCDIR" "$DATADIR"
   fi
-  chown www-data: "${DATADIR}"
+  chown www-data: "$DATADIR"
 
   # datadir
-  ncc config:system:set datadirectory  --value="${DATADIR}" \
-  || sed -i "s|'datadirectory' =>.*|'datadirectory' => '${DATADIR}',|" "${NCDIR?}"/config/config.php
+  ncc config:system:set datadirectory  --value="$DATADIR" \
+  || sed -i "s|'datadirectory' =>.*|'datadirectory' => '$DATADIR',|" "${NCDIR?}"/config/config.php
   
   ncc config:system:set logfile --value="${DATADIR}/nextcloud.log" \
   || sed -i "s|'logfile' =>.*|'logfile' => '${DATADIR}/nextcloud.log',|" "${NCDIR?}"/config/config.php
-  set_ncpcfg datadir "${DATADIR}"
+  set_ncpcfg datadir "$DATADIR"
 
   # tmp upload dir
   create_tmp_upload_dir
   ncc config:system:set tempdirectory --value "$DATADIR/tmp" \
-  || sed -i "s|'tempdirectory' =>.*|'tempdirectory' => '${DATADIR}/tmp',|" "${NCDIR?}"/config/config.php
-  sed -i "s|^;\?upload_tmp_dir =.*$|uploadtmp_dir = ${DATADIR}/tmp|"  /etc/php/"${PHPVER?}"/cli/php.ini
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = ${DATADIR}/tmp|" /etc/php/"${PHPVER}"/fpm/php.ini
-  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = ${DATADIR}/tmp|"     /etc/php/"${PHPVER}"/fpm/php.ini
+  || sed -i "s|'tempdirectory' =>.*|'tempdirectory' => '${DATADIR}/tmp',|" "${NCDIR?}/config/config.php"
+  sed -i "s|^;\?upload_tmp_dir =.*$|uploadtmp_dir = ${DATADIR}/tmp|"  "/etc/php/${PHP_VERSION?}/cli/php.ini"
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = ${DATADIR}/tmp|" "/etc/php/${PHP_VERSION}/fpm/php.ini"
+  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = ${DATADIR}/tmp|"     "/etc/php/${PHP_VERSION}/fpm/php.ini"
 
   # opcache dir
   create_opcache_dir
-  install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+  installTemplate "php/opcache.ini.sh" "/etc/php/${PHP_VERSION}/mods-available/opcache.ini"
 
   # update fail2ban logpath
   [[ -f /etc/fail2ban/jail.local ]] && \
@@ -152,13 +196,12 @@ configure()
   (
     . "${BINDIR?}/SYSTEM/metrics.sh"
     reload_metrics_config || {
-      echo 'WARN: There was an issue reloading ncp metrics. This might not affect your installation,
-      but keep it in mind if there is an issue with metrics.'
+      log 1 'There was an issue reloading ncp metrics. This might not affect your installation but keep it in mind if there is an issue with metrics.'
       true
     }
   )
 
-  echo "The NC data directory has been moved successfully."
+  log 0 "The NC data directory has been moved successfully."
 }
 
 # License

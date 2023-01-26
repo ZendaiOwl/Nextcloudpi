@@ -225,7 +225,7 @@
 
 ## [v1.39.16](https://github.com/nextcloud/nextcloudpi/commit/2be666b) (2021-09-27) nc-https: proto logic was inverted fix
 
-## [v1.39.15](https://github.com/nextcloud/nextcloudpi/commit/b067844) (2021-09-27) add get_ip function
+## [v1.39.15](https://github.com/nextcloud/nextcloudpi/commit/b067844) (2021-09-27) add getIP function
 
 ## [v1.39.14](https://github.com/nextcloud/nextcloudpi/commit/6ad96ed) (2021-09-25) nc-https:only fix infinite redirects behind proxy
 

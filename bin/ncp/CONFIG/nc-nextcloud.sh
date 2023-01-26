@@ -1,71 +1,135 @@
-#!/bin/bash
-
-# Nextcloud installation on Raspbian over LAMP base
-#
-# Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
-# GPL licensed (see end of file) * Use at your own risk!
-#
-# More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
-#
-
-DBADMIN=ncadmin
-REDIS_MEM=3gb
-
-APTINSTALL="apt-get install -y --no-install-recommends"
-export DEBIAN_FRONTEND=noninteractive
-
-tmpl_max_transfer_time()
-{
-  find_app_param nc-nextcloud MAXTRANSFERTIME
+#!/usr/bin/env bash
+# A log function that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log {
+  if [[ "$#" -gt 0 ]]
+  then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+    then
+      case "$LOGLEVEL" in
+        -2)
+          local -r CYAN='\e[1;36m'
+          printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+          ;;
+        -1)
+          local -r BLUE='\e[1;34m'
+          printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+          ;;
+        0)
+          local -r GREEN='\e[1;32m'
+          printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+          ;;
+        1)
+          local -r YELLOW='\e[1;33m'
+          printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+          ;;
+        2)
+          local -r RED='\e[1;31m'
+          printf "${RED}ERROR${Z} %s\n" "$TEXT"
+          ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
 }
 
-install()
-{
-  # During build, this step is run before ncp.sh. Avoid executing twice
-  [[ -f /usr/lib/systemd/system/nc-provisioning.service ]] && return 0
+# Checks if user running script is root or not
+# Return codes
+# 0: Is root
+# 1: Not root
+function isRoot {
+  if [[ "$EUID" -eq 0 ]]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
 
-  # Optional packets for Nextcloud and Apps
-  apt-get update
-  $APTINSTALL lbzip2 iputils-ping jq wget
-  # NOTE: php-smbclient in sury but not in Debian sources, we'll use the binary version
-  # https://docs.nextcloud.com/server/latest/admin_manual/configuration_files/external_storage/smb.html
-  $APTINSTALL -t $RELEASE smbclient exfat-fuse exfat-utils                      # for external storage
-  $APTINSTALL -t $RELEASE exfat-fuse exfat-utils                                # for external storage
-  $APTINSTALL -t $RELEASE php${PHPVER}-exif                                     # for gallery
-  $APTINSTALL -t $RELEASE php${PHPVER}-bcmath                                   # for LDAP
-  $APTINSTALL -t $RELEASE php${PHPVER}-gmp                                      # for bookmarks
-  #$APTINSTALL -t imagemagick php${PHPVER}-imagick ghostscript   # for gallery
+# Checks if a command exists on the system
+# Return status codes
+# 0: Command exists on the system
+# 1: Command is unavailable on the system
+# 2: Missing command argument to check
+function hasCMD {
+  if [[ "$#" -eq 1 ]]
+  then
+    local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null
+    then
+      return 0
+    else
+      return 1
+    fi
+  else
+    return 2
+  fi
+}
 
+function TmplMaxTransferTime() {
+  findAppParameter nc-nextcloud MAXTRANSFERTIME
+}
 
-  # POSTFIX
-  $APTINSTALL postfix || {
-    # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
-    echo "[NCP] Please, ignore the previous postfix installation error ..."
-    mv /usr/bin/newaliases /
-    ln -s /bin/true /usr/bin/newaliases
-    $APTINSTALL postfix
-    rm /usr/bin/newaliases
-    mv /newaliases /usr/bin/newaliases
-  }
+# Install function for Nextcloud
+# External storage: smbclient exfat-fuse exfat-utils
+# Gallery:          php"$PHP_VERSION"-exif
+# LDAP:             php"$PHP_VERSION"-bcmath
+# Bookmarks:        php"$PHP_VERSION"-gmp
+function install {
+  local OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends) \
+        APTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+        APTINSTALL=(apt-get "${OPTIONS[@]}" install) \
+        PACKAGES=(smbclient exfat-fuse exfat-utils redis-server php"$PHP_VERSION"-{exif,bcmath,gmp,redis}) \
+        PROVISIONING_SERVICE='/usr/lib/systemd/system/nc-provisioning.service' \
+        DBADMIN='ncadmin' \
+        REDIS_MEM='3gb' \
+        REDIS_CONF='/etc/redis/redis.conf' \
+        REDIS_INIT='/etc/init.d/redis-server' \
+        REDIS_SERVICE_D='/etc/systemd/system/redis-server.service.d' \
+        REDIS_PASSWORD='default' \
+        REDIS_GROUP='redis' \
+        HTTP_USER='www-data' \
+        LXC_FIX_CONF='/etc/systemd/system/redis-server.service.d/lxc_fix.conf' \
+        SYSCTL_CONF='/etc/sysctl.conf' \
+        SYSTEM_DIR='/usr/lib/systemd/system'
 
-  $APTINSTALL redis-server
-  $APTINSTALL -t $RELEASE php${PHPVER}-redis
+  # During build, this service runs before Ncp.sh
+  # Avoid executing twice
+  [[ -f "$PROVISIONING_SERVICE" ]] && return 0
 
-  local REDIS_CONF=/etc/redis/redis.conf
-  local REDISPASS="default"
-  sed -i "s|# unixsocket .*|unixsocket /var/run/redis/redis.sock|" $REDIS_CONF
-  sed -i "s|# unixsocketperm .*|unixsocketperm 770|"               $REDIS_CONF
-  sed -i "s|# requirepass .*|requirepass $REDISPASS|"              $REDIS_CONF
-  sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'   $REDIS_CONF
-  sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'  $REDIS_CONF
-  sed -i "s|^port.*|port 0|"                                       $REDIS_CONF
-  echo "maxmemory $REDIS_MEM" >> $REDIS_CONF
-  echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
+  # Optional packages for Nextcloud & Nextcloud Apps
+  DEBIAN_FRONTEND=noninteractive "${APTUPDATE[@]}"
+  DEBIAN_FRONTEND=noninteractive "${APTINSTALL[@]}" --target-release "$RELEASE" "${PACKAGES[@]}"
 
-  if is_lxc; then
-    # Otherwise it fails to start in Buster LXC container
-    mkdir -p /etc/systemd/system/redis-server.service.d
-    cat > /etc/systemd/system/redis-server.service.d/lxc_fix.conf <<'EOF'
+  sed -i "s|# unixsocket .*|unixsocket /var/run/redis/redis.sock|"   "$REDIS_CONF"
+  # Default redis unixsocketperm is 700 
+  sed -i "s|# unixsocketperm .*|unixsocketperm 770|"                 "$REDIS_CONF"
+  sed -i "s|# requirepass .*|requirepass $REDISPASS|"                "$REDIS_CONF"
+  sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'     "$REDIS_CONF"
+  sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'    "$REDIS_CONF"
+  sed -i "s|^port.*|port 0|"                                         "$REDIS_CONF"
+  echo "maxmemory $REDIS_MEM"     >>                                 "$REDIS_CONF"
+  echo 'vm.overcommit_memory = 1' >>                                 "$SYSCTL_CONF"
+  # TODO
+  # Inside Docker container
+  # Modify: /etc/init.d/redis-server
+  # Add line: chmod 644 $PIDFILE
+  if [[ "$DOCKERBUILD" -eq 1 ]]
+  then
+    sed -i '/chmod 755 $RUNDIR/i chmod 644 $PIDFILE'                 "$REDIS_INIT"
+  fi
+
+  if isLXC
+  then
+    mkdir --parents "$REDIS_SERVICE_D"
+    cat > "$LXC_FIX_CONF" <<'EOF'
 [Service]
 ReadOnlyDirectories=
 EOF
@@ -73,15 +137,14 @@ EOF
   fi
 
   chown redis: "$REDIS_CONF"
-  usermod -a -G redis www-data
+  usermod --append --groups "$REDIS_GROUP" "$HTTP_USER"
 
   service redis-server restart
   update-rc.d redis-server enable
-  clear_opcache
+  clearOPCache
 
-  # service to randomize passwords on first boot
-  mkdir -p /usr/lib/systemd/system
-  cat > /usr/lib/systemd/system/nc-provisioning.service <<'EOF'
+  mkdir --parents "$SYSTEM_DIR"
+  cat > "$PROVISIONING_SERVICE" <<'EOF'
 [Unit]
 Description=Randomize passwords on first boot
 Requires=network.target
@@ -93,93 +156,116 @@ ExecStart=/bin/bash /usr/local/bin/ncp-provisioning.sh
 [Install]
 WantedBy=multi-user.target
 EOF
-  [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nc-provisioning
+  [[ "$DOCKERBUILD" -ne 1 ]] && systemctl enable nc-provisioning
   return 0
 }
 
-configure()
-{
-  ## DOWNLOAD AND (OVER)WRITE NEXTCLOUD
-  cd /var/www/
-
-  local URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-$VER.tar.bz2"
-  echo "Downloading Nextcloud $VER..."
-  wget -q "$URL" -O nextcloud.tar.bz2 || {
-    echo "couldn't download $URL"
+function configure {
+  local DBCONF='/root/.my.cnf'
+  local OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends) \
+        APTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+        APTINSTALL=(apt-get "${OPTIONS[@]}" install) \
+        URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${VER}.tar.bz2" \
+        BACKUP_DIR="${HTTP_DIR}/backup" \
+        HTTP_DIR='/var/www' \
+        HTTP_USER='www-data' \
+        HTTP_GROUP='www-data' \
+        OCPATH="${HTTP_DIR}/nextcloud" \
+        APPS_PATH="${OCPATH}/apps" \
+        CONFIG_PATH="${OCPATH}/config" \
+        DATA_PATH="${OCPATH}/data" \
+        THEMES_PATH="${OCPATH}/themes" \
+        UPDATER_PATH="${OCPATH}/updater" \
+        OCC_PATH="${OCPATH}/occ" \
+        ROOT_USER='root' \
+        OPCACHEDIR="$(
+          # shellcheck disable=SC2015
+          [ -f "${BINDIR}/CONFIG/nc-datadir.sh" ] && { source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir; } || true
+        )" \
+        MYSQLD_PID='/run/mysqld/mysqld.pid' \
+        MYSQLD_SOCKET='/var/run/mysqld/mysqld.sock' \
+        DBADMIN='ncadmin' REDIS_MEM='3gb' DB_PID \
+        DBPASSWD="$(grep 'password' "$DB_CONF" | sed 's|password=||')"
+  
+  # Download & overwrite Nextcloud
+  ################################
+  cd "$HTTP_DIR"
+  log -1 "Downloading Nextcloud $NEXTCLOUD_VERSION_LATEST"
+  if ! wget -q "$URL" -O nextcloud.tar.bz2
+  then
+    log 2 "Couldn't download $NEXTCLOUD_VERSION_LATEST"
     return 1
-  }
-  rm -rf nextcloud
+  fi
+  mkdir --parents "$BACKUP_DIR"
+  mv nextcloud    "${BACKUP_DIR}/"
+  #rm --recursive --force nextcloud
+  log -1 "Installing $NEXTCLOUD_VERSION_LATEST"
 
-  echo "Installing  Nextcloud $VER..."
   tar -xf nextcloud.tar.bz2
   rm nextcloud.tar.bz2
+  
+  # File Permissions Configuration
+  ################################
+  log -1 "Creating possible missing directories"
+  mkdir --parents "$DATA_PATH"
+  mkdir --parents "$UPDATER_PATH"
 
-  ## CONFIGURE FILE PERMISSIONS
-  local ocpath='/var/www/nextcloud'
-  local htuser='www-data'
-  local htgroup='www-data'
-  local rootuser='root'
+  log -1 "Permissions: Files 'chmod 0640' | Directories 'chmod 0750'"
+  find "${OCPATH}/" -type f -print0 | xargs -0 chmod 0640
+  find "${OCPATH}/" -type d -print0 | xargs -0 chmod 0750
 
-  printf "Creating possible missing Directories\n"
-  mkdir -p $ocpath/data
-  mkdir -p $ocpath/updater
+  log -1 "Change owner to: ${HTTP_USER}:${HTTP_GROUP}"
+  chown -R "${HTTP_USER}:${HTTP_GROUP}" "$OCPATH"
+  #chown -R "${HTTP_USER}:${HTTP_GROUP}" "$APPS_PATH"
+  #chown -R "${HTTP_USER}:${HTTP_GROUP}" "$CONFIG_PATH"
+  #chown -R "${HTTP_USER}:${HTTP_GROUP}" "$DATA_PATH"
+  #chown -R "${HTTP_USER}:${HTTP_GROUP}" "$THEMES_PATH"
+  #chown -R "${HTTP_USER}:${HTTP_GROUP}" "$UPDATER_PATH"
 
-  printf "chmod Files and Directories\n"
-  find ${ocpath}/ -type f -print0 | xargs -0 chmod 0640
-  find ${ocpath}/ -type d -print0 | xargs -0 chmod 0750
+  chmod +x "$OCC_PATH"
 
-  printf "chown Directories\n"
-
-  chown -R ${htuser}:${htgroup} ${ocpath}/
-  chown -R ${htuser}:${htgroup} ${ocpath}/apps/
-  chown -R ${htuser}:${htgroup} ${ocpath}/config/
-  chown -R ${htuser}:${htgroup} ${ocpath}/data/
-  chown -R ${htuser}:${htgroup} ${ocpath}/themes/
-  chown -R ${htuser}:${htgroup} ${ocpath}/updater/
-
-  chmod +x ${ocpath}/occ
-
-  printf "chmod/chown .htaccess\n"
-  if [ -f ${ocpath}/.htaccess ]; then
-    chmod 0644 ${ocpath}/.htaccess
-    chown ${htuser}:${htgroup} ${ocpath}/.htaccess
-  fi
-  if [ -f ${ocpath}/data/.htaccess ]; then
-    chmod 0644 ${ocpath}/data/.htaccess
-    chown ${htuser}:${htgroup} ${ocpath}/data/.htaccess
-  fi
-
-  # create and configure opcache dir
-  local OPCACHEDIR="$(
-    # shellcheck disable=SC2015
-    [ -f "${BINDIR}/CONFIG/nc-datadir.sh" ] && { source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir; } || true
-  )"
-  if [[ -z "${OPCACHEDIR}" ]]
+  if [[ -f "${OCPATH}/.htaccess" ]]
   then
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+    chmod 0644 "${OCPATH}/.htaccess"
+    chown "${HTTP_USER}:${HTTP_GROUP}" "${OCPATH}/.htaccess"
+  fi
+  if [[ -f "${DATA_PATH}/.htaccess" ]]
+  then
+    chmod 0644 "${DATA_PATH}/.htaccess"
+    chown "${HTTP_USER}:${HTTP_GROUP}" "${DATA_PATH}/.htaccess"
+  fi
+
+  if [[ -< "$OPCACHEDIR" ]]
+  then
+    installTemplate "php/opcache.ini.sh" "/etc/php/${PHP_VERSION}/mods-available/opcache.ini" --defaults
   else
     mkdir -p "$OPCACHEDIR"
-    chown -R www-data:www-data "$OPCACHEDIR"
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+    chown -R "${HTTP_USER}:${HTTP_GROUP}" "$OPCACHEDIR"
+    installTemplate "php/opcache.ini.sh" "/etc/php/${PHP_VERSION}/mods-available/opcache.ini"
   fi
-
-  ## RE-CREATE DATABASE TABLE
-  # launch mariadb if not already running (for docker build)
-  if ! [[ -f /run/mysqld/mysqld.pid ]]; then
-    echo "Starting mariaDB"
+  
+  # Recreate database table
+  #########################
+  if [[ ! -f "$MYSQLD_PID" ]]
+  then
+    log -1 "Starting MariaDB"
     mysqld &
-    local db_pid=$!
+    DB_PID="$!"
   fi
 
-  while :; do
-    [[ -S /var/run/mysqld/mysqld.sock ]] && break
-    sleep 0.5
+  while :
+  do
+    if [[ -S "$MYSQLD_SOCKET" ]]
+    then
+      break
+    else
+      sleep 1
+    fi
   done
 
-  echo "Setting up database..."
+  log -1 "Setting up the database"
 
-  # workaround to emulate DROP USER IF EXISTS ..;)
-  local DBPASSWD=$( grep password /root/.my.cnf | sed 's|password=||' )
+  # Workaround to emulate DROP USER IF EXISTS
   mysql <<EOF
 DROP DATABASE IF EXISTS nextcloud;
 CREATE DATABASE nextcloud
@@ -192,14 +278,18 @@ GRANT ALL PRIVILEGES ON nextcloud.* TO $DBADMIN@localhost;
 EXIT
 EOF
 
-## SET APACHE VHOST
-  echo "Setting up Apache..."
-  install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback || {
-      echo "ERROR: Parsing template failed. Nextcloud will not work."
-      exit 1
-  }
-  a2ensite nextcloud
+  # Set Apache2 VirtualHost
+  #########################
 
+  log -1 "Setting up Apache2"
+  if ! installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
+  then
+    log 2 "Parsing template failed"
+    exit 1
+  fi
+
+  a2ensite nextcloud
+  
   cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
 <VirtualHost _default_:80>
   DocumentRoot /var/www/nextcloud
@@ -220,22 +310,24 @@ EOF
 </VirtualHost>
 EOF
 
-  # for notify_push app in NC21
-  a2enmod proxy proxy_http proxy_wstunnel
+  ARCH="$(dpkg --print-architecture)"
+  [[ "$ARCH" =~ ^(armhf|arm)$ ]]       && ARCH='armv7'
+  [[ "$ARCH" == "arm64" ]]             && ARCH='aarch64'
+  [[ "$ARCH" == "amd64" ]]             && ARCH='x86_64'
 
-  arch="$(uname -m)"
-  [[ "${arch}" =~ "armv7" ]] && arch="armv7"
-  install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
+  installTemplate systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
   [[ -f /.docker-image ]] || systemctl enable notify_push
 
-  # some added security
+  # Some added security
   sed -i 's|^ServerSignature .*|ServerSignature Off|' /etc/apache2/conf-enabled/security.conf
   sed -i 's|^ServerTokens .*|ServerTokens Prod|'      /etc/apache2/conf-enabled/security.conf
 
-  echo "Setting up system..."
+  log -1 "Setting up system"
 
-  ## SET LIMITS
-  cat > /etc/php/${PHPVER}/fpm/conf.d/90-ncp.ini <<EOF
+  # Set limits
+  ############
+  
+  cat > /etc/php/"$PHP_VERSION"/fpm/conf.d/90-ncp.ini <<EOF
 ; disable .user.ini files for performance and workaround NC update bugs
 user_ini.filename =
 
@@ -253,34 +345,22 @@ max_execution_time=$MAXTRANSFERTIME
 max_input_time=$MAXTRANSFERTIME
 EOF
 
-  ## SET CRON
+  # Set cron
+  ##########
+  
   echo "*/5  *  *  *  * php -f /var/www/nextcloud/cron.php" > /tmp/crontab_http
   crontab -u www-data /tmp/crontab_http
   rm /tmp/crontab_http
-
-  # dettach mysql during the build
-  if [[ "${db_pid}" != "" ]]; then
-    echo "Shutting down mariaDB (${db_pid})"
+  
+  # Detach MySQL during build
+  if [[ "$DB_PID" != "" ]]
+  then
+    log -1 "Shutting down MariaDB ( $DB_PID )"
     mysqladmin -u root shutdown
-    wait "${db_pid}"
+    wait "$DB_PID"
   fi
-  echo "Don't forget to run nc-init"
-}
 
-# License
-#
-# This script is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This script is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this script; if not, write to the
-# Free Software Foundation, Inc., 59 Temple Place, Suite 330,
-# Boston, MA  02111-1307  USA
+  log -1 "Don't forget to run nc-init"
+  
+}
 

@@ -17,7 +17,12 @@
 # - failure at each test point
 # -> must pass basic NC in tests.py ( meaning it's not in a broken state )
 
-set -eE${DBG}
+if [[ -n "$DBG" ]]
+then
+  set -eE"$DBG"
+else
+  set -eE
+fi
 
 VER="$1"
 BIN="${0##*/}"
@@ -26,10 +31,10 @@ source /usr/local/etc/library.sh
 
 # pre-checks
 ####################
-[[ "$VER" == "" ]] && { echo "Usage ${BIN} <version>"; exit 1; }
+[[ "$VER" == "" ]] && { echo "Usage $BIN <version>"; exit 1; }
 [[ -f /.docker-image ]] && BASEDIR=/data || BASEDIR=/var/www
 cd "$BASEDIR"
-DATADIR="$( get_nc_config_value datadirectory )"
+DATADIR="$(getNextcloudConfigValue datadirectory)"
 ncc status &>/dev/null          || { [[ "$DBG" == x ]] && ncc status; echo "Nextcloud is currently down"; exit 1; }
 [[ -d /var/www/nextcloud-old ]] && { echo "Nextcloud backup directory found. Interrupted or already running installation?"; exit 1; }
 [[ -d /var/www/nextcloud     ]] || { echo "Nextcloud directory not found"      ; exit 1; }
@@ -38,12 +43,13 @@ ncc status &>/dev/null          || { [[ "$DBG" == x ]] && ncc status; echo "Next
 # check version
 ####################
 
-[[ ${EUID} -eq 0 ]] && SUDO="sudo -u www-data"
-CURRENT="$( $SUDO php /var/www/nextcloud/occ status | grep "version:" | awk '{ print $3 }' )"
+[[ "$(isRoot)" -eq 0 ]] && SUDO=(sudo -u www-data)
+CURRENT="$("${SUDO[@]}" php /var/www/nextcloud/occ status | grep "version:" | awk '{print $3}')"
 
-MAJOR_CUR=$( cut -d. -f1 <<<"${CURRENT}" )
-MAJOR_NEW=$( cut -d. -f1 <<<"${VER}" )
-if [[ $((MAJOR_NEW - MAJOR_CUR)) -gt 1 ]]; then
+MAJOR_CUR="$(cut -d. -f1 <<<"${CURRENT}")"
+MAJOR_NEW="$(cut -d. -f1 <<<"${VER}")"
+if [[ $((MAJOR_NEW - MAJOR_CUR)) -gt 1 ]]
+then
   echo "Upgrade cannot skip major versions. Please upgrade one major version at a time" >&2
   exit 1
 fi
@@ -57,12 +63,12 @@ fi
 grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT" || { echo "Malformed version $CURRENT"; exit 1; }
 grep -qP "\d+\.\d+\.\d+" <<<"$VER"     || { echo "Malformed version $VER"    ; exit 1; }
 
-echo "Current   Nextcloud version $CURRENT"
-echo "Available Nextcloud version $VER"
-is_more_recent_than "${VER}" "${CURRENT}" || { echo "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
+echo "Current   Nextcloud version: $CURRENT"
+echo "Available Nextcloud version: $VER"
+is_more_recent_than "$VER" "$CURRENT" || { echo "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
 
 
-if ! is_more_recent_than '25.0.0' "${VER}" && is_more_recent_than "8.1.0" "${PHPVER}.0" && is_docker
+if ! is_more_recent_than '25.0.0' "$VER" && is_more_recent_than "8.1.0" "${PHP_VERSION}.0" && is_docker
 then
   echo 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'
   exit 1
@@ -76,13 +82,13 @@ mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 
 # cleanup
 ####################
-cleanup() {
-  local RET=$?
+function cleanup {
+  local RET="$?"
   set +eE
   echo "Clean up..."
-  rm -rf "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
+  rm --recursive --force "${BASEDIR}/nextcloud.tar.bz2" "${BASEDIR}/nextcloud-old"
   trap "" EXIT
-  exit $RET
+  exit "$RET"
 }
 trap cleanup EXIT
 
@@ -95,31 +101,32 @@ wget -q "$URL" -O nextcloud.tar.bz2 || { echo "Error downloading"; exit 1; }
 # backup
 ####################
 BKPDIR="$BASEDIR"
-WITH_DATA=no
-COMPRESSED=yes
-LIMIT=0
+WITH_DATA='no'
+COMPRESSED='yes'
+LIMIT='0'
 
 echo "Back up current instance..."
+
 set +eE
 ncp-backup "$BKPDIR" "$WITH_DATA" "$COMPRESSED" "$LIMIT" # && false # test point
-RET=$?
+RET="$?"
 sync
 set -eE
 
-BKP_="$( ls -1t "$BKPDIR"/nextcloud-bkp_*.tar.gz 2>/dev/null | head -1 )"
+BKP_="$(ls -1t "$BKPDIR"/nextcloud-bkp_*.tar.gz 2>/dev/null | head -1)"
 [[ -f "$BKP_"  ]] || {                set +eE; echo "Error backing up"; false || cleanup; }
-[[ $RET -ne 0  ]] && { rm -f "$BKP_"; set +eE; echo "Error backing up"; false || cleanup; }
-BKP="$( dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
-echo "Storing backup at '$BKP'..."
+[[ "$RET" -ne 0  ]] && { rm --force "$BKP_"; set +eE; echo "Error backing up"; false || cleanup; }
+BKP="$(dirname "$BKP_")/$(basename "$BKP_" .tar.gz)-${CURRENT}.tar.gz"
+echo "Storing backup at: $BKP"
 mv "$BKP_" "$BKP"
 
 # simple restore if anything fails from here
 ####################
-rollback_simple() {
+function rollback_simple {
   set +eE
   trap "" INT TERM HUP ERR
   echo -e "Abort\nSimple roll back..."
-  rm -rf "$BASEDIR"/nextcloud
+  rm --recursive --force "$BASEDIR"/nextcloud
   mv "$BASEDIR"/nextcloud-old "$BASEDIR"/nextcloud
   false || cleanup                 # so cleanup exits with 1
 }
@@ -130,7 +137,7 @@ trap rollback_simple INT TERM HUP ERR
 echo "Install Nextcloud $VER..."
 mv -T nextcloud nextcloud-old
 tar -xf nextcloud.tar.bz2             # && false # test point
-rm -rf /var/www/nextcloud.tar.bz2
+rm --recursive --force /var/www/nextcloud.tar.bz2
 
 # copy old config
 ####################
@@ -142,9 +149,11 @@ cp -raT nextcloud-old/themes/ nextcloud/themes/
 
 # copy old NCP apps
 ####################
-for app in nextcloudpi previewgenerator; do
-  if [[ -d nextcloud-old/apps/"${app}" ]]; then
-    cp -r -L nextcloud-old/apps/"${app}" /var/www/nextcloud/apps/
+for APP in nextcloudpi previewgenerator
+do
+  if [[ -d nextcloud-old/apps/"$APP" ]]
+  then
+    cp --recursive -L nextcloud-old/apps/"$APP" /var/www/nextcloud/apps/
   fi
 done
 
@@ -159,18 +168,18 @@ fi
 
 # nc-restore if anything fails from here
 ####################
-rollback() {
+function rollback {
   set +eE
   trap "" INT TERM HUP ERR EXIT
   echo -e "Abort\nClean up..."
-  rm -rf /var/www/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
+  rm --recursive --force /var/www/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
   echo "Rolling back to backup $BKP..."
   local TMPDATA
-  mkdir -p "$BASEDIR/recovery/"
-  TMPDATA="$( mktemp -d "$BASEDIR/recovery/ncp-data.XXXXXX" )" || { echo "Failed to create temp dir" >&2; exit 1; }
-  [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && mv -T "$DATADIR" "$TMPDATA"
+  mkdir --parents "$BASEDIR"/recovery/
+  TMPDATA="$(mktemp -d "$BASEDIR"/recovery/ncp-data.XXXXXX)" || { echo "Failed to create temp dir" >&2; exit 1; }
+  [[ "$DATADIR" == "${BASEDIR}/nextcloud/data" ]] && mv -T "$DATADIR" "$TMPDATA"
   ncp-restore "$BKP" || { echo "Rollback failed! Data left at $TMPDATA"; exit 1; }
-  [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && { rm -rf "$DATADIR"; mv -T "$TMPDATA" "$DATADIR"; }
+  [[ "$DATADIR" == "${BASEDIR}/nextcloud/data" ]] && { rm --recursive --force "$DATADIR"; mv -T "$TMPDATA" "$DATADIR"; }
   rm "$BKP"
   echo "Rollback successful. Nothing was updated"
   exit 1
@@ -203,15 +212,15 @@ else
   if ! is_app_enabled notify_push; then
     ncc app:install notify_push
     ncc app:enable  notify_push
-    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf
+    installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf
     a2enmod proxy proxy_http proxy_wstunnel
     apachectl -k graceful
     ## make sure the notify_push daemon is runnnig
 
-    install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
-    start_notify_push
+    installTemplate systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
+    startNotifyPush
     nc_domain="$(ncc config:system:get overwrite.cli.url)"
-    set-nc-domain "${nc_domain}" || {
+    setNextcloudDomain "${nc_domain}" || {
       echo "notify_push setup failed. You are probably behind a proxy"
       echo "Run 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
       echo "Check https://help.nextcloud.com/tags/ncp for support"
@@ -223,33 +232,33 @@ fi
 rm -rf /var/www/nextcloud/apps/previewgenerator
 ln -snf "${NCPREV}" /var/www/nextcloud/apps/previewgenerator
 
-if ! is_docker && ! is_more_recent_than "24.0.0" "${NCVER}" && is_more_recent_than "8.1.0" "${PHPVER}.0"
+if ! is_docker && ! is_more_recent_than "24.0.0" "${NCVER}" && is_more_recent_than "8.1.0" "${PHP_VERSION}.0"
 then
   (
   echo "Upgrading PHP..."
   export DEBIAN_FRONTEND=noninteractive
-  PHPVER_OLD="$PHPVER"
-  PHPVER_NEW="8.1"
-  PHP_PACKAGES_OLD=(php-{common,igbinary,redis,json} "php${PHPVER_OLD}" \
-    "php${PHPVER_OLD}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,json,common,readline,mysql,bcmath,gmp})
-  PHP_PACKAGES_NEW=("php${PHPVER_NEW}" \
-    "php${PHPVER_NEW}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql,bcmath,gmp,redis,common})
+  PHP_VERSION_OLD="$PHP_VERSION"
+  PHP_VERSION_NEW="8.1"
+  PHP_PACKAGES_OLD=(php-{common,igbinary,redis,json} "php${PHP_VERSION_OLD}" \
+    "php${PHP_VERSION_OLD}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,json,common,readline,mysql,bcmath,gmp})
+  PHP_PACKAGES_NEW=("php${PHP_VERSION_NEW}" \
+    "php${PHP_VERSION_NEW}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql,bcmath,gmp,redis,common})
 
   php_restore() {
     trap "" INT TERM HUP ERR
-    echo "Something went wrong while upgrading PHP. Rolling back to version ${PHPVER_OLD}..."
+    echo "Something went wrong while upgrading PHP. Rolling back to version ${PHP_VERSION_OLD}..."
     set +e
-    service "php${PHPVER_NEW}-fpm" stop
-    a2disconf php${PHPVER_NEW}-fpm
+    service "php${PHP_VERSION_NEW}-fpm" stop
+    a2disconf php${PHP_VERSION_NEW}-fpm
     rm /etc/apt/sources.list.d/php.list
     apt-get update
     apt-get remove --purge -y "${PHP_PACKAGES_NEW[@]}"
     apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_OLD[@]}"
-    set_ncpcfg "php_version" "${PHPVER_OLD}"
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
-    run_app nc-limits
-    a2enconf "php${PHPVER_OLD}-fpm"
-    service "php${PHPVER_OLD}-fpm" start
+    set_ncpcfg "php_version" "${PHP_VERSION_OLD}"
+    installTemplate "php/opcache.ini.sh" "/etc/php/${PHP_VERSION_NEW}/mods-available/opcache.ini"
+    runApp nc-limits
+    a2enconf "php${PHP_VERSION_OLD}-fpm"
+    service "php${PHP_VERSION_OLD}-fpm" start
     service apache2 restart
     echo "PHP upgrade has been successfully reverted"
     set -e
@@ -262,34 +271,34 @@ then
   echo "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
   apt-get update
 
-  clear_opcache
+  clearOPCache
 
   echo "Stopping apache and  php-fpm..."
-  service "php${PHPVER_OLD}-fpm" stop
+  service "php${PHP_VERSION_OLD}-fpm" stop
   service apache2 stop
 
-  echo "Remove old PHP (${PHPVER_OLD})..."
-  a2disconf "php${PHPVER_OLD}-fpm"
+  echo "Remove old PHP (${PHP_VERSION_OLD})..."
+  a2disconf "php${PHP_VERSION_OLD}-fpm"
 
   apt-get remove --purge -y "${PHP_PACKAGES_OLD[@]}"
 
-  echo "Install PHP ${PHPVER_NEW}..."
-  install_with_shadow_workaround --no-install-recommends systemd
-  apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_NEW[@]}"
+  echo "Install PHP ${PHP_VERSION_NEW}..."
+  installWithWorkaroundShadow --no-install-recommends systemd
+  installPKG "${PHP_PACKAGES_NEW[@]}"
 
-  set_ncpcfg "php_version" "${PHPVER_NEW}"
-  install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
-  ( set -e; export PHPVER="${PHPVER_NEW}"; run_app nc-limits )
+  set_ncpcfg "php_version" "${PHP_VERSION_NEW}"
+  installTemplate "php/opcache.ini.sh" "/etc/php/${PHP_VERSION_NEW}/mods-available/opcache.ini"
+  ( set -e; export PHP_VERSION="${PHP_VERSION_NEW}"; runApp nc-limits )
 
-  a2enconf "php${PHPVER_NEW}-fpm"
+  a2enconf "php${PHP_VERSION_NEW}-fpm"
 
   echo "Starting apache and php-fpm..."
-  service "php${PHPVER_NEW}-fpm" start
+  service "php${PHP_VERSION_NEW}-fpm" start
   service apache2 start
   ncc status
   )
 
-  # Reload library.sh to reset PHPVER
+  # Reload library.sh to reset PHP_VERSION
   source /usr/local/etc/library.sh
 
 fi
@@ -303,7 +312,7 @@ echo "Update completed successfully."
 mkdir -p  "$DATADIR"/ncp-update-backups
 mv "$BKP" "$DATADIR"/ncp-update-backups
 chown -R www-data:www-data "$DATADIR"/ncp-update-backups
-BKP="$DATADIR"/ncp-update-backups/"$( basename "$BKP" )"
+BKP="$DATADIR"/ncp-update-backups/"$(basename "$BKP")"
 echo "Backup stored at $BKP"
 
-bash -c "sleep 5; source /usr/local/etc/library.sh; clear_opcache;" &>/dev/null &
+bash -c "sleep 5; source /usr/local/etc/library.sh; clearOPCache;" &>/dev/null &

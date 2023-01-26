@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Let's encrypt certbot installation on NextCloudPi
+# Let's encrypt certbot installation on NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -21,8 +21,8 @@ is_active()
 tmpl_letsencrypt_domain() {
   (
   . /usr/local/etc/library.sh
-  if is_active_app letsencrypt; then
-    find_app_param letsencrypt DOMAIN
+  if isActiveApp letsencrypt; then
+    findAppParameter letsencrypt DOMAIN
   fi
   )
 }
@@ -57,7 +57,7 @@ configure()
     rm -f /etc/cron.weekly/letsencrypt-ncp
     rm -f /etc/letsencrypt/renewal-hooks/deploy/ncp
     [[ "$DOCKERBUILD" == 1 ]] && update-rc.d letsencrypt disable
-    install_template nextcloud.conf.sh "${nc_vhostcfg}"
+    installTemplate nextcloud.conf.sh "${nc_vhostcfg}"
     local cert_path="$(grep SSLCertificateFile   "${nc_vhostcfg}" | awk '{ print $2 }')"
     local key_path="$(grep SSLCertificateKeyFile "${nc_vhostcfg}" | awk '{ print $2 }')"
     sed -i "s|SSLCertificateFile.*|SSLCertificateFile ${cert_path}|"      "${ncp_vhostcfg}"
@@ -114,7 +114,7 @@ EOF
     chmod +x /etc/letsencrypt/renewal-hooks/deploy/ncp
 
     # Configure Apache
-    install_template nextcloud.conf.sh "${nc_vhostcfg}"
+    installTemplate nextcloud.conf.sh "${nc_vhostcfg}"
     local cert_path="$(grep SSLCertificateFile   "${nc_vhostcfg}" | awk '{ print $2 }')"
     local key_path="$(grep SSLCertificateKeyFile "${nc_vhostcfg}" | awk '{ print $2 }')"
     sed -i "s|SSLCertificateFile.*|SSLCertificateFile ${cert_path}|"      "${ncp_vhostcfg}"
@@ -133,7 +133,7 @@ EOF
         ((domain_index++))
       }
     done
-    set-nc-domain "$DOMAIN"
+    setNextcloudDomain "$DOMAIN"
 
     apachectl -k graceful
     rm -rf $ncdir/.well-known

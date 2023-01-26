@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Data dir configuration script for NextCloudPi
+# Data dir configuration script for NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -16,8 +16,8 @@ is_active()
 }
 
 tmpl_db_dir() {
-  if is_active_app nc-database; then
-    find_app_param nc-database DBDIR
+  if isActiveApp nc-database; then
+    findAppParameter nc-database DBDIR
   fi
 }
 
@@ -49,7 +49,7 @@ configure()
   echo "moving database to $DBDIR..."
   service mysql stop
   mv "$SRCDIR" "$DBDIR"
-  install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf"
+  installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf"
   service mysql start
 
   restore_maintenance_mode

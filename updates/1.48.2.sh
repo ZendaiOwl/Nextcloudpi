@@ -24,7 +24,7 @@ User=www-data
 [Install]
 WantedBy = multi-user.target
 EOF
-  start_notify_push
+  startNotifyPush
 }
 
 exit 0

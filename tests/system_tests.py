@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Automatic system testing for NextCloudPi
+Automatic system testing for NextcloudPi
 
 Copyleft 2018 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 GPL licensed (see LICENSE file in repository root).
@@ -165,7 +165,7 @@ def check_notify_push():
         print(result.stdout)
         return False
 
-def is_lxc():
+def isLXC():
     "check that we are running inside a LXC container"
     (exitcode, output) = getstatusoutput('grep -q container=lxc /proc/1/environ')
     return exitcode == 0
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     # local method
     if os.path.exists('/usr/local/etc/ncp-baseimage'):
         print(tc.brown + "* local NCP instance detected" + tc.normal)
-        if not is_lxc():
+        if not isLXC():
             binaries_must_be_installed = binaries_must_be_installed + binaries_no_docker
         pre_cmd = []
 
@@ -275,7 +275,7 @@ if __name__ == "__main__":
 
     print(pre_cmd)
     # checks
-    print("\nNextCloudPi system checks")
+    print("\nNextcloudPi system checks")
     print("-------------------------")
     running_result = check_processes_running(processes_must_be_running)
     install_result = check_binaries_installed(binaries_must_be_installed)

@@ -16,7 +16,7 @@ is_active() {
 tmpl_metrics_enabled() {
   (
   . /usr/local/etc/library.sh
-  local param_active="$(find_app_param metrics.sh ACTIVE)"
+  local param_active="$(findAppParameter metrics.sh ACTIVE)"
   [[ "$param_active" == yes ]] || exit 1
   )
 }
@@ -24,7 +24,7 @@ tmpl_metrics_enabled() {
 reload_metrics_config() {
   is_supported || return 0
 
-  install_template ncp-metrics.cfg.sh "/usr/local/etc/ncp-metrics.cfg" || {
+  installTemplate ncp-metrics.cfg.sh "/usr/local/etc/ncp-metrics.cfg" || {
     echo -e "ERROR while generating ncp-metrics.conf!"
     return 1
   }
@@ -107,7 +107,7 @@ EOF
   sed -i 's|status_of_proc "$DAEMON" "$NAME" ${PIDFILE:="-p ${PIDFILE}"}|status_of_proc ${PIDFILE:+-p "$PIDFILE"} "$DAEMON" "$NAME"|' /lib/init/init-d-script
 
   apt-get update --allow-releaseinfo-change
-  install_with_shadow_workaround -o Dpkg::Options::=--force-confdef -o Dpkg::Options::="--force-confold" prometheus-node-exporter
+  installWithWorkaroundShadow -o Dpkg::Options::=--force-confdef -o Dpkg::Options::="--force-confold" prometheus-node-exporter
 
   if is_docker
   then
@@ -196,8 +196,8 @@ configure() {
   if [[ "$ACTIVE" != yes ]]
   then
 
-    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
-      install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
+    installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
+      installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
       echo -e "ERROR while generating nextcloud.conf! Exiting..."
       return 1
     }
@@ -248,8 +248,8 @@ configure() {
     echo "done."
 
 
-    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
-      install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
+    installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
+      installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
       echo -e "ERROR while generating nextcloud.conf! Exiting..."
       return 1
     }

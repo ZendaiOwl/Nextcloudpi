@@ -4,7 +4,7 @@ set -e
 
 ## BACKWARD FIXES ( for older images )
 
-source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
+source /usr/local/etc/library.sh # sets NEXTCLOUD_VERSION_LATEST PHP_VERSION RELEASE
 
 # all images
 
@@ -12,18 +12,18 @@ source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
 sed -i "s/buster/$RELEASE/g" /etc/apt/sources.list.d/* &>/dev/null || true
 
 # restore smbclient after dist upgrade
-apt_install php${PHPVER}-gmp
+apt_install php${PHP_VERSION}-gmp
 
 # Update modsecurity config file only if user is already in buster and
 # modsecurity is used.
 # https://github.com/nextcloud/nextcloudpi/issues/959
-is_active_app modsecurity && run_app modsecurity
+isActiveApp modsecurity && runApp modsecurity
 
 # fix armbian disabling unattended-upgrades
-is_active_app unattended-upgrades && run_app unattended-upgrades
+isActiveApp unattended-upgrades && runApp unattended-upgrades
 
 # groupfolders fix
-install_app nc-backup
+installApp nc-backup
 
 # docker images only
 [[ -f /.docker-image ]] && {

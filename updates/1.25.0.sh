@@ -4,7 +4,7 @@ set -e
 
 ## BACKWARD FIXES ( for older images )
 
-source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
+source /usr/local/etc/library.sh # sets NEXTCLOUD_VERSION_LATEST PHP_VERSION RELEASE
 
 # all images
 
@@ -16,7 +16,7 @@ grep -q '^SSLProtocol all -SSLv2 -SSLv3' "${file}" && {
 }
 
 # fix nc-backup-auto
-is_active_app nc-backup-auto && run_app nc-backup-auto
+isActiveApp nc-backup-auto && runApp nc-backup-auto
 
 # docker images only
 [[ -f /.docker-image ]] && {

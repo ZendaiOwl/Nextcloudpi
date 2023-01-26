@@ -12,7 +12,7 @@
 configure()
 {
   echo "Clearing opcache..."
-  bash -c "sleep 5; source /usr/local/etc/library.sh; clear_opcache;" &>/dev/null &
+  bash -c "sleep 5; source /usr/local/etc/library.sh; clearOPCache;" &>/dev/null &
   echo "Done."
 }
 

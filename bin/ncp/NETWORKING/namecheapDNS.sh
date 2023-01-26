@@ -50,7 +50,7 @@ EOF
   chmod 644 /etc/cron.d/namecheapDNS
   service cron restart
 
-  set-nc-domain "$FULLDOMAIN"
+  setNextcloudDomain "$FULLDOMAIN"
 
   echo "Namecheap DNS client is enabled"
 }

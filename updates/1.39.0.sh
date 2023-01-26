@@ -4,12 +4,12 @@ set -e
 
 ## BACKWARD FIXES ( for older images )
 
-source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
+source /usr/local/etc/library.sh # sets NEXTCLOUD_VERSION_LATEST PHP_VERSION RELEASE
 
 # all images
 
 ## fix raspbian origin
-is_active_app unattended-upgrades && run_app unattended-upgrades
+isActiveApp unattended-upgrades && runApp unattended-upgrades
 
 ## reduce cron interval to 5 minutes
 crontab_tmp=$(mktemp -u -t crontab-www.XXXXXX)
@@ -18,7 +18,7 @@ crontab -u www-data "${crontab_tmp}"
 rm "${crontab_tmp}"
 
 ## update nc-restore
-install_app nc-restore
+installApp nc-restore
 
 ## make sure old images clear the ncp-image flag
 rm -f /.ncp-image

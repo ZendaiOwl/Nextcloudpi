@@ -8,7 +8,7 @@
 # More at: https://ownyourbits.com
 #
 
-# just change NCLATESTVER and re-activate in update.sh to upgrade users
+# just change NEXTCLOUD_VERSION_LATEST and re-activate in update.sh to upgrade users
 
 configure()
 {
@@ -23,13 +23,13 @@ configure()
 source /usr/local/etc/library.sh
 
 echo -e "[ncp-update-nc]"                              >> /var/log/ncp.log
-/usr/local/bin/ncp-update-nc "$NCLATESTVER" 2>&1 | tee -a /var/log/ncp.log
+/usr/local/bin/ncp-update-nc "$NEXTCLOUD_VERSION_LATEST" 2>&1 | tee -a /var/log/ncp.log
 
 if [[ \${PIPESTATUS[0]} -eq 0 ]]; then
 
   VER="\$( /usr/local/bin/ncc status | grep "version:" | awk '{ print \$3 }' )"
 
-  notify_admin "NextCloudPi" "Nextcloud was updated to \$VER"
+  notify_admin "NextcloudPi" "Nextcloud was updated to \$VER"
 fi
 echo "" >> /var/log/ncp.log
 EOF
