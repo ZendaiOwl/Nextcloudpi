@@ -954,9 +954,7 @@ function setAppParam {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function installTemplate {
-  [[ "$#" -ne 2 ]] && return 1
   local -r TEMPLATE="${1?}" TARGET="${2?}"
   local BACKUP
   BACKUP="$(mktemp)"

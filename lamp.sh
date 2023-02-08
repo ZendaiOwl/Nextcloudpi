@@ -220,7 +220,10 @@ function installPKG {
 
 function install
 {
-    set -x
+    #set -x
+    local -r DBPID_FILE='/run/mysqld/mysqld.pid' \
+             DBSOCKET='/run/mysqld/mysqld.sock' \
+             DBDAEMON='/run/mysqld'
     # Setup apt repository for php 8
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
     echo "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
@@ -255,8 +258,8 @@ function install
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
     installPKG mariadb-server
-    mkdir --parents /run/mysqld
-    chown mysql /run/mysqld
+    mkdir --parents "$DBDAEMON"
+    chown mysql "$DBDAEMON"
 
     # CONFIGURE APACHE
     ##########################################
@@ -289,15 +292,15 @@ function install
     installTemplate "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
 
   # launch mariadb if not already running
-  if ! [[ -f /run/mysqld/mysqld.pid ]]; then
+  if ! [[ -f "$DBPID_FILE" ]]; then
     log -1 "Starting MariaDB"
     mysqld &
-    local MARIA_PID="$?"
+    local DB_PID="$?"
   fi
 
   # wait for mariadb
   while :; do
-    [[ -S /run/mysqld/mysqld.sock ]] && break
+    [[ -S "$DBSOCKET" ]] && break
     sleep 1
   done
 
