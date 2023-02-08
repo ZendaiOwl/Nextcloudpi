@@ -126,7 +126,7 @@ if isFile ReplaceNames.txt; then
   CURRENT='./ReplaceNames.txt'
   BACKUP='../.backup'
   cat "$CURRENT" > "$BACKUP"
-  for LINE in $(cat "$CURRENT"); do
+  for LINE in $(cat "$BACKUP"); do
     IN+=("$(printf '%s\n' "$LINE")")
   done
   LENGTH="${#IN[@]}"
