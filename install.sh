@@ -189,7 +189,11 @@ function installPKG {
   fi
 }
 
-BRANCH="${BRANCH:-master}"
+#BRANCH="${BRANCH:-master}"
+#OWNER="${OWNER:-nextcloud}"
+BRANCH="${BRANCH:-Refactoring}"
+OWNER="${OWNER:-ZendaiOwl}"
+REPO="${REPO:-nextcloudpi}"
 #DBG=x
 
 [[ -n "$DBG" ]] && set -e"$DBG"
