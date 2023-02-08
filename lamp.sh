@@ -218,7 +218,7 @@ function installPKG {
   fi
 }
 
-install()
+function install
 {
     set -x
     # Setup apt repository for php 8
@@ -239,7 +239,7 @@ install()
         --gecos "systemd Resolver" systemd-resolve
     fi
     installWithShadowWorkaround --no-install-recommends systemd
-    installPKG -t "$RELEASE" php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2, mysql}
+    installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2, mysql}
 
     #installPKG -t "$RELEASE" php"$PHPVER" php"$PHPVER"-curl php"$PHPVER"-gd php"$PHPVER"-fpm php"$PHPVER"-cli php"$PHPVER"-opcache \
                              php"$PHPVER"-mbstring php"$PHPVER"-xml php"$PHPVER"-zip php"$PHPVER"-fileinfo php"$PHPVER"-ldap \
