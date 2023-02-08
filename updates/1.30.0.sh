@@ -9,10 +9,10 @@ source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
 # all images
 
 # make sure these are installed as well in all upgrade paths
-apt_install php${PHPVER}-gmp haveged lsb-release php-smbclient exfat-fuse exfat-utils file
+AptInstall php${PHPVER}-gmp haveged lsb-release php-smbclient exfat-fuse exfat-utils file
 
 # for NC19.0.1
-apt_install php-bcmath
+AptInstall php-bcmath
 
 ## delayed in bg so it does not kill the connection, and we get AJAX response
 bash -c "sleep 3; service php${PHPVER}-fpm restart" &>/dev/null &

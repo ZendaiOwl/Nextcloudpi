@@ -20,7 +20,7 @@ TAG="$*"
  
 source build/buildlib.sh
 git tag -f "$TAG"
-generate_changelog
+genChangelog
 git add changelog.md
 git commit -C HEAD --amend
 git tag -f "$TAG"

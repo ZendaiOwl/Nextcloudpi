@@ -16,8 +16,8 @@ set -e
 }
 
 # MOVE CONFIGS TO PERSISTENT VOLUME
-persistent_cfg /etc/apache2/sites-available /data/etc/apache2/sites-available
-persistent_cfg /etc/apache2/sites-enabled /data/etc/apache2/sites-enabled
+persistConfiguration /etc/apache2/sites-available /data/etc/apache2/sites-available
+persistConfiguration /etc/apache2/sites-enabled /data/etc/apache2/sites-enabled
 
 # Run hardcoded hooks. This allows scripts in the image to change persistent values before
 # initialization. Use case is to download a new image.
@@ -32,7 +32,7 @@ echo "Starting Apache"
 /usr/sbin/apache2ctl start
 
 # adjust the dbdir to the persistent storage
-install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" || exit 1
+installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" || exit 1
 
 # start
 echo "Starting mariaDB"

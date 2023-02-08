@@ -16,7 +16,7 @@ grep -q '^SSLProtocol all -SSLv2 -SSLv3' "${file}" && {
 }
 
 # fix nc-backup-auto
-is_active_app nc-backup-auto && run_app nc-backup-auto
+isAppActive nc-backup-auto && runApp nc-backup-auto
 
 # docker images only
 [[ -f /.docker-image ]] && {

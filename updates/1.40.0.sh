@@ -9,10 +9,10 @@ source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
 # all images
 
 # update ncp-restore
-install_app nc-restore
+installApp nc-restore
 
 # fix ncp.conf bug if LE is disabled
-if ! is_active_app letsencrypt; then
+if ! isAppActive letsencrypt; then
   if [[ -f /etc/apache2/sites-enabled/ncp.conf ]]; then
     sed -i "s|SSLCertificateFile.*|SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem|"         /etc/apache2/sites-enabled/ncp.conf
     sed -i "s|SSLCertificateKeyFile.*|SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key|" /etc/apache2/sites-enabled/ncp.conf
@@ -42,12 +42,12 @@ EOF
   apachectl -k graceful
 
 # fix issue with reverse proxy infinite redirections
-run_app nc-httpsonly
+runApp nc-httpsonly
 ncc config:system:set overwriteprotocol --value="https"
 
 # bash completion for `ncc`
 if ! [[ -f /usr/share/bash-completion/completions/ncp ]]; then
-  apt_install bash-completion
+  AptInstall bash-completion
   ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
   echo ". /etc/bash_completion" >> /etc/bash.bashrc
   echo ". /usr/share/bash-completion/completions/ncp" >> /etc/bash.bashrc
@@ -60,7 +60,7 @@ fi
 
 # we handle this ourselves now
 ncc app:disable updatenotification
-run_app nc-notify-updates
+runApp nc-notify-updates
 
 # docker images only
 [[ -f /.docker-image ]] && {

@@ -12,10 +12,10 @@ do
 done
 
 # Reinstall metrics services
-install_app metrics
-is_active_app metrics && (
+installApp metrics
+isAppActive metrics && (
   export METRICS_SKIP_PASSWORD_CONFIG=true
-  run_app metrics
+  runApp metrics
 )
 
 exit 0

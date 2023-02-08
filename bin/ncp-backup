@@ -20,13 +20,13 @@ dbbackup=nextcloud-sqlbkp_$( date +"%Y%m%d" ).bak
 
 [[ "$compress" == "yes" ]] && destfile="$destfile".gz
 
-datadir=$( get_nc_config_value datadirectory ) || {
+datadir=$( getNextcloudConfigValue datadirectory ) || {
   echo "Error reading data directory. Is NextCloud running and configured?";
   exit 1;
 }
 
-cleanup(){ local ret=$?;                    rm -f "${dbbackup}"              ; restore_maintenance_mode; exit $ret; }
-fail()   { local ret=$?; echo "Abort..."  ; rm -f "${dbbackup}" "${destfile}"; restore_maintenance_mode; exit $ret; }
+cleanup(){ local ret=$?;                    rm -f "${dbbackup}"              ; restoreMaintenanceMode; exit $ret; }
+fail()   { local ret=$?; echo "Abort..."  ; rm -f "${dbbackup}" "${destfile}"; restoreMaintenanceMode; exit $ret; }
 trap cleanup EXIT
 trap fail INT TERM HUP ERR
 
@@ -60,7 +60,7 @@ free=$( df -B1 "$destdir" | tail -1 | awk '{ print $4 }' )
 }
 
 # database
-save_maintenance_mode
+saveMaintenanceMode
 cd "$basedir" || exit 1
 echo "backup database..."
 mysqldump -u root --single-transaction nextcloud > "$dbbackup"

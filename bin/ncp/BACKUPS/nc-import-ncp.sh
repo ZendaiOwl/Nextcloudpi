@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Import NextCloudPi configuration
+# Import NextcloudPi configuration
 #
 #
 # Copyleft 2017 by Courtney Hicks
@@ -25,12 +25,12 @@ configure()
     if [[ "${app}" == "letsencrypt" ]] || [[ "${app}" == "dnsmasq" ]]; then
       continue
     fi
-    is_active_app "${app}" && run_app "${app}"
+    isAppActive "${app}" && runApp "${app}"
   done
 
   # order is important for these
-  is_active_app "dnsmasq"     && run_app "dnsmasq"
-  is_active_app "letsencrypt" && run_app "letsencrypt"
+  isAppActive "dnsmasq"     && runApp "dnsmasq"
+  isAppActive "letsencrypt" && runApp "letsencrypt"
 
   echo -e "\nconfiguration restored"
 

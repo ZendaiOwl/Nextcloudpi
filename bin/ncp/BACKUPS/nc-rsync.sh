@@ -16,17 +16,17 @@ install()
 
 configure()
 {
-  save_maintenance_mode
+  saveMaintenanceMode
 
   local DATADIR
-  DATADIR=$( get_nc_config_value datadirectory ) || {
+  DATADIR=$( getNextcloudConfigValue datadirectory ) || {
     echo -e "Error reading data directory. Is NextCloud running and configured?";
     return 1;
   }
 
   rsync -ax -e "ssh -p $PORTNUMBER" --delete "$DATADIR" "$DESTINATION"
 
-  restore_maintenance_mode
+  restoreMaintenanceMode
 }
 
 # License

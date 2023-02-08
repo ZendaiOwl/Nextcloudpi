@@ -17,10 +17,10 @@ install()
 
 configure()
 {
-  save_maintenance_mode
+  saveMaintenanceMode
 
   local DATADIR MOUNTPOINT
-  DATADIR=$( get_nc_config_value datadirectory ) || {
+  DATADIR=$( getNextcloudConfigValue datadirectory ) || {
     echo -e "Error reading data directory. Is NextCloud running?";
     return 1;
   }
@@ -34,7 +34,7 @@ configure()
 
   btrfs-snp "${MOUNTPOINT}" manual "${LIMIT}" 0 ../ncp-snapshots
 
-  restore_maintenance_mode
+  restoreMaintenanceMode
 }
 
 # License

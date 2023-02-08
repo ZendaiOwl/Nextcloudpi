@@ -4,13 +4,13 @@ source /usr/local/etc/library.sh
 
 # wait until user decrypts the instance first
 while :; do
-  needs_decrypt || break
+  needsDecryption || break
   sleep 1
 done
 
 # wicd service finishes before completing DHCP
 while :; do
-  local_ip="$(get_ip)"
+  local_ip="$(getIP)"
   pub_ip="$(curl -m4 icanhazip.com 2>/dev/null)"
 
   [[ "$pub_ip"   != "" ]] && ncc config:system:set trusted_domains 11 --value="$pub_ip"
@@ -31,7 +31,7 @@ while :; do
   # Fix the situation where junk was introduced in the config by mistake
   # because Redis was not yet ready to be used even if it was up
   [[ "${nc_domain}" =~ "RedisException" ]] && nc_domain="$(hostname)"
-  set-nc-domain "${nc_domain}" >> /var/log/ncp.log
+  setNextcloudDomain "${nc_domain}" >> /var/log/ncp.log
   break
 done
 

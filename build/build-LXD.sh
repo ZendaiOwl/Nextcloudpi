@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Batch creation of NextCloudPi LXD image
+# Batch creation of NextcloudPi LXD image
 #
 # Copyleft 2021 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -14,7 +14,7 @@ source build/buildlib.sh
 echo -e "\e[1m\n[ Build NCP LXD ]\e[0m"
 
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
-IMG="NextCloudPi_LXD_$( date  "+%m-%d-%y" ).img"
+IMG="NextcloudPi_LXD_$( date  "+%m-%d-%y" ).img"
 IMG=tmp/"$IMG"
 
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
@@ -27,7 +27,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 set -e
-prepare_dirs                   # tmp cache output
+prepareDirectories                   # tmp cache output
 
 ## BUILD NCP
 
@@ -39,7 +39,7 @@ systemd-run --user --scope -p "Delegate=yes" "${LXC_LAUNCH[@]}"
 lxc config device add ncp buildcode disk source="$(pwd)" path=/build
 lxc exec ncp -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
 lxc exec ncp -- bash -c 'CODE_DIR=/build DBG=x bash /build/install.sh'
-lxc exec ncp -- bash -c 'source /build/etc/library.sh; run_app_unsafe /build/post-inst.sh'
+lxc exec ncp -- bash -c 'source /build/etc/library.sh; runApp_unsafe /build/post-inst.sh'
 lxc exec ncp -- bash -c "echo '$(basename "$IMG")' > /usr/local/etc/ncp-baseimage"
 lxc stop ncp
 lxc config device remove ncp buildcode
@@ -51,12 +51,12 @@ lxc publish -q ncp -f --alias ncp/"${version}"
 exit 0
 
 ## test
-#set_static_IP "$IMG" "$IP"
+#setStaticIP "$IMG" "$IP"
 #test_image    "$IMG" "$IP"
 
 # upload
-#create_torrent "$TAR"
-#upload_ftp "$( basename "$TAR" .tar.bz2 )"
+#createTorrent "$TAR"
+#uploadFTP "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

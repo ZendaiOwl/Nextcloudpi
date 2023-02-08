@@ -22,7 +22,7 @@ configure()
   }
 
   # activate NCP
-  if ! is_ncp_activated; then
+  if ! isNcpActivated; then
     # Run cron.php once now to get all checks right in CI.
     sudo -u www-data php /var/www/nextcloud/cron.php
 

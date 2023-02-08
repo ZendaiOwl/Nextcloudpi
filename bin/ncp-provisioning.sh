@@ -16,7 +16,7 @@ REDISPASS="$( grep "^requirepass" /etc/redis/redis.conf | cut -f2 -d' ' )"
   echo Provisioning Redis password
   sed -i -E "s|^requirepass .*|requirepass $REDISPASS|" /etc/redis/redis.conf
   chown redis:redis /etc/redis/redis.conf
-  is_docker || systemctl restart redis
+  isDocker || systemctl restart redis
 }
 
 ### If there exists already a configuration adjust the password
@@ -53,7 +53,7 @@ EOF
 ## nc.limits.sh (auto)adjustments: number of threads, memory limits...
 
 source /usr/local/etc/library.sh
-run_app nc-limits
+runApp nc-limits
 
 ## Check for interrupted upgrades and rollback
 BKP="$( ls -1t /var/www/nextcloud-bkp_*.tar.gz 2>/dev/null | head -1 )"
@@ -65,7 +65,7 @@ BKP="$( ls -1t /var/www/nextcloud-bkp_*.tar.gz 2>/dev/null | head -1 )"
 }
 
 ## Check for encrypted data and ask for password
-if needs_decrypt; then
+if needsDecryption; then
   echo "Detected encrypted instance"
   a2dissite ncp nextcloud
   a2ensite ncp-activation

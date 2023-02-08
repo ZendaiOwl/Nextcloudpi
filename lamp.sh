@@ -44,7 +44,7 @@ install()
       adduser --quiet -u 181 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Resolver" systemd-resolve
     }
-    install_with_shadow_workaround --no-install-recommends systemd
+    installWithShadowWorkaround --no-install-recommends systemd
     $APTINSTALL -t $RELEASE php${PHPVER} php${PHPVER}-curl php${PHPVER}-gd php${PHPVER}-fpm php${PHPVER}-cli php${PHPVER}-opcache \
                             php${PHPVER}-mbstring php${PHPVER}-xml php${PHPVER}-zip php${PHPVER}-fileinfo php${PHPVER}-ldap \
                             php${PHPVER}-intl php${PHPVER}-bz2
@@ -65,12 +65,12 @@ install()
     # CONFIGURE APACHE
     ##########################################
 
-    install_template apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
+    installTemplate apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
 
     # CONFIGURE PHP7
     ##########################################
 
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+    installTemplate "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
 
     a2enmod http2
     a2enconf http2
@@ -90,9 +90,9 @@ install()
 
     $APTINSTALL ssl-cert # self signed snakeoil certs
 
-    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
+    installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
 
-    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
+    installTemplate "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
 
   # launch mariadb if not already running
   if ! [[ -f /run/mysqld/mysqld.pid ]]; then

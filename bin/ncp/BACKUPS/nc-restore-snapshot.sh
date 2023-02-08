@@ -16,7 +16,7 @@ configure()
   [[ -d "$SNAPSHOT" ]] || { echo "$SNAPSHOT doesn't exist"; return 1; }
 
   local datadir mountpoint
-  datadir=$( get_nc_config_value datadirectory ) || {
+  datadir=$( getNextcloudConfigValue datadirectory ) || {
     echo -e "Error reading data directory. Is NextCloud running?";
     return 1;
   }
@@ -36,10 +36,10 @@ configure()
 
   btrfs-snp $mountpoint autobackup 0 0 ../ncp-snapshots || return 1
 
-  save_maintenance_mode
+  saveMaintenanceMode
   btrfs subvolume delete   "$datadir" || return 1
   btrfs subvolume snapshot "$SNAPSHOT" "$datadir"
-  restore_maintenance_mode
+  restoreMaintenanceMode
   ncp-scan
 
   echo "snapshot $SNAPSHOT restored"

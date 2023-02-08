@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Batch creation of NextCloudPi VM image
+# Batch creation of NextcloudPi VM image
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -16,7 +16,7 @@ echo -e "\e[1m\n[ Build NCP VM ]\e[0m"
 IP=${1:-192.168.0.145}      # For QEMU automated testing (optional)
 SIZE=3G                     # Raspbian image size
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
-IMG="${IMG:-NextCloudPi_VM_$( date  "+%m-%d-%y" ).img}"
+IMG="${IMG:-NextcloudPi_VM_$( date  "+%m-%d-%y" ).img}"
 IMG=tmp/"$IMG"
 VM="/var/lib/libvirt/images/ncp-vm.img"
 
@@ -29,7 +29,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 ## preparations
 
 test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
-prepare_dirs                   # tmp cache output
+prepareDirectories                   # tmp cache output
 
 ## BUILD NCP
 
@@ -46,15 +46,15 @@ sudo chown "$USER" "$VM"
 sudo cp -a --reflink=auto --sparse=auto "$VM" "$IMG"
 
 ## pack
-pack_image "$IMG" "$TAR"
+packImage "$IMG" "$TAR"
 
 ## test
-#set_static_IP "$IMG" "$IP"
+#setStaticIP "$IMG" "$IP"
 #test_image    "$IMG" "$IP" # TODO fix tests
 
 # upload
-create_torrent "$TAR"
-#upload_ftp "$( basename "$TAR" .tar.bz2 )"
+createTorrent "$TAR"
+#uploadFTP "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

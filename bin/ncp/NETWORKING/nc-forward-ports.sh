@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Use uPnP to forward router ports for NextCloudPi
+# Use uPnP to forward router ports for NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -18,7 +18,7 @@ install()
 configure() 
 {
   local ip
-  ip="$(get_ip)"
+  ip="$(getIP)"
   upnpc -d "$HTTPSPORT" TCP
   upnpc -d "$HTTPPORT"  TCP
   upnpc -a "$ip" 443 "$HTTPSPORT" TCP | tee >(cat - >&2) | grep -q "is redirected to internal" || \

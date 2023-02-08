@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Library to install software on Raspbian ARM through QEMU
 #
@@ -8,26 +8,399 @@
 # More at ownyourbits.com
 #
 
-DBG=x
+#DBG=x
 
-version=$(git describe --tags --always)
-version=${version%-*-*}
+#VERSION="$(git describe --tags --always)"
+#VERSION="${VERSION%-*-*}"
 
-# $IMG    is the source image
-# $IP     is the IP of the QEMU images
-# $IMGOUT will contain the name of the generated image
-function launch_install_qemu()
+# A log that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log
 {
-  local IMG=$1
-  local IP=$2
-  [[ "$IP"      == ""  ]] && { echo "usage: launch_install_qemu <img> <IP>"; return 1; }
-  test -f "$IMG"          || { echo "input file $IMG not found";             return 1; }
+  if [[ "$#" -gt 0 ]]; then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
+      case "$LOGLEVEL" in
+        -2)
+           local -r CYAN='\e[1;36m'
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           ;;
+        -1)
+           local -r BLUE='\e[1;34m'
+           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+           ;;
+         0)
+           local -r GREEN='\e[1;32m'
+           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+           ;;
+         1)
+           local -r YELLOW='\e[1;33m'
+           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+           ;;
+         2)
+           local -r RED='\e[1;31m'
+           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
 
-  IMGOUT="$IMG-$( date +%s )"
-  cp --reflink=auto -v "$IMG" "$IMGOUT" || return 1
+# Test if a function() is available
+# Return codes
+# 0: Available
+# 1: Unvailable
+# 2: Too many/few arguments
+function isFunction
+{
+  if [[ "$#" -eq 1 ]]; then
+    local -r FUNC="$1"
+    if declare -f "$FUNC" &>/dev/null; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    return 2
+  fi
+}
 
-  pgrep qemu-system-aarch64 &>/dev/null && { echo -e "QEMU instance already running. Abort..."; return 1; }
-  launch_qemu "$IMGOUT" &
+# Check if user ID executing script is 0 or not
+# Return codes
+# 0: Is root
+# 1: Not root
+# 2: Invalid number of arguments
+function isRoot
+{
+  [[ "$#" -ne 0 ]] && return 2
+  [[ "$EUID" -eq 0 ]]
+}
+
+# Checks if a given path to a file exists
+# Return codes
+# 0: Path exist
+# 1: No such path
+# 2: Invalid number of arguments
+function isPath
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -e "$1" ]]
+}
+
+# Checks if a given path is a regular file
+# 0: Is a file
+# 1: Not a file
+# 2: Invalid number of arguments
+function isFile
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -f "$1" ]]
+}
+
+# Checks if a given path is a readable file
+# 0: Is readable
+# 1: Not readable
+# 2: Invalid number of arguments
+function isReadable
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -r "$1" ]]
+}
+
+# Checks if a given path is a writable file
+# 0: Is writable
+# 1: Not writable
+# 2: Invalid number of arguments
+function isWritable
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -w "$1" ]]
+}
+
+# Checks if a given path is an executable file
+# 0: Is executable
+# 1: Not executable
+# 2: Invalid number of arguments
+function isExecutable
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -x "$1" ]]
+}
+
+# Checks if given path is a directory 
+# Return codes
+# 0: Is a directory
+# 1: Not a directory
+# 2: Invalid number of arguments
+function isDirectory
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -d "$1" ]]
+}
+
+# Checks if given path is a named pipe
+# Return codes
+# 0: Is a named pipe
+# 1: Not a named pipe
+# 2: Invalid number of arguments
+function isPipe
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -p "$1" ]]
+}
+
+# Checks if a given path is a socket
+# Return codes
+# 0: Is a socket
+# 1: Not a socket
+# 2: Invalid number of arguments
+function isSocket
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -S "$1" ]]
+}
+
+# Checks if a given String is zero
+# Return codes
+# 0: Is zero
+# 1: Not zero
+# 2: Invalid number of arguments
+function isZero
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -z "$1" ]]
+}
+
+# Checks if a given String is not zero
+# Return codes
+# 0: Not zero
+# 1: Is zero
+# 2: Invalid number of arguments
+function notZero
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -n "$1" ]]
+}
+
+# Checks if 2 given digits are equal
+# Return codes
+# 0: Is equal
+# 1: Not equal
+# 2: Invalid number of arguments
+function isEqual
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -eq "$2" ]]
+}
+
+# Checks if 2 given digits are not equal
+# Return codes
+# 0: Not equal
+# 1: Is equal
+# 2: Invalid number of arguments
+function notEqual
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -ne "$2" ]]
+}
+
+# Checks if 2 given String variables match
+# Return codes
+# 0: Is a match
+# 1: Not a match
+# 2: Invalid number of arguments
+function isMatch
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" == "$2" ]]
+}
+
+# Checks if 2 given String variables do not match
+# Return codes
+# 0: Not a match
+# 1: Is a match
+# 2: Invalid number of arguments
+function noMatch
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" != "$2" ]]
+}
+
+# Checks if a given variable has been set and assigned a value.
+# Return codes
+# 0: Is set
+# 1: Not set 
+# 2: Invalid number of arguments
+function isSet
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -v "$1" ]]
+}
+
+# Checks if a given variable has been set and is a name reference
+# Return codes
+# 0: Is set
+# 1: Not set 
+# 2: Invalid number of arguments
+function isReference
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -R "$1" ]]
+}
+
+# Checks if a given variable is an array or not
+# Return codes
+# 0: Variable is an array
+# 1: Variable is not an array
+# 2: Missing argument: Variable to check
+function isArray
+{
+  if [[ "$#" -ne 1 ]]; then
+    return 2
+  elif ! declare -a "$1" &>/dev/null; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+# Checks if a command exists on the system
+# Return status codes
+# 0: Command exists on the system
+# 1: Command is unavailable on the system
+# 2: Missing command argument to check
+function hasCMD
+{
+  if [[ "$#" -eq 1 ]]; then
+    local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    return 2
+  fi
+}
+
+# Checks if a package exists on the system
+# Return status codes
+# 0: Package is installed
+# 1: Package is not installed but is available in apt
+# 2: Package is not installed and is not available in apt
+# 3: Missing package argument to check
+function hasPKG
+{
+  if [[ "$#" -eq 1 ]]; then
+    local -r CHECK="$1"
+    if dpkg-query --status "$CHECK" &>/dev/null; then
+      return 0
+    elif apt-cache show "$CHECK" &>/dev/null; then
+      return 1
+    else
+      return 2
+    fi
+  else
+    return 3
+  fi
+}
+
+# Checks for a running process
+# Return codes
+# 0: Running process exists
+# 1: No such running process
+# 2: Missing argument: process
+# 3: Missing command: pgrep
+function findProcess
+{
+  if hasCMD pgrep; then
+    if [[ "$#" -eq 1 ]]; then
+      local -r PROCESS="$1"
+      if pgrep "$PROCESS" &>/dev/null; then
+        return 0
+      else
+        return 1
+      fi
+    else
+      return 2
+    fi
+  else
+    return 3
+  fi
+}
+
+# Checks for a running process
+# Return codes
+# 0: Running process exists
+# 1: No such running process
+# 2: Missing argument: process
+# 3: Missing command: pgrep
+function findFullProcess {
+  if hasCMD pgrep &>/dev/null
+  then
+    if [[ "$#" -eq 1 ]]
+    then
+      local -r PROCESS="$1"
+      if pgrep --full "$PROCESS" &>/dev/null
+      then
+        return 0
+      else
+        return 1
+      fi
+    else
+      return 2
+    fi
+  else
+    return 3
+  fi
+}
+
+#
+# Return codes
+# 1: Invalid number of arguments
+# 2: Invalid argument #2: [IP]
+# 3: File not found: [IMG]
+function launchInstallQEMU
+{
+  local IMG="$1" IP="$2" IMGOUT
+  
+  if [[ "$#" -ne 2 ]]; then
+    log 2 ""
+    return 1
+  elif isZero "$IP"; then
+    log 2 "Invalid argument #2: [IP]"
+    return 2
+  elif ! isFile "$IMG"; then
+    log 2 "File not found: $IMG"
+    return 3
+  fi
+  
+  IMGOUT="${IMG}-$( date +%s )"
+  
+  if ! cp --reflink=auto -v "$IMG" "$IMGOUT"; then
+    log 2 "Copying IMG failed"
+    return 1
+  fi
+
+  if hasCMD pgrep; then
+    if findProcess qemu-system-aarch64; then
+      log 2 "QEMU is already running"
+      return 1
+    fi
+  else
+    log 2 "Missing command: pgrep"
+    return 1
+  fi
+
+  # TODO
+  launchQEMU "$IMGOUT" &
   sleep 10
   wait_SSH "$IP"
   launch_installation_qemu "$IP" || return 1 # uses $INSTALLATION_CODE
@@ -35,212 +408,470 @@ function launch_install_qemu()
   echo "$IMGOUT generated successfully"
 }
 
-function launch_qemu()
+
+# Return codes
+# 1: Invalid number of arguments
+# 2: File not found: [IMG]
+# 3: Missing command: sed
+function launchQEMU
 {
-  local IMG=$1
-  test -f "$1" || { echo "Image $IMG not found"; return 1; }
-  test -d qemu-raspbian-network || git clone https://github.com/nachoparker/qemu-raspbian-network.git
-  sed -i '30s/NO_NETWORK=1/NO_NETWORK=0/' qemu-raspbian-network/qemu-pi.sh
-  sed -i '35s/NO_GRAPHIC=0/NO_GRAPHIC=1/' qemu-raspbian-network/qemu-pi.sh
-  echo "Starting QEMU image $IMG"
-  ( cd qemu-raspbian-network && sudo ./qemu-pi.sh ../"$IMG" 2>/dev/null )
+  [[ "$#" -ne 1 ]] && return 1
+  local IMG="$1"
+  if ! isFile "$IMG"; then
+    log 2 "File not found: $IMG"
+    return 2
+  fi
+
+  if ! isDirectory qemu-raspbian-network; then
+    git clone https://github.com/nachoparker/qemu-raspbian-network.git
+  fi
+
+  if hasCMD sed; then
+    sed -i '30s/NO_NETWORK=1/NO_NETWORK=0/' qemu-raspbian-network/qemu-pi.sh
+    sed -i '35s/NO_GRAPHIC=0/NO_GRAPHIC=1/' qemu-raspbian-network/qemu-pi.sh
+  else
+    log 2 "Missing command: sed"
+    return 3
+  fi
+  
+  log -1 "Starting QEMU image: $IMG"
+  
+  (
+    cd qemu-raspbian-network && sudo ./qemu-pi.sh ../"$IMG" 2>/dev/null
+  )
 }
 
-function ssh_pi()
+# TODO: NEEDS TO BE REWORKED - PI USER NO LONGER EXISTS
+function sshPi
 {
-  local IP=$1
-  local ARGS=${@:2}
-  local PIUSER=${PIUSER:-pi}
-  local PIPASS=${PIPASS:-raspberry}
-  local SSH=( ssh -q  -o UserKnownHostsFile=/dev/null\
-                      -o StrictHostKeyChecking=no\
-                      -o ServerAliveInterval=20\
-                      -o ConnectTimeout=20\
-                      -o LogLevel=quiet                  )
-  type sshpass &>/dev/null && local SSHPASS=( sshpass -p$PIPASS )
-  if [[ "${SSHPASS[@]}" == "" ]]; then
-    ${SSH[@]} ${PIUSER}@$IP $ARGS;
+  local IP="$1" ARGS=("${@:2}") \
+        PIUSER="${PIUSER:-pi}" \
+        PIPASS="${PIPASS:-raspberry}" \
+        SSHPASS SSH RET
+  
+  SSH=( ssh -q  -o UserKnownHostsFile=/dev/null\
+                -o StrictHostKeyChecking=no\
+                -o ServerAliveInterval=20\
+                -o ConnectTimeout=20\
+                -o LogLevel=quiet )
+  type sshpass &>/dev/null && SSHPASS=( sshpass -p"$PIPASS" )
+  if [[ "${SSHPASS[*]}" == "" ]]; then
+    "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}";
   else
-    ${SSHPASS[@]} ${SSH[@]} ${PIUSER}@$IP $ARGS
-    local RET=$?
-    [[ $RET -eq 5 ]] && { ${SSH[@]} ${PIUSER}@$IP $ARGS; return $?; }
-    return $RET
+    "${SSHPASS[@]}" "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}"
+    RET="$?"
+    if [[ "$RET" -eq 5 ]]; then
+      "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}"
+      return "$?"
+    fi
+    return "$RET"
   fi
 }
 
-function wait_SSH()
+# Return codes
+# 1: Invalid number of arguments
+function waitSSH
 {
-  local IP=$1
-  echo "Waiting for SSH to be up on $IP..."
+  [[ "$#" -ne 1 ]] && return 1
+  local IP="$1"
+  log -1 "Waiting for SSH on: $IP"
   while true; do
-    ssh_pi "$IP" : && break
+    sshPi "$IP" : && break
     sleep 1
   done
-  echo "SSH is up"
+  log -1 "SSH is up"
 }
 
-function launch_installation()
+# Return codes
+# 1: Invalid number of arguments
+# 2: Needs to run configuration first
+# 3: No installation instructions available
+# 4: SSH installation to QEMU target failed
+function launchInstallation
 {
-  local IP=$1
-  [[ "$INSTALLATION_CODE"  == "" ]] && { echo "Need to run config first"    ; return 1; }
-  [[ "$INSTALLATION_STEPS" == "" ]] && { echo "No installation instructions"; return 1; }
+  [[ "$#" -ne 1 ]] && return 1
+  local IP="$1"
+  if isZero "$INSTALLATION_CODE"; then
+    log 2 "Configuration is required to be run first"
+    return 2
+  elif isZero "$INSTALLATION_STEPS"; then
+    log 2 "No installation instructions provided"
+    return 3
+  fi
+  
   local PREINST_CODE="
 set -e$DBG
 sudo su
 set -e$DBG
 "
-  echo "Launching installation"
-  echo -e "$PREINST_CODE\n$INSTALLATION_CODE\n$INSTALLATION_STEPS" | ssh_pi "$IP" || { echo "Installation to $IP failed" && return 1; }
+  log 2 "Launching installation"
+  if ! sshPi "$IP" "$PREINST_CODE" "$INSTALLATION_CODE" "$INSTALLATION_STEPS"; then
+    log 2 "SSH installation failed to QEMU target at: $IP"
+    return 4
+  fi
 }
 
-function launch_installation_qemu()
+# Return codes
+# 1: Invalid number of arguments
+function launchInstallationQEMU
 {
-  local IP=$1
-  [[ "$NO_CFG_STEP"  != "1" ]] && local CFG_STEP=configure
-  [[ "$NO_CLEANUP"   != "1" ]] && local CLEANUP_STEP="if [[ \$( type -t cleanup ) == function ]];then cleanup; fi"
-  [[ "$NO_HALT_STEP" != "1" ]] && local HALT_STEP="nohup halt &>/dev/null &"
-  local INSTALLATION_STEPS="
+  [[ "$#" -ne 1 ]] && return 1
+  local IP="$1" MATCH="1" CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
+
+  if noMatch "$NO_CFG_STEP" "$MATCH"; then
+    CFG_STEP=configure
+  fi
+  if noMatch "$NO_CLEANUP" "$MATCH"; then
+    CLEANUP_STEP="if [[ \$( type -t cleanup ) == function ]];then cleanup; fi"
+  fi
+  if noMatch "$NO_HALT_STEP" "$MATCH"; then
+    HALT_STEP="nohup halt &>/dev/null &"
+  fi
+  
+  INSTALLATION_STEPS="
 install
 $CFG_STEP
 $CLEANUP_STEP
 $HALT_STEP
 "
-  launch_installation "$IP" # uses $INSTALLATION_CODE
+  # Uses $INSTALLATION_CODE
+  launchInstallation "$IP"
 }
 
-function launch_installation_online()
+# Return codes
+# 1: Invalid number of arguments
+function launchInstallationOnline
 {
-  local IP=$1
-  [[ "$NO_CFG_STEP" != "1" ]]  && local CFG_STEP=configure
-  local INSTALLATION_STEPS="
+  [[ "$#" -ne 1 ]] && return 1
+  local IP="$1" MATCH="1" CFG_STEP INSTALLATION_STEPS
+  if noMatch "$NO_CFG_STEP" "$MATCH"; then
+    CFG_STEP=configure
+  fi
+  INSTALLATION_STEPS="
 install
 $CFG_STEP
 "
-  launch_installation "$IP" # uses $INSTALLATION_CODE
+  # Uses $INSTALLATION_CODE
+  launchInstallation "$IP"
 }
 
-function prepare_dirs()
+function prepareDirectories
 {
-  [[ "$CLEAN" == "0" ]] || rm -rf cache
-  rm -rf tmp
-  mkdir -p tmp output cache
+  local DIRS=(tmp output cache)
+  if noMatch "$CLEAN" "0"; then
+    rm --recursive --force "${DIRS[2]}"
+  fi
+  rm --recursive --force "${DIRS[0]}"
+  mkdir --parents "${DIRS[@]}"
 }
 
-function mount_raspbian()
+# Return codes
+# 1: Invalid number of arguments
+# 2: File not found: [IMG]
+# 3: Mountpoint already exists
+# 4: Failed to mount IMG at mountpoint
+function mountRoot
 {
-  local IMG="$1"
-  local MP=raspbian_root
+  [[ "$#" -ne 1 ]] && return 1
+  local IMG="$1" MP='raspbian_root' SECTOR OFFSET
+  if ! isFile "$IMG"; then
+    log 2 "File not found: $IMG"
+    return 2
+  elif isPath "$MP"; then
+    log 2 "Mountpoint already exists"
+    return 3
+  fi
 
-  [[ -f "$IMG"        ]] || { echo "no image";  return 1; }
-  [[ -e "$MP" ]] && { echo "$MP already exists"; return 1; }
-
-  local SECTOR=$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )
-  local OFFSET=$(( SECTOR * 512 ))
-  mkdir -p "$MP"
-  sudo mount $IMG -o offset=$OFFSET "$MP" || return 1
-  echo "RaspiOS image mounted"
-}
-
-function mount_raspbian_boot()
-{
-  local IMG="$1"
-  local MP=raspbian_boot
-
-  [[ -f "$IMG" ]] || { echo "no image";           return 1; }
-  [[ -e "$MP"  ]] && { echo "$MP already exists"; return 1; }
-
-  local SECTOR=$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )
-  local OFFSET=$(( SECTOR * 512 ))
-  mkdir -p "$MP"
-  sudo mount $IMG -o offset=$OFFSET "$MP" || return 1
-  echo "RaspiOS image mounted"
-}
-
-function umount_raspbian()
-{
-  [[ -d raspbian_root ]] || [[ -d raspbian_boot ]] || { echo "Nothing to umount"; return 0; }
-  [[ -d raspbian_root ]] && { sudo umount -l raspbian_root; rmdir raspbian_root || return 1; }
-  [[ -d raspbian_boot ]] && { sudo umount -l raspbian_boot; rmdir raspbian_boot || return 1; }
-  echo "RaspiOS image umounted"
-}
-
-function prepare_chroot_raspbian()
-{
-  local IMG="$1"
-  mount_raspbian "$IMG" || return 1
-  sudo mount -t proc proc     raspbian_root/proc/
-  sudo mount -t sysfs sys     raspbian_root/sys/
-  sudo mount -o bind /dev     raspbian_root/dev/
-  sudo mount -o bind /dev/pts raspbian_root/dev/pts
-
-  if [[ -f "qemu-aarch64-static" ]]
-  then
-    sudo cp qemu-aarch64-static raspbian_root/usr/bin/
+  SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
+  OFFSET=$(( "$SECTOR" * 512 ))
+  mkdir --parents "$MP"
+  
+  if isRoot; then
+    if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
+      log 2 "Failed to mount IMG at: $MP"
+      return 4
+    fi
   else
-    sudo cp /usr/bin/qemu-aarch64-static raspbian_root/usr/bin
+    if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
+      log 2 "Failed to mount IMG at: $MP"
+      return 4
+    fi
+  fi
+  log -1 "IMG is mounted at: $MP"
+}
+
+# Return codes
+# 1: Invalid number of arguments
+# 2: File not found: [IMG]
+# 3: Mountpoint already exists
+# 4: Failed to mount IMG at mountpoint
+function mountBoot
+{
+  [[ "$#" -ne 1 ]] && return 1
+  local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
+  if ! isFile "$IMG"; then
+    log 2 "File not found: $IMG"
+    return 2
+  elif isPath "$MP"; then
+    log 2 "Mountpoint already exists"
+    return 3
+  fi
+
+  SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
+  OFFSET=$(( "$SECTOR" * 512 ))
+  mkdir --parents "$MP"
+  
+  if isRoot; then
+    if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
+      log 2 "Failed to mount IMG at: $MP"
+      return 4
+    fi
+  else
+    if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
+      log 2 "Failed to mount IMG at: $MP"
+      return 4
+    fi
+  fi
+  log -1 "IMG is mounted at: $MP"
+}
+
+# Return codes
+# 0: Nothing to unmount OR Unmounted IMG
+# 1: Could not unmount directory: Root
+# 2: Could not remove directory: Root
+# 3: Could not unmount directory: Boot
+# 4: Could not remove directory: Boot
+function unmountRPi
+{
+  local ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
+  if ! isDirectory "$ROOTDIR" && ! isDirectory "$BOOTDIR"; then
+    log -1 "Nothing to unmount"
+    return 0
+  fi
+  if isDirectory "$ROOTDIR"; then
+    if isRoot; then
+      if ! umount --lazy "$ROOTDIR"; then
+        log 2 "Could not unmount: $ROOTDIR"
+        return 1
+      fi
+      if ! rmdir "$ROOTDIR"; then
+        log 2 "Could not remove: $ROOTDIR"
+        return 2
+      fi
+    else
+      if ! sudo umount --lazy "$ROOTDIR"; then
+        log 2 "Could not unmount: $ROOTDIR"
+        return 1
+      fi
+      if ! sudo rmdir "$ROOTDIR"; then
+        log 2 "Could not remove: $ROOTDIR"
+        return 2
+      fi
+    fi
+  fi
+  if isDirectory "$BOOTDIR"; then
+    if isRoot; then
+      if ! umount --lazy "$BOOTDIR"; then
+        log 2 "Could not unmount: $BOOTDIR"
+        return 3
+      fi
+      if ! rmdir "$BOOTDIR"; then
+        log 2 "Could not remove: $BOOTDIR"
+        return 4
+      fi
+    else
+      if ! sudo umount --lazy "$BOOTDIR"; then
+        log 2 "Could not unmount: $BOOTDIR"
+        return 3
+      fi
+      if ! sudo rmdir "$BOOTDIR"; then
+        log 2 "Could not remove: $BOOTDIR"
+        return 4
+      fi
+    fi
+  fi
+  log -1 "Unmounted IMG"
+}
+
+# Return codes
+# 1: Invalid number of arguments
+# 2: Failed to mount IMG root
+# 3: File not found: /usr/bin/qemu-aarch64-static
+function prepareChrootRPi
+{
+  [[ "$#" -ne 1 ]] && return 1
+  local -r IMG="$1" ROOTDIR='raspbian_root'
+  if ! mountRoot "$IMG"; then
+    return 2
+  fi
+  if isRoot; then
+    mount -t proc proc     "$ROOTDIR"/proc/
+    mount -t sysfs sys     "$ROOTDIR"/sys/
+    mount -o bind /dev     "$ROOTDIR"/dev/
+    mount -o bind /dev/pts "$ROOTDIR"/dev/pts
+  else
+    sudo mount -t proc proc     "$ROOTDIR"/proc/
+    sudo mount -t sysfs sys     "$ROOTDIR"/sys/
+    sudo mount -o bind /dev     "$ROOTDIR"/dev/
+    sudo mount -o bind /dev/pts "$ROOTDIR"/dev/pts
+  fi
+
+  if isFile "qemu-aarch64-static"; then
+    if isRoot; then
+      cp qemu-aarch64-static "$ROOTDIR"/usr/bin/
+    else
+      sudo cp qemu-aarch64-static "$ROOTDIR"/usr/bin/
+    fi
+  else
+    if isFile '/usr/bin/qemu-aarch64-static'; then
+      if isRoot; then
+        cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin
+      else
+        sudo cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin
+      fi
+    else
+      log 2 "File not found: /usr/bin/qemu-aarch64-static"
+      return 3
+    fi
   fi
 
   # Prevent services from auto-starting
-  sudo bash -c "echo -e '#!/bin/sh\nexit 101' > raspbian_root/usr/sbin/policy-rc.d"
-  sudo chmod +x raspbian_root/usr/sbin/policy-rc.d
+  if isRoot; then
+    bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
+    chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
+  else
+    sudo bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
+    sudo chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
+  fi
 }
 
-function clean_chroot_raspbian()
+function cleanChroot
 {
-  sudo rm -f raspbian_root/usr/bin/qemu-aarch64-static
-  sudo rm -f raspbian_root/usr/sbin/policy-rc.d
-  sudo umount -l raspbian_root/{proc,sys,dev/pts,dev}
-  umount_raspbian
+  local -r ROOTDIR='raspbian_root'
+  if isRoot; then
+    rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
+    rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
+    umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
+  else
+    sudo rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
+    sudo rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
+    sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
+  fi
+  unmountRPi
 }
 
-# sets DEV
-function resize_image()
+# Sets DEV
+function resizeIMG
 {
-  local IMG="$1"
-  local SIZE="$2"
+  local -r IMG="$1" SIZE="$2"
   local DEV
-  echo -e "\n\e[1m[ Resize Image ]\e[0m"
-  fallocate -l$SIZE "$IMG"
+  log -1 "Resize IMG"
+  fallocate -l"$SIZE" "$IMG"
   parted "$IMG" -- resizepart 2 -1s
-  DEV="$( sudo losetup -f )"
-  mount_raspbian "$IMG"
-  sudo resize2fs -f "$DEV"
-  echo "Image resized"
-  umount_raspbian
+  if isRoot; then
+    DEV="$(losetup -f)"
+  else
+    DEV="$(sudo losetup -f)"
+  fi
+  mountRoot "$IMG"
+  if isRoot; then
+    resize2fs -f "$DEV"
+  else
+    sudo resize2fs -f "$DEV"
+  fi
+  log -1 "Resized IMG"
+  unmountRPi
 }
 
-function update_boot_uuid()
+# Return codes
+# 1: Invalid number of arguments
+# 2: Failed to mount IMG root
+# 3: Failed to mount IMG boot
+function updateBootUUID
 {
-  local IMG="$1"
-  local PTUUID="$( sudo blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||' )"
+  [[ "$#" -ne 1 ]] && return 1
+  local -r IMG="$1" ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
+  local PTUUID
+  if isRoot; then
+    PTUUID="$(blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
+  else
+    PTUUID="$(sudo blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
+  fi
+  log -1 "Updating IMG Boot UUID's"
 
-  echo -e "\n\e[1m[ Update Raspbian Boot UUIDS ]\e[0m"
-  mount_raspbian "$IMG" || return 1
-  sudo bash -c "cat > raspbian_root/etc/fstab" <<EOF
+  if ! mountRoot "$IMG"; then
+    log 2 "Failed to mount IMG root"
+    return 2
+  fi
+  if isRoot; then
+    bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
 PARTUUID=${PTUUID}-01  /boot           vfat    defaults          0       2
 PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
 EOF
-  umount_raspbian
+  else
+    sudo bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
+PARTUUID=${PTUUID}-01  /boot           vfat    defaults          0       2
+PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
+EOF
+  fi
+  
+  unmountRPi
 
-  mount_raspbian_boot "$IMG"
-  sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' raspbian_boot/cmdline.txt"
-  umount_raspbian
+  if ! mountBoot "$IMG"; then
+    log 2 "Failed to mount IMG boot"
+    return 3
+  fi
+
+  if isRoot; then
+    bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
+  else
+    sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
+  fi
+  
+  unmountRPi
 }
 
-function prepare_sshd_raspbian()
+# Return codes
+# 1: Invalid number of arguments
+# 2: Failed to mount IMG boot
+# 3: Failed to create SSH file in IMG boot
+function prepareSSHD
 {
-  local IMG="$1"
-  mount_raspbian_boot "$IMG" || return 1
-  sudo touch raspbian_boot/ssh   # this enables ssh
-  umount_raspbian
+  [[ "$#" -ne 1 ]] && return 1
+  local -r IMG="$1" BOOTDIR='raspbian_boot'
+  if ! mountBoot "$IMG"; then
+    log 2 "Failed to mount IMG boot"
+    return 2
+  fi
+  # Enable SSH
+  if isRoot; then
+    if ! touch "$BOOTDIR"/ssh; then
+      log 2 "Failed to create SSH file in IMG boot"
+      return 3
+    fi
+  else
+    if ! sudo touch "$BOOTDIR"/ssh; then
+      log 2 "Failed to create SSH file in IMG boot"
+      return 3
+    fi
+  fi
+  unmountRPi
 }
 
-function set_static_IP()
+# Return codes
+# 1: Invalid number of arguments
+# 2: Failed to mount IMG root
+function setStaticIP
 {
-  local IMG="$1"
-  local IP="$2"
-  mount_raspbian "$IMG" || return 1
-  sudo bash -c "cat > raspbian_root/etc/dhcpcd.conf" <<EOF
+  [[ "$#" -ne 2 ]] && return 1
+  local -r IMG="$1" IP="$2" ROOTDIR='raspbian_root'
+  if ! mountRoot "$IMG"; then
+    log 2 "Failed to mount IMG root"
+    return 2
+  fi
+  
+  if isRoot; then
+    bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
 interface eth0
 static ip_address=$IP/24
 static routers=192.168.0.1
@@ -250,81 +881,173 @@ static domain_name_servers=8.8.8.8
 auto lo
 iface lo inet loopback
 EOF
-  umount_raspbian
+  else
+    sudo bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
+interface eth0
+static ip_address=$IP/24
+static routers=192.168.0.1
+static domain_name_servers=8.8.8.8
+
+# Local loopback
+auto lo
+iface lo inet loopback
+EOF
+  fi
+  
+  unmountRPi
 }
 
-function copy_to_image()
+# Return codes
+# 1: Invalid number of arguments
+# 2: Failed to mount IMG root
+# 3: Copy to image failed
+function copyToImage
 {
-  local IMG=$1
-  local DST=$2
-  local SRC=${@: 3 }
-
-  mount_raspbian "$IMG" || return 1
-  sudo cp --reflink=auto -v "$SRC" raspbian_root/"$DST" || return 1
+  [[ "$#" -ne 3 ]] && return 1
+  local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR='raspbian_root'
+  if ! mountRoot "$IMG"; then
+    log 2 "Failed to mount IMG root"
+    return 2
+  fi
+  if isRoot; then
+    if ! cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
+      log 2 "Copy to image failed"
+      return 3
+    fi
+  else
+    if ! sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
+      log 2 "Copy to image failed"
+      return 3
+    fi
+  fi
   sync
-  umount_raspbian
+  unmountRPi
 }
 
-function deactivate_unattended_upgrades()
+# Return codes
+# 1: Invalid number of arguments
+# 2: Failed to mount IMG root
+function deactivateUnattendedUpgrades
 {
-  local IMG=$1
-
-  mount_raspbian "$IMG" || return 1
-  sudo rm -f raspbian_root/etc/apt/apt.conf.d/20ncp-upgrades
-  umount_raspbian
+  [[ "$#" -ne 1 ]] && return 1
+  local -r IMG="$1" ROOTDIR='raspbian_root'
+  if ! mountRoot "$IMG"; then
+    log 2 "Failed to mount IMG root"
+    return 2
+  fi
+  if ! isFile "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades; then
+    log 1 "Directory not found: ${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
+  else
+    if isRoot; then
+      rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
+    else
+      sudo rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
+    fi
+  fi
+  unmountRPi
 }
 
-function download_raspbian()
+# Return codes
+# 0: Success
+# 1: Invalid number of arguments
+# 2: Copy failed
+# 3: Download failed from URL
+# 4: Missing command: unxz
+function downloadRaspberryOS
 {
-  local URL=$1
-  local IMGFILE=$2
-  local IMG_CACHE=cache/raspios_lite.img
-  local ZIP_CACHE=cache/raspios_lite.xz
-
-  echo -e "\n\e[1m[ Download RaspiOS ]\e[0m"
-  mkdir -p cache
-  test -f $IMG_CACHE && \
-    echo -e "INFO: $IMG_CACHE already exists. Skipping download ..." && \
-    cp -v --reflink=auto $IMG_CACHE "$IMGFILE" && \
+  [[ "$#" -ne 2 ]] && return 1
+  local -r URL="$1" IMGFILE="$2" \
+           IMG_CACHE='cache/raspios_lite.img' \
+           ZIP_CACHE='cache/raspios_lite.xz'
+  log -1 "Downloading Raspberry Pi OS"
+  mkdir --parents cache
+  if isFile "$IMG_CACHE"; then
+    log -1 "File exists: $IMG_CACHE"
+    log -1 "Skipping download"
+    if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
+      log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
+      return 2
+    fi
     return 0
+  elif isFile "$ZIP_CACHE"; then
+    log -1 "File exists: $ZIP_CACHE"
+    log -1 "Skipping download"
+  else
+    if ! wget "$URL" -nv -O "$ZIP_CACHE"; then
+      log 2 "Download failed from: $URL"
+      return 3
+    fi
+  fi
 
-  test -f "$ZIP_CACHE" && {
-    echo -e "INFO: $ZIP_CACHE already exists. Skipping download ..."
-  } || {
-    wget "$URL" -nv -O "$ZIP_CACHE" || return 1
-  }
-
-  unxz -k -c "$ZIP_CACHE" > "$IMG_CACHE" && \
-    cp -v --reflink=auto $IMG_CACHE "$IMGFILE"
+  if hasCMD unxz; then
+    unxz -k -c "$ZIP_CACHE" > "$IMG_CACHE"
+    if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
+      log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
+      return 2
+    fi
+  else
+    log 2 "Missing command: unxz"
+    return 4
+  fi
 }
 
-function pack_image()
+# Return codes
+# 0: Success
+# 1: Invalid number of arguments
+# 2: Failed packing image
+function packImage
 {
-  local IMG="$1"
-  local TAR="$2"
-  local DIR="$( dirname  "$IMG" )"
-  local IMGNAME="$( basename "$IMG" )"
-  echo -e "\n\e[1m[ Pack Image ]\e[0m"
-  echo "packing $IMG → $TAR"
-  tar -C "$DIR" -cavf "$TAR" "$IMGNAME" && \
-    echo -e "$TAR packed successfully"
+  [[ "$#" -ne 2 ]] && return 1
+  local -r IMG="$1" TAR="$2"
+  local DIR IMGNAME
+  DIR="$( dirname  "$IMG" )"
+  IMGNAME="$( basename "$IMG" )"
+  log -1 "Packing image: $IMG → $TAR"
+  if isRoot; then
+    if tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then
+      log 0 "$TAR packed successfully"
+      return 0
+    else
+      log 2 "Failed packing IMG: $TAR"
+      return 2
+    fi
+  else
+    if sudo tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then
+      log 0 "$TAR packed successfully"
+      return 0
+    else
+      log 2 "Failed packing IMG: $TAR"
+      return 2
+    fi
+  fi
 }
 
-function create_torrent()
+# Return codes
+# 0: Success
+# 1: Invalid number of arguments
+function createTorrent
 {
-  local TAR="$1"
-  echo -e "\n\e[1m[ Create Torrent ]\e[0m"
-  [[ -f "$TAR" ]] || { echo "image $TAR not found"; return 1; }
-  local IMGNAME="$( basename "$TAR" .tar.bz2 )"
-  local DIR="torrent/$IMGNAME"
-  [[ -d "$DIR" ]] && { echo "dir $DIR already exists"; return 1; }
-  mkdir -p torrent/"$IMGNAME" && cp -v --reflink=auto "$TAR" torrent/"$IMGNAME"
+  [[ "$#" -ne 1 ]] && return 1
+  local -r TAR="$1"
+  local IMGNAME DIR
+  log -1 "Creating torrent"
+  if ! isFile "$TAR"; then
+    log 2 "File not found: $TAR"
+    return 1
+  fi
+  IMGNAME="$( basename "$TAR" .tar.bz2 )"
+  DIR="torrent/$IMGNAME"
+  if isDirectory "$DIR"; then
+    log 2 "Directory already exists: $DIR"
+    return 1
+  fi
+  mkdir --parents torrent/"$IMGNAME" && cp -v --reflink=auto "$TAR" torrent/"$IMGNAME"
   md5sum "$DIR"/*.bz2 > "$DIR"/md5sum
-  createtorrent -a udp://tracker.opentrackr.org -p 1337 -c "NextCloudPi. Nextcloud ready to use image" "$DIR" "$DIR".torrent
-  transmission-remote -w $(pwd)/torrent -a "$DIR".torrent
+  createtorrent -a udp://tracker.opentrackr.org -p 1337 -c "NextcloudPi. Nextcloud ready to use image" "$DIR" "$DIR".torrent
+  transmission-remote -w "$PWD"/torrent -a "$DIR".torrent
 }
 
-function generate_changelog()
+function genChangelog
 {
   git log --graph --oneline --decorate \
     --pretty=format:"[%<(13)%D](https://github.com/nextcloud/nextcloudpi/commit/%h) (%ad) %s" --date=short | \
@@ -333,15 +1056,36 @@ function generate_changelog()
     sed 's|* \[tag: |\n[|' > changelog.md
 }
 
-function upload_ftp()
+# Return codes
+# 0: Success OR Skip
+# 1: Invalid number of arguments
+# 2: File not found: $IMGNAME
+# 3: Failed to change directory to: torrent
+# 4: Directory not found
+function uploadFTP
 {
-  local IMGNAME="$1"
-  echo -e "\n\e[1m[ Upload FTP ]\e[0m"
-  echo "* $IMGNAME..."
-  [[ -f torrent/"$IMGNAME"/"$IMGNAME".tar.bz2 ]] || { echo "No image file found, abort"; return 1; }
-  [[ "$FTPPASS" == "" ]] && { echo "No FTPPASS variable found, skip upload"; return 0; }
+  [[ "$#" -ne 1 ]] && return 1
+  local -r IMGNAME="$1"
+  local RET
+  log -1 "Upload FTP: $IMGNAME"
+  if ! isFile torrent/"$IMGNAME"/"$IMGNAME".tar.bz2; then
+    log 2 "File not found: $IMGNAME"
+    return 2
+  fi
+  if isZero "$FTPPASS"; then
+    log 2 "No FTP password was found, variable not set, skipping upload"
+    return 0
+  fi
 
-  cd torrent
+  if isDirectory torrent; then
+    if ! cd torrent; then
+      log 2 "Failed to change directory"
+      return 3
+    fi
+  else
+    log 2 "Directory not found:  torrent/$IMGNAME"
+    return 4
+  fi
 
   ftp -np ftp.ownyourbits.com <<EOF
 user root@ownyourbits.com $FTPPASS
@@ -353,8 +1097,19 @@ rm  $IMGNAME.torrent
 put $IMGNAME.torrent
 bye
 EOF
-  cd -
-  cd torrent/$IMGNAME
+  if ! cd -; then
+    log 2 "Failed to change directory to: -"
+    return 3
+  fi
+  if isDirectory torrent/"$IMGNAME"; then
+    if ! cd torrent/"$IMGNAME"; then
+      log 2 "Failed to change directory to: torrent/$IMGNAME"
+      return 3
+    fi
+  else
+    log 2 "Directory not found:  torrent/$IMGNAME"
+    return 4
+  fi
 
   ftp -np ftp.ownyourbits.com <<EOF
 user root@ownyourbits.com $FTPPASS
@@ -366,81 +1121,100 @@ rm  md5sum
 put md5sum
 bye
 EOF
-  ret=$?
-  cd -
-  return $ret
+  RET="$?"
+  if ! cd -; then
+    log 2 "Failed to change directory to: -"
+    return 3
+  fi
+  return "$RET"
 }
 
-upload_images()
+function uploadImages
 {
-  test -d output || { echo "No uploads found. Nothing to do"; return; }
-  [[ "$FTPPASS" == "" ]] && { echo "No FTPPASS variable found, skip upload"; return 1; }
+  if ! isDirectory output; then
+    log 2 "Directory not found: output"
+    log -1 "No uploads available"
+    return
+  fi
+  if isZero "$FTPPASS"; then
+    log 2 "No FTP password was found, variable not set, skipping upload"
+    return 0
+  fi
 
-  mkdir -p archive
-  for img in $(find output -name '*.tar.bz2'); do
-    upload_ftp "$(basename ${img} .tar.bz2)" && mv "${img}" archive
+  mkdir --parents archive
+  for IMG in output/*.tar.bz2; do
+    upload_ftp "$(basename "$IMG" .tar.bz2)" && mv "$IMG" archive
   done
 }
 
-function upload_docker()
+function uploadDocker
 {
   export DOCKER_CLI_EXPERIMENTAL=enabled
+  local -r OWNER='ownyourbits'
 
-  docker push ownyourbits/nextcloudpi-x86:latest
-  docker push ownyourbits/nextcloudpi-x86:${version}
-  docker push ownyourbits/nextcloud-x86:latest
-  docker push ownyourbits/nextcloud-x86:${version}
-  docker push ownyourbits/lamp-x86:latest
-  docker push ownyourbits/lamp-x86:${version}
-  docker push ownyourbits/debian-ncp-x86:latest
-  docker push ownyourbits/debian-ncp-x86:${version}
+  docker push "$OWNER"/nextcloudpi-x86:latest
+  docker push "$OWNER"/nextcloudpi-x86:"$VERSION"
+  docker push "$OWNER"/nextcloud-x86:latest
+  docker push "$OWNER"/nextcloud-x86:"$VERSION"
+  docker push "$OWNER"/lamp-x86:latest
+  docker push "$OWNER"/lamp-x86:"$VERSION"
+  docker push "$OWNER"/debian-ncp-x86:latest
+  docker push "$OWNER"/debian-ncp-x86:"$VERSION"
 
-  docker push ownyourbits/nextcloudpi-armhf:latest
-  docker push ownyourbits/nextcloudpi-armhf:${version}
-  docker push ownyourbits/nextcloud-armhf:latest
-  docker push ownyourbits/nextcloud-armhf:${version}
-  docker push ownyourbits/lamp-armhf:latest
-  docker push ownyourbits/lamp-armhf:${version}
-  docker push ownyourbits/debian-ncp-armhf:latest
-  docker push ownyourbits/debian-ncp-armhf:${version}
+  docker push "$OWNER"/nextcloudpi-armhf:latest
+  docker push "$OWNER"/nextcloudpi-armhf:"$VERSION"
+  docker push "$OWNER"/nextcloud-armhf:latest
+  docker push "$OWNER"/nextcloud-armhf:"$VERSION"
+  docker push "$OWNER"/lamp-armhf:latest
+  docker push "$OWNER"/lamp-armhf:"$VERSION"
+  docker push "$OWNER"/debian-ncp-armhf:latest
+  docker push "$OWNER"/debian-ncp-armhf:"$VERSION"
 
-  docker push ownyourbits/nextcloudpi-arm64:latest
-  docker push ownyourbits/nextcloudpi-arm64:${version}
-  docker push ownyourbits/nextcloud-arm64:latest
-  docker push ownyourbits/nextcloud-arm64:${version}
-  docker push ownyourbits/lamp-arm64:latest
-  docker push ownyourbits/lamp-arm64:${version}
-  docker push ownyourbits/debian-ncp-arm64:latest
-  docker push ownyourbits/debian-ncp-arm64:${version}
+  docker push "$OWNER"/nextcloudpi-arm64:latest
+  docker push "$OWNER"/nextcloudpi-arm64:"$VERSION"
+  docker push "$OWNER"/nextcloud-arm64:latest
+  docker push "$OWNER"/nextcloud-arm64:"$VERSION"
+  docker push "$OWNER"/lamp-arm64:latest
+  docker push "$OWNER"/lamp-arm64:"$VERSION"
+  docker push "$OWNER"/debian-ncp-arm64:latest
+  docker push "$OWNER"/debian-ncp-arm64:"$VERSION"
 
   # Docker multi-arch
-  docker manifest create --amend ownyourbits/nextcloudpi:${version} \
-    --amend ownyourbits/nextcloudpi-x86:${version} \
-    --amend ownyourbits/nextcloudpi-armhf:${version} \
-    --amend ownyourbits/nextcloudpi-arm64:${version}
+  docker manifest create --amend "$OWNER"/nextcloudpi:"$VERSION" \
+    --amend "$OWNER"/nextcloudpi-x86:"$VERSION" \
+    --amend "$OWNER"/nextcloudpi-armhf:"$VERSION" \
+    --amend "$OWNER"/nextcloudpi-arm64:"$VERSION"
 
-  docker manifest create --amend ownyourbits/nextcloudpi:latest \
-    --amend ownyourbits/nextcloudpi-x86:latest \
-    --amend ownyourbits/nextcloudpi-armhf:latest \
-    --amend ownyourbits/nextcloudpi-arm64:latest
+  docker manifest create --amend "$OWNER"/nextcloudpi:latest \
+    --amend "$OWNER"/nextcloudpi-x86:latest \
+    --amend "$OWNER"/nextcloudpi-armhf:latest \
+    --amend "$OWNER"/nextcloudpi-arm64:latest
 
 
-  docker manifest annotate ownyourbits/nextcloudpi:${version} ownyourbits/nextcloudpi-x86:${version}   --os linux --arch amd64
-  docker manifest annotate ownyourbits/nextcloudpi:${version} ownyourbits/nextcloudpi-armhf:${version} --os linux --arch arm
-  docker manifest annotate ownyourbits/nextcloudpi:${version} ownyourbits/nextcloudpi-arm64:${version} --os linux --arch arm64
+  docker manifest annotate "$OWNER"/nextcloudpi:"$VERSION" "$OWNER"/nextcloudpi-x86:"$VERSION"   --os linux --arch amd64
+  docker manifest annotate "$OWNER"/nextcloudpi:"$VERSION" "$OWNER"/nextcloudpi-armhf:"$VERSION" --os linux --arch arm
+  docker manifest annotate "$OWNER"/nextcloudpi:"$VERSION" "$OWNER"/nextcloudpi-arm64:"$VERSION" --os linux --arch arm64
 
-  docker manifest annotate ownyourbits/nextcloudpi:latest ownyourbits/nextcloudpi-x86:latest   --os linux --arch amd64
-  docker manifest annotate ownyourbits/nextcloudpi:latest ownyourbits/nextcloudpi-armhf:latest --os linux --arch arm
-  docker manifest annotate ownyourbits/nextcloudpi:latest ownyourbits/nextcloudpi-arm64:latest --os linux --arch arm64
+  docker manifest annotate "$OWNER"/nextcloudpi:latest "$OWNER"/nextcloudpi-x86:latest   --os linux --arch amd64
+  docker manifest annotate "$OWNER"/nextcloudpi:latest "$OWNER"/nextcloudpi-armhf:latest --os linux --arch arm
+  docker manifest annotate "$OWNER"/nextcloudpi:latest "$OWNER"/nextcloudpi-arm64:latest --os linux --arch arm64
 
-  docker manifest push -p ownyourbits/nextcloudpi:${version}
-  docker manifest push -p ownyourbits/nextcloudpi:latest
+  docker manifest push -p "$OWNER"/nextcloudpi:"$VERSION"
+  docker manifest push -p "$OWNER"/nextcloudpi:latest
 }
 
-function test_docker()
+function isDocker
 {
   (
-  cd build/docker
+  if isDirectory build/docker; then
+    if ! cd build/docker; then
+      log 2 "Failed to change directory to: build/docker"
+      return 3
+    fi
+  else
+    log 2 "Directory not found:  build/docker"
+    return 4
+  fi
   docker compose down
   docker volume rm docker_ncdata
   docker compose up -d
@@ -452,30 +1226,31 @@ function test_docker()
   )
 }
 
-function test_lxc()
+function isLXC
 {
-  local ip
+  local IP
   lxc stop ncp || true
   lxc start ncp
+  # shellcheck disable=SC2016
   lxc exec ncp -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
-  ip="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && get_ip')"
-  tests/activation_tests.py "${ip}"
-  tests/nextcloud_tests.py  "${ip}"
+  IP="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && get_ip')"
+  tests/activation_tests.py "$IP"
+  tests/nextcloud_tests.py  "$IP"
   tests/system_tests.py
   lxc stop ncp
 }
 
-function test_vm()
+function isVM
 {
-  local ip
+  local IP
   virsh --connect qemu:///system shutdown ncp-vm &>/dev/null || true
   virsh --connect qemu:///system start ncp-vm
-  while [[ "${ip}" == "" ]]; do
-    ip="$(virsh --connect qemu:///system domifaddr ncp-vm | grep ipv4 | awk '{ print $4 }' | sed 's|/24||' )"
+  while [[ "$IP" == "" ]]; do
+    IP="$(virsh --connect qemu:///system domifaddr ncp-vm | grep ipv4 | awk '{ print $4 }' | sed 's|/24||' )"
     sleep 0.5
   done
-  tests/activation_tests.py "${ip}"
-  tests/nextcloud_tests.py  "${ip}"
+  tests/activation_tests.py "$IP"
+  tests/nextcloud_tests.py  "$IP"
   #tests/system_tests.py
   virsh --connect qemu:///system shutdown ncp-vm
 }
@@ -484,8 +1259,8 @@ function test_vm()
 #
 # This script is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# the Free Software Foundation; either VERSION 2 of the License, or
+# (at your option) any later VERSION.
 #
 # This script is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of

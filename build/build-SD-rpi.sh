@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Batch creation of NextCloudPi image
+# Batch creation of NextcloudPi image
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -9,43 +9,110 @@
 #
 
 set -e"$DBG"
+[[ ! -f 'build/buildlib.sh' ]] && echo "File not found: build/buildlib.sh" 1>&2; exit 1;
+# shellcheck disable=SC1090
 source build/buildlib.sh
 
-echo -e "\e[1m\n[ Build NCP Raspberry Pi ]\e[0m"
+log -1 "Build NCP Raspberry Pi"
 
 URL="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-09-26/2022-09-22-raspios-bullseye-arm64-lite.img.xz"
-SIZE=4G                     # Raspbian image size
+SIZE='4G'                     # Raspbian image size
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
-IMG="${IMG:-NextCloudPi_RPi_$( date  "+%m-%d-%y" ).img}"
+IMG="${IMG:-NextcloudPi_RPi_$( date  "+%m-%d-%y" ).img}"
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
 
 ##############################################################################
 
-test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
-pgrep -f qemu-arm-static     &>/dev/null && { echo "qemu-arm-static already running. Abort"; exit 1; }
-pgrep -f qemu-aarch64-static &>/dev/null && { echo "qemu-aarch64-static already running. Abort"; exit 1; }
+if isFile "$TAR"; then
+  echo "File exists: $TAR"
+  exit 0
+fi
+if findFullProcess qemu-arm-static; then
+  log 2 "qemu-arm-static already running"
+  exit 1
+fi
+if findFullProcess qemu-aarch64-static; then
+  log 2 "qemu-aarch64-static already running"
+  exit 1
+fi
 
 ## preparations
 
 IMG=tmp/"$IMG"
 
-trap clean_chroot_raspbian EXIT
-prepare_dirs                   # tmp cache output
-download_raspbian "$URL" "$IMG"
-resize_image      "$IMG" "$SIZE"
-update_boot_uuid  "$IMG"       # PARTUUID has changed after resize
+trap 'cleanChroot' EXIT SIGHUP SIGILL SIGABRT
+# tmp cache output
+prepareDirectories
+downloadRaspberryOS "$URL" "$IMG"
+resizeIMG           "$IMG" "$SIZE"
+# PARTUUID has changed after resize
+updateBootUUID      "$IMG"
 
-# make sure we don't accidentally disable first run wizard
-rm -f ncp-web/{wizard.cfg,ncp-web.cfg}
+# Make sure we don't accidentally disable first run wizard
+if isRoot; then
+  rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
+else
+  sudo rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
+fi
 
 ## BUILD NCP
 
-prepare_chroot_raspbian "$IMG"
+prepareChrootRPi "$IMG"
 
-mkdir raspbian_root/tmp/ncp-build
-rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . raspbian_root/tmp/ncp-build
+if isRoot; then
+  mkdir raspbian_root/tmp/ncp-build
+else
+  sudo mkdir raspbian_root/tmp/ncp-build
+fi
 
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+if isRoot; then
+  rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . raspbian_root/tmp/ncp-build
+else
+  sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . raspbian_root/tmp/ncp-build
+fi
+
+if isRoot; then
+  PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+  chroot raspbian_root /bin/bash <<'EOFCHROOT'
+    set -ex
+
+    # allow oldstable
+    apt-get update --allow-releaseinfo-change
+
+    # As of 10-2018 this upgrades raspi-kernel and messes up wifi and BTRFS
+    #apt-get upgrade -y
+    #apt-get dist-upgrade -y
+
+    # As of 03-2018, you dont get a big kernel update by doing
+    # this, so better be safe. Might uncomment again in the future
+    #$APTINSTALL rpi-update
+    #echo -e "y\n" | PRUNE_MODULES=1 rpi-update
+
+    # this image comes without resolv.conf ??
+    echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
+
+    # install NCP
+    cd /tmp/ncp-build || exit 1
+    systemctl daemon-reload
+    CODE_DIR="$PWD" bash install.sh
+
+    # work around dhcpcd Raspbian bug
+    # https://lb.raspberrypi.org/forums/viewtopic.php?t=230779
+    # https://github.com/nextcloud/nextcloudpi/issues/938
+    apt-get update
+    apt-get install -y --no-install-recommends haveged
+    systemctl enable haveged.service
+
+    # harden SSH further for Raspbian
+    sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
+
+    # cleanup
+    source etc/library.sh && runApp_unsafe post-inst.sh
+    rm /etc/resolv.conf
+    rm -rf /tmp/ncp-build
+EOFCHROOT
+else
+  PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
   sudo chroot raspbian_root /bin/bash <<'EOFCHROOT'
     set -ex
 
@@ -67,7 +134,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     # install NCP
     cd /tmp/ncp-build || exit 1
     systemctl daemon-reload
-    CODE_DIR="$(pwd)" bash install.sh
+    CODE_DIR="$PWD" bash install.sh
 
     # work around dhcpcd Raspbian bug
     # https://lb.raspberrypi.org/forums/viewtopic.php?t=230779
@@ -80,29 +147,33 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
     # cleanup
-    source etc/library.sh && run_app_unsafe post-inst.sh
+    source etc/library.sh && runApp_unsafe post-inst.sh
     rm /etc/resolv.conf
     rm -rf /tmp/ncp-build
 EOFCHROOT
+fi
 
-basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
+if isRoot; then
+ basename "$IMG" | tee raspbian_root/usr/local/etc/ncp-baseimage
+else
+  sudo basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
+fi
 
-trap '' EXIT
-clean_chroot_raspbian
+cleanChroot
 
-## pack
-[[ "$*" =~ .*" --pack ".* ]] && pack_image "$IMG" "$TAR"
+## Pack IMG
+[[ "$*" =~ .*" --pack ".* ]] && packImage "$IMG" "$TAR"
 
 exit 0
 
 ## test
 
-#set_static_IP "$IMG" "$IP"
+#setStaticIP "$IMG" "$IP"
 #test_image    "$IMG" "$IP" # TODO fix tests
 
 # upload
-#create_torrent "$TAR"
-#upload_ftp "$( basename "$TAR" .tar.bz2 )"
+#createTorrent "$TAR"
+#uploadFTP "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

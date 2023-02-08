@@ -29,7 +29,7 @@ old_cfg="${NCPCFG}"
 
 trap "echo 'Something went wrong. Fix it and try again'" EXIT
 
-save_maintenance_mode
+saveMaintenanceMode
 
 # Fix grub-pc issue in VM
 if apt show grub-pc-bin &>/dev/null; then
@@ -120,16 +120,16 @@ service php${php_ver_new}-fpm restart
 a2enconf php${php_ver_new}-fpm
 service apache2 restart
 
-is_active_app unattended-upgrades && run_app unattended-upgrades || true
+isAppActive unattended-upgrades && runApp unattended-upgrades || true
 
 # mark as successful
 mv "${new_cfg}" "${old_cfg}"
-install_template "php/opcache.ini.sh" "/etc/php/${php_ver_new}/mods-available/opcache.ini" --defaults
-clear_opcache
+installTemplate "php/opcache.ini.sh" "/etc/php/${php_ver_new}/mods-available/opcache.ini" --defaults
+clearOpCache
 
 source /usr/local/etc/library.sh # refresh NCPCFG RELEASE PHPVER
-run_app nc-limits
-restore_maintenance_mode
+runApp nc-limits
+restoreMaintenanceMode
 
 rm -f /etc/update-motd.d/30ncp-dist-upgrade
 

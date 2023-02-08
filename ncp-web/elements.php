@@ -1,6 +1,6 @@
 <?php
 ///
-// NextCloudPi Web Panel Side bar
+// NextcloudPi Web Panel Side bar
 //
 // Copyleft 2018 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 // GPL licensed (see end of file) * Use at your own risk!
@@ -184,7 +184,7 @@ function print_sidebar( $l /* translations l10n object */, $ticks /* wether to c
 
       $active = "";
       if ( $ticks ) {
-        exec("bash -c \"source /usr/local/etc/library.sh && is_active_app $ncp_app\"", $output, $retval);
+        exec("bash -c \"source /usr/local/etc/library.sh && isAppActive $ncp_app\"", $output, $retval);
         if ($retval == 0)
           $active = " ✓";
       } else if (sizeof($cfg['params']) > 0 && $cfg['params'][0]['id'] == 'ACTIVE' && $cfg['params'][0]['value'] == 'yes')

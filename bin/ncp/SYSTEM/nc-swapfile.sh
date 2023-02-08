@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Data dir configuration script for NextCloudPi
+# Data dir configuration script for NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -48,7 +48,7 @@ configure()
 install()
 {
   if [[ "$(stat -fc%T /var)" != "btrfs" ]]; then
-    apt_install dphys-swapfile
+    AptInstall dphys-swapfile
   fi
 }
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Data dir configuration script for NextCloudPi
+# Data dir configuration script for NextcloudPi
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -17,17 +17,17 @@ is_active()
 
 install()
 {
-  apt_install btrfs-progs
+  AptInstall btrfs-progs
 }
 
 tmpl_opcache_dir() {
-  DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
+  DATADIR="$(getNextcloudConfigValue datadirectory || findAppParam nc-datadir DATADIR)"
   echo -n "${DATADIR}/.opcache"
   #[[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo "/tmp" || echo "${DATADIR}/.opcache"
 }
 
 tmpl_tmp_upload_dir() {
-  DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
+  DATADIR="$(getNextcloudConfigValue datadirectory || findAppParam nc-datadir DATADIR)"
   echo -n "${DATADIR}/tmp"
 }
 
@@ -58,7 +58,7 @@ configure()
 
   ## CHECKS
   local SRCDIR BASEDIR ENCDIR
-  SRCDIR=$( get_nc_config_value datadirectory ) || {
+  SRCDIR=$( getNextcloudConfigValue datadirectory ) || {
     echo -e "Error reading data directory. Is NextCloud running and configured?";
     return 1;
   }
@@ -101,19 +101,19 @@ configure()
 
   ## COPY
   cd /var/www/nextcloud
-  [[ "$BUILD_MODE" == 1 ]] || save_maintenance_mode
+  [[ "$BUILD_MODE" == 1 ]] || saveMaintenanceMode
 
   echo "moving data directory from ${SRCDIR} to ${BASEDIR}..."
 
   # use subvolumes, if BTRFS
-  [[ "$(stat -fc%T "${BASEDIR}")" == "btrfs" ]] && ! is_docker && {
+  [[ "$(stat -fc%T "${BASEDIR}")" == "btrfs" ]] && ! isDocker && {
     echo "BTRFS filesystem detected"
     rmdir "${BASEDIR}"
     btrfs subvolume create "${BASEDIR}"
   }
 
   # use encryption, if selected
-  if is_active_app nc-encrypt; then
+  if isAppActive nc-encrypt; then
     # if we have encryption AND BTRFS, then store ncdata_enc in the subvolume
     mv "$(dirname "${SRCDIR}")"/ncdata_enc "${ENCDIR?}"
     mkdir "${DATADIR}"                        && mount --bind "${SRCDIR}" "${DATADIR}"
@@ -129,7 +129,7 @@ configure()
   
   ncc config:system:set logfile --value="${DATADIR}/nextcloud.log" \
   || sed -i "s|'logfile' =>.*|'logfile' => '${DATADIR}/nextcloud.log',|" "${NCDIR?}"/config/config.php
-  set_ncpcfg datadir "${DATADIR}"
+  setNcpConfig datadir "${DATADIR}"
 
   # tmp upload dir
   create_tmp_upload_dir
@@ -141,13 +141,13 @@ configure()
 
   # opcache dir
   create_opcache_dir
-  install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+  installTemplate "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
 
   # update fail2ban logpath
   [[ -f /etc/fail2ban/jail.local ]] && \
   sed -i "s|logpath  =.*nextcloud.log|logpath  = ${DATADIR}/nextcloud.log|" /etc/fail2ban/jail.local
 
-  [[ "$BUILD_MODE" == 1 ]] || restore_maintenance_mode
+  [[ "$BUILD_MODE" == 1 ]] || restoreMaintenanceMode
 
   (
     . "${BINDIR?}/SYSTEM/metrics.sh"

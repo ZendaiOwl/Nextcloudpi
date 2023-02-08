@@ -42,7 +42,7 @@ EOF
   chmod 644 /etc/cron.d/freeDNS
   service cron restart
 
-  set-nc-domain "$DOMAIN"
+  setNextcloudDomain "$DOMAIN"
 
   echo "FreeDNS client is enabled"
 }

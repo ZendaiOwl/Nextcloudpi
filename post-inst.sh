@@ -24,7 +24,7 @@ configure()
 
   # cleanup all NCP extras
   find /usr/local/bin/ncp -name '*.sh' | \
-    while read script; do cleanup_script $script; done
+    while read script; do cleanupScript $script; done
 
   # clean packages and installation logs
   apt-get autoremove -y

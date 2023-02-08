@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Batch creation of NextCloudPi Armbian based images
+# Batch creation of NextcloudPi Armbian based images
 #
 # Copyleft 2018 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -18,7 +18,7 @@ NCPCFG=etc/ncp.cfg
 
 echo -e "\e[1m\n[ Build NCP ${BNAME} ]\e[0m"
 
-IMG="${IMG:-NextCloudPi_${BNAME}_$( date  "+%m-%d-%y" ).img}"
+IMG="${IMG:-NextcloudPi_${BNAME}_$( date  "+%m-%d-%y" ).img}"
 IMG=tmp/"$IMG"
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
 
@@ -27,7 +27,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 source etc/library.sh # sets RELEASE
 
-prepare_dirs                   # tmp cache output
+prepareDirectories                   # tmp cache output
 
 # get latest armbian
 [[ -d armbian ]] || git clone https://github.com/armbian/build armbian
@@ -76,7 +76,7 @@ rm "$CONF"
 
 # pack image
 
-[[ " $* " =~ " --pack " ]] && { mv armbian/output/images/Armbian*.img "$IMG" && pack_image "$IMG" "$TAR"; }
+[[ " $* " =~ " --pack " ]] && { mv armbian/output/images/Armbian*.img "$IMG" && packImage "$IMG" "$TAR"; }
 
 exit 0
 
@@ -84,5 +84,5 @@ exit 0
 # TODO
 
 # upload
-#create_torrent "$TAR"
-#upload_ftp "$( basename "$TAR" .tar.bz2 )"
+#createTorrent "$TAR"
+#uploadFTP "$( basename "$TAR" .tar.bz2 )"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Data at rest encryption for NextCloudPi
+# Data at rest encryption for NextcloudPi
 #
 # Copyleft 2021 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -15,7 +15,7 @@ is_active()
 
 install()
 {
-  apt_install gocryptfs
+  AptInstall gocryptfs
 }
 
 configure()
@@ -23,7 +23,7 @@ configure()
 (
   set -e -o pipefail
   local datadir parentdir encdir tmpdir
-  datadir="$(get_ncpcfg datadir)"
+  datadir="$(getNcpConfig datadir)"
   [[ "${datadir?}" == "null" ]] && datadir=/var/www/nextcloud/data
   parentdir="$(dirname "${datadir}")"
   encdir="${parentdir?}/ncdata_enc"
@@ -34,8 +34,8 @@ configure()
       echo "Data not currently encrypted"
       return 0
     fi
-    save_maintenance_mode
-    trap restore_maintenance_mode EXIT
+    saveMaintenanceMode
+    trap restoreMaintenanceMode EXIT
     echo "Decrypting data..."
     mkdir "${tmpdir?}"
     chown www-data: "${tmpdir}"
@@ -69,8 +69,8 @@ configure()
   fi
   mkdir -p "${encdir?}"
   echo "${PASSWORD?}" | gocryptfs -init -q "${encdir}"
-  save_maintenance_mode
-  trap restore_maintenance_mode EXIT
+  saveMaintenanceMode
+  trap restoreMaintenanceMode EXIT
 
   mv "${datadir?}" "${tmpdir?}"
 
@@ -82,7 +82,7 @@ configure()
   chown -R www-data: "${datadir}"
   rmdir "${tmpdir}"
 
-  set_ncpcfg datadir "${datadir}"
+  setNcpConfig datadir "${datadir}"
 
   echo "Data is now encrypted"
 )

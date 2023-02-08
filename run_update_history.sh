@@ -33,7 +33,7 @@ fi
 # Compare current version with latest checkpoint
 # If the current version is more recent than the latest checkpoint there is no need for backward updates
 
-if is_more_recent_than "$latest_checkpoint_version" "$current_version" ; then
+if isMoreRecent "$latest_checkpoint_version" "$current_version" ; then
 
   # Execute a series of updates of older versions
 
@@ -55,7 +55,7 @@ if is_more_recent_than "$latest_checkpoint_version" "$current_version" ; then
 
     mid_version=$( basename ${updates_list[$mid]} .sh )
 
-    if is_more_recent_than "$mid_version" "$current_version" ; then 
+    if isMoreRecent "$mid_version" "$current_version" ; then 
       # Mid's version update is applicable to the current version
       # Check if the previous checkpoint (mid-1) is applicable
 
@@ -65,7 +65,7 @@ if is_more_recent_than "$latest_checkpoint_version" "$current_version" ; then
         #Compare previous's version with current version
 	# If the previous checkpoint is not applicable then mid is the starting checkpoint
 	# Otherwise keep on binary searching
-	if is_more_recent_than "$current_version" "$previous_version" ; then
+	if isMoreRecent "$current_version" "$previous_version" ; then
           starting_checkpoint=$mid
 	  break
 	fi
@@ -87,7 +87,7 @@ if is_more_recent_than "$latest_checkpoint_version" "$current_version" ; then
       #Compare next's version with current version
       # If next checkpoint is not applicable then next is the starting checkpoint
       # Otherwise keep on binary searching
-      if is_more_recent_than "$current_version" "$next_version" ; then
+      if isMoreRecent "$current_version" "$next_version" ; then
         # Continue searching for starting checkpoint
 	lower_bound=$((mid + 1))
       else
@@ -108,7 +108,7 @@ if is_more_recent_than "$latest_checkpoint_version" "$current_version" ; then
       exit 1
     }
     echo "v$tag_update" > /usr/local/etc/ncp-version
-    [[ $i != $end_of_list ]] && echo -e "NextCloudPi updated to version v$tag_update" || true
+    [[ $i != $end_of_list ]] && echo -e "NextcloudPi updated to version v$tag_update" || true
   done
 fi
 

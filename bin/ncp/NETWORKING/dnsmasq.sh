@@ -16,7 +16,7 @@ install()
   apt-get install --no-install-recommends -y dnsmasq
   rc=0
   service dnsmasq status > /dev/null 2>&1 || rc=$?
-  ! is_docker && [[ $rc -eq 3 ]] && ! [[ "$INIT_SYSTEM" =~ ^("chroot"|"unknown")$ ]] && {
+  ! isDocker && [[ $rc -eq 3 ]] && ! [[ "$INIT_SYSTEM" =~ ^("chroot"|"unknown")$ ]] && {
     echo "Applying workaround for dnsmasq bug (compare issue #1446)"
     service systemd-resolved stop || true
     service dnsmasq start
@@ -39,7 +39,7 @@ source /usr/local/etc/library.sh
   exit 0
 }
 
-persistent_cfg /etc/dnsmasq.conf
+persistConfiguration /etc/dnsmasq.conf
 
 echo "Starting dnsmasq..."
 service dnsmasq start
@@ -63,7 +63,7 @@ configure()
   local IFACE IP
   IFACE=$( ip r | grep "default via"   | awk '{ print $5 }' | head -1 )
   IP=$( ncc config:system:get trusted_domains 6 | grep -oP '\d{1,3}(.\d{1,3}){3}' )
-  [[ "$IP" == "" ]] && IP="$(get_ip)"
+  [[ "$IP" == "" ]] && IP="$(getIP)"
 
   [[ "$IP" == "" ]] && { echo "could not detect IP"; return 1; }
 
@@ -87,7 +87,7 @@ EOF
   update-rc.d dnsmasq enable
   service dnsmasq restart
   ncc config:system:set trusted_domains 2 --value="$DOMAIN"
-  set-nc-domain "$DOMAIN" --no-trusted-domain
+  setNextcloudDomain "$DOMAIN" --no-trusted-domain
   echo "dnsmasq enabled"
 }
 

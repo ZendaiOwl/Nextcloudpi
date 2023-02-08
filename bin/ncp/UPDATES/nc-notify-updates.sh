@@ -33,7 +33,7 @@ NOTIFIED=/var/run/.ncp-version-notified
 /usr/local/bin/ncp-check-nc-version
 
 test -e $LATEST || exit 0;
-/usr/local/bin/ncp-test-updates || { echo "NextCloudPi up to date"; exit 0; }
+/usr/local/bin/ncp-test-updates || { echo "NextcloudPi up to date"; exit 0; }
 
 test -e $NOTIFIED && [[ "$( cat $LATEST )" == "$( cat $NOTIFIED )" ]] && {
   echo "Found update from $( cat $VERFILE ) to $( cat $LATEST ). Already notified"
@@ -42,9 +42,9 @@ test -e $NOTIFIED && [[ "$( cat $LATEST )" == "$( cat $NOTIFIED )" ]] && {
 
 echo "Found update from $( cat $VERFILE ) to $( cat $LATEST ). Sending notification..."
 
-notify_admin \
-  "NextCloudPi update" \
-  "Update from $( cat $VERFILE ) to $( cat $LATEST ) is available. Update from https://$(get_ip):4443"
+notifyAdmin \
+  "NextcloudPi update" \
+  "Update from $( cat $VERFILE ) to $( cat $LATEST ) is available. Update from https://$(getIP):4443"
 
 cat $LATEST > $NOTIFIED
 EOF
@@ -74,8 +74,8 @@ sed -i 's|INFO Packages that will be upgraded:|INFO Packages that will be upgrad
 echo -e "Packages automatically upgraded: $PKGS\n"
 
 # notify
-notify_admin \
-  "NextCloudPi Unattended Upgrades" \
+notifyAdmin \
+  "NextcloudPi Unattended Upgrades" \
   "Packages automatically upgraded $PKGS"
 EOF
   chmod +x /usr/local/bin/ncp-notify-unattended-upgrade

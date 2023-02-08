@@ -46,8 +46,8 @@ EOF
   cat >> /usr/local/etc/ncp-hdd-notif.sh <<EOF
 source /usr/local/etc/library.sh
 wall "\$SMARTD_MESSAGE"
-notify_admin \
-  "NextCloudPi HDD health \$SMARTD_FAILTYPE" \
+notifyAdmin \
+  "NextcloudPi HDD health \$SMARTD_FAILTYPE" \
   "\$SMARTD_MESSAGE"
 EOF
 chmod +x /usr/local/etc/ncp-hdd-notif.sh
