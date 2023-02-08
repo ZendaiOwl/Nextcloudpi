@@ -313,6 +313,58 @@ function hasPKG
   fi
 }
 
+# Installs package(s) using the package manager and pre-configured options
+# Return codes
+# 0: Install completed
+# 1: Coudn't update apt list
+# 2: Error during installation
+# 3: Missing package argument
+function installPKG {
+  if [[ "$#" -eq 0 ]]; then
+    log 2 "Requires: [PKG(s) to install]"
+    return 3
+  else
+    local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+             SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+             ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+             ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+    local PKG=()
+    IFS=' ' read -ra PKG <<<"$@"
+    if [[ ! "$EUID" -eq 0 ]]; then
+      if "${SUDOUPDATE[@]}" &>/dev/null; then
+        log 0 "Apt list updated"
+      else
+        log 2 "Couldn't update apt lists"
+        return 1
+      fi
+      log -1 "Installing ${PKG[*]}"
+      if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
+        log 0 "Installation completed"
+        return 0
+      else
+        log 2 "Something went wrong during installation"
+        return 2
+      fi
+    else
+      if "${ROOTUPDATE[@]}" &>/dev/null; then
+        log 0 "Apt list updated"
+      else
+        log 2 "Couldn't update apt lists"
+        return 1
+      fi
+      log -1 "Installing ${PKG[*]}"
+      if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
+        log 0 "Installation completed"
+        return 0
+      else
+        log 2 "Something went wrong during installation"
+        return 1
+      fi
+    fi
+  fi
+}
+
 # Checks for a running process
 # Return codes
 # 0: Running process exists

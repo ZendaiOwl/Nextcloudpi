@@ -8,8 +8,17 @@
 # Usage: ./batch.sh <DHCP QEMU image IP>
 #
 
-set -e"$DBG"
-[[ ! -f 'build/buildlib.sh' ]] && echo "File not found: build/buildlib.sh" 1>&2; exit 1;
+if [[ -z "$DBG" ]]; then
+  set -e
+elif [[ -n "$DBG" ]]; then
+  set -e"$DBG"
+fi
+
+if [[ ! -f 'build/buildlib.sh' ]]; then
+  echo "File not found: build/buildlib.sh"
+  exit 1
+fi
+
 # shellcheck disable=SC1090
 source build/buildlib.sh
 
