@@ -635,6 +635,10 @@ function mountRoot
     return 3
   fi
 
+  if ! hasCMD fdisk; then
+    installPKG fdisk
+  fi
+  
   SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
   OFFSET=$(( "$SECTOR" * 512 ))
   mkdir --parents "$MP"
@@ -824,6 +828,7 @@ function resizeIMG
     parted "$IMG" -- resizepart 2 -1s
   else
     installPKG parted
+    parted "$IMG" -- resizepart 2 -1s
   fi
   if isRoot; then
     DEV="$(losetup -f)"
