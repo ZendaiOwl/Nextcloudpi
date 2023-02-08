@@ -678,7 +678,12 @@ function mountBoot
     return 3
   fi
 
-  SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
+  if isRoot; then
+    SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
+  else
+    SECTOR="$( sudo fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
+  fi
+  
   OFFSET=$(( "$SECTOR" * 512 ))
   mkdir --parents "$MP"
   

@@ -60,6 +60,25 @@ function isRoot {
   [[ "$EUID" -eq 0 ]]
 }
 
+# Checks if a given path to a file exists
+# Return codes
+# 0: Path exist
+# 1: No such path
+# 2: Invalid number of arguments
+function isPath {
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -e "$1" ]]
+}
+
+# Checks if a given path is a regular file
+# 0: Is a file
+# 1: Not a file
+# 2: Invalid number of arguments
+function isFile {
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -f "$1" ]]
+}
+
 # Checks if a given String is zero
 # Return codes
 # 0: Is zero
