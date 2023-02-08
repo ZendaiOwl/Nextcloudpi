@@ -756,7 +756,7 @@ function setNextcloudDomain {
   if ! ping -c1 -w1 -q "$DOMAIN" &>/dev/null; then
     unset DOMAIN
   fi
-  if [[ "$DOMAIN" == "" ]] || is_an_ip "$DOMAIN"; then
+  if [[ "$DOMAIN" == "" ]] || isIP "$DOMAIN"; then
     log 1 "No domain found. Defaulting to hostname: $(hostname)"
     DOMAIN="$(hostname)"
   fi

@@ -123,7 +123,10 @@ function replaceTextInAllFiles {
 
 if isFile ReplaceNames.txt; then
   IN=()
-  for LINE in $(cat ReplaceNames.txt); do
+  CURRENT='./ReplaceNames.txt'
+  BACKUP='../.backup'
+  cat "$CURRENT" > "$BACKUP"
+  for LINE in $(cat "$CURRENT"); do
     IN+=("$(printf '%s\n' "$LINE")")
   done
   LENGTH="${#IN[@]}"
@@ -131,7 +134,8 @@ if isFile ReplaceNames.txt; then
     echo "Replacing: ${IN[$i]} | With: ${IN[$(($i + 1))]}"
     replaceTextInAllFiles "${IN[$i]}" "${IN[$(($i + 1))]}"
   done
-  unset IN LENGTH
+  mv "$BACKUP" "$CURRENT"
+  unset IN LENGTH CURRENT BACKUP
 else
   exit 1
 fi

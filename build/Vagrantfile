@@ -42,7 +42,7 @@ Vagrant.configure("2") do |config|
 
     # cleanup
     source etc/library.sh
-    runApp_unsafe post-inst.sh
+    runAppUnsafe post-inst.sh
     cd /
     rm -r /tmp/nextcloudpi
     echo "root:ownyourbits" | chpasswd

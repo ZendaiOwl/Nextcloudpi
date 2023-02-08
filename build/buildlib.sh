@@ -402,8 +402,8 @@ function launchInstallQEMU
   # TODO
   launchQEMU "$IMGOUT" &
   sleep 10
-  wait_SSH "$IP"
-  launch_installation_qemu "$IP" || return 1 # uses $INSTALLATION_CODE
+  waitSSH "$IP"
+  launchInstallation_qemu "$IP" || return 1 # uses $INSTALLATION_CODE
   wait
   echo "$IMGOUT generated successfully"
 }
@@ -1143,7 +1143,7 @@ function uploadImages
 
   mkdir --parents archive
   for IMG in output/*.tar.bz2; do
-    upload_ftp "$(basename "$IMG" .tar.bz2)" && mv "$IMG" archive
+    uploadFTP "$(basename "$IMG" .tar.bz2)" && mv "$IMG" archive
   done
 }
 
@@ -1233,7 +1233,7 @@ function isLXC
   lxc start ncp
   # shellcheck disable=SC2016
   lxc exec ncp -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
-  IP="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && get_ip')"
+  IP="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && getIP')"
   tests/activation_tests.py "$IP"
   tests/nextcloud_tests.py  "$IP"
   tests/system_tests.py

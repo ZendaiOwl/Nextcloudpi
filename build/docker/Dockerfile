@@ -109,7 +109,7 @@ apt-get update; \
 apt-get install --no-install-recommends -y sudo jq; \
 source /usr/local/etc/library.sh; \
 installApp /nc-nextcloud.sh; \
-runApp_unsafe /nc-nextcloud.sh; \
+runAppUnsafe /nc-nextcloud.sh; \
 mv /var/www/nextcloud /data-ro/nextcloud; \
 ln -s /data-ro/nextcloud /var/www/nextcloud; \
 
@@ -173,12 +173,12 @@ cd /tmp/ncp-build/; \
 installApp ncp.sh; \
 
 mv /usr/local/etc/ncp-config.d/nc-init-copy.cfg /usr/local/etc/ncp-config.d/nc-init.cfg; \
-runApp_unsafe bin/ncp/CONFIG/nc-init.sh; \
+runAppUnsafe bin/ncp/CONFIG/nc-init.sh; \
 echo 'Moving data directory to a more sensible location'; \
 mv /usr/local/etc/ncp-config.d/nc-datadir-copy.cfg /usr/local/etc/ncp-config.d/nc-datadir.cfg; \
 mkdir -p /data-ro/ncdata; \
 setAppParam nc-datadir.sh DATADIR '/data-ro/ncdata'; \
-BUILD_MODE=1 DISABLE_FS_CHECK=1  runApp_unsafe bin/ncp/CONFIG/nc-datadir.sh; \
+BUILD_MODE=1 DISABLE_FS_CHECK=1  runAppUnsafe bin/ncp/CONFIG/nc-datadir.sh; \
 setAppParam nc-datadir.sh DATADIR '/data/ncdata'; \
 # Remove nc-datadir.cfg as it's disabled in docker
 rm /usr/local/etc/ncp-config.d/nc-datadir.cfg; \
@@ -195,7 +195,7 @@ cat /etc/mysql/mariadb.conf.d/90-ncp.cnf; \
 ls -l /usr/local/bin/; \
 
 # cleanup all NCP extras
-runApp_unsafe post-inst.sh; \
+runAppUnsafe post-inst.sh; \
 
 echo "DEBUGGING:"; \
 cat /etc/mysql/mariadb.conf.d/90-ncp.cnf; \

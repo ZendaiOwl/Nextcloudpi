@@ -107,7 +107,7 @@ if isRoot; then
     sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
     # cleanup
-    source etc/library.sh && runApp_unsafe post-inst.sh
+    source etc/library.sh && runAppUnsafe post-inst.sh
     rm /etc/resolv.conf
     rm -rf /tmp/ncp-build
 EOFCHROOT
@@ -147,7 +147,7 @@ else
     sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
     # cleanup
-    source etc/library.sh && runApp_unsafe post-inst.sh
+    source etc/library.sh && runAppUnsafe post-inst.sh
     rm /etc/resolv.conf
     rm -rf /tmp/ncp-build
 EOFCHROOT

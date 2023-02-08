@@ -32,7 +32,7 @@ EOF
 
 
 sudo mksquashfs raspbian_root "$IMG"  -comp lzo -e lib/modules
-umountRoot
+unmountRPi
 
 ## pack
 packImage "$IMG" "$TAR"
