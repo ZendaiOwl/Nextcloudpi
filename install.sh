@@ -189,11 +189,12 @@ function installPKG {
   fi
 }
 
-#BRANCH="${BRANCH:-master}"
 #OWNER="${OWNER:-nextcloud}"
-BRANCH="${BRANCH:-Refactoring}"
+#REPO="${REPO:-nextcloudpi}"
+#BRANCH="${BRANCH:-master}"
 OWNER="${OWNER:-ZendaiOwl}"
 REPO="${REPO:-nextcloudpi}"
+BRANCH="${BRANCH:-Refactoring}"
 #DBG=x
 
 [[ -n "$DBG" ]] && set -e"$DBG"
@@ -224,8 +225,8 @@ installPKG git ca-certificates sudo lsb-release wget
 # get install code
 if isMatch "$CODE_DIR" ""; then
   log -1 "Fetching build code"
-  CODE_DIR="$TMPDIR"/nextcloudpi
-  git clone -b "$BRANCH" https://github.com/nextcloud/nextcloudpi.git "$CODE_DIR"
+  CODE_DIR="$TMPDIR"/"$REPO"
+  git clone -b "$BRANCH" https://github.com/"$OWNER"/"$REPO".git "$CODE_DIR"
 fi
 cd "$CODE_DIR"
 
