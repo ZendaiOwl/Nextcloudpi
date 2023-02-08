@@ -1,3 +1,4 @@
+NextCloudPi NextcloudPi
 apt_install AptInstall
 check_distro checkDistro
 cleanup_script cleanupScript

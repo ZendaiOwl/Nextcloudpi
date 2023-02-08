@@ -134,7 +134,6 @@ if isFile ReplaceNames.txt; then
     echo "Replacing: ${IN[$i]} | With: ${IN[$(($i + 1))]}"
     replaceTextInAllFiles "${IN[$i]}" "${IN[$(($i + 1))]}"
   done
-  replaceTextInAllFiles 'NextcloudPi' 'NextcloudPi'
   mv "$BACKUP" "$CURRENT"
   unset IN LENGTH CURRENT BACKUP
 else
