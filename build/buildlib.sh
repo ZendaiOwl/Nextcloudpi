@@ -10,8 +10,9 @@
 
 #DBG=x
 
-#VERSION="$(git describe --tags --always)"
-#VERSION="${VERSION%-*-*}"
+VERSION="$(git describe --tags --always)"
+VERSION="${VERSION%-*-*}"
+export VERSION
 
 # A log that uses log levels for logging different outputs
 # Log levels
