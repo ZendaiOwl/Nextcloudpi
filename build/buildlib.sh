@@ -638,8 +638,12 @@ function mountRoot
   if ! hasCMD fdisk; then
     installPKG fdisk
   fi
-  
-  SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
+
+  if isRoot; then
+    SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
+  else
+    SECTOR="$( sudo fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
+  fi
   OFFSET=$(( "$SECTOR" * 512 ))
   mkdir --parents "$MP"
   
