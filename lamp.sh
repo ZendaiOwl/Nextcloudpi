@@ -19,8 +19,204 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-APTINSTALL="apt-get install -y --no-install-recommends"
-export DEBIAN_FRONTEND=noninteractive
+# A log that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log {
+  if [[ "$#" -gt 0 ]]
+  then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+    then
+      case "$LOGLEVEL" in
+        -2)
+           local -r CYAN='\e[1;36m'
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           ;;
+        -1)
+           local -r BLUE='\e[1;34m'
+           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+           ;;
+         0)
+           local -r GREEN='\e[1;32m'
+           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+           ;;
+         1)
+           local -r YELLOW='\e[1;33m'
+           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+           ;;
+         2)
+           local -r RED='\e[1;31m'
+           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
+
+# Check if user ID executing script is 0 or not
+# Return codes
+# 0: Is root
+# 1: Not root
+# 2: Invalid number of arguments
+function isRoot {
+  [[ "$#" -ne 0 ]] && return 2
+  [[ "$EUID" -eq 0 ]]
+}
+
+# Checks if a given path to a file exists
+# Return codes
+# 0: Path exist
+# 1: No such path
+# 2: Invalid number of arguments
+function isPath {
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -e "$1" ]]
+}
+
+# Checks if a given path is a regular file
+# 0: Is a file
+# 1: Not a file
+# 2: Invalid number of arguments
+function isFile {
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -f "$1" ]]
+}
+
+# Checks if a given String is zero
+# Return codes
+# 0: Is zero
+# 1: Not zero
+# 2: Invalid number of arguments
+function isZero {
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -z "$1" ]]
+}
+# Checks if 2 given digits are equal
+# Return codes
+# 0: Is equal
+# 1: Not equal
+# 2: Invalid number of arguments
+function isEqual {
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -eq "$2" ]]
+}
+
+# Checks if 2 given digits are not equal
+# Return codes
+# 0: Not equal
+# 1: Is equal
+# 2: Invalid number of arguments
+function notEqual {
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -ne "$2" ]]
+}
+
+# Checks if 2 given String variables match
+# Return codes
+# 0: Is a match
+# 1: Not a match
+# 2: Invalid number of arguments
+function isMatch {
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" == "$2" ]]
+}
+
+# Checks if 2 given String variables do not match
+# Return codes
+# 0: Not a match
+# 1: Is a match
+# 2: Invalid number of arguments
+function noMatch {
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" != "$2" ]]
+}
+
+# Checks if a given String is not zero
+# Return codes
+# 0: Not zero
+# 1: Is zero
+# 2: Invalid number of arguments
+function notZero {
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -n "$1" ]]
+}
+
+# Checks if a command exists on the system
+# Return status codes
+# 0: Command exists on the system
+# 1: Command is unavailable on the system
+# 2: Missing command argument to check
+function hasCMD {
+  if [[ "$#" -eq 1 ]]; then
+    local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    return 2
+  fi
+}
+
+# Installs package(s) using the package manager and pre-configured options
+# Return codes
+# 0: Install completed
+# 1: Coudn't update apt list
+# 2: Error during installation
+# 3: Missing package argument
+function installPKG {
+  if [[ "$#" -eq 0 ]]; then
+    log 2 "Requires: [PKG(s) to install]"
+    return 3
+  else
+    local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+             SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+             ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+             ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+    local PKG=()
+    IFS=' ' read -ra PKG <<<"$@"
+    if [[ ! "$EUID" -eq 0 ]]; then
+      if "${SUDOUPDATE[@]}" &>/dev/null; then
+        log 0 "Apt list updated"
+      else
+        log 2 "Couldn't update apt lists"
+        return 1
+      fi
+      log -1 "Installing ${PKG[*]}"
+      if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
+        log 0 "Installation completed"
+        return 0
+      else
+        log 2 "Something went wrong during installation"
+        return 2
+      fi
+    else
+      if "${ROOTUPDATE[@]}" &>/dev/null; then
+        log 0 "Apt list updated"
+      else
+        log 2 "Couldn't update apt lists"
+        return 1
+      fi
+      log -1 "Installing ${PKG[*]}"
+      if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
+        log 0 "Installation completed"
+        return 0
+      else
+        log 2 "Something went wrong during installation"
+        return 1
+      fi
+    fi
+  fi
+}
 
 install()
 {
@@ -28,38 +224,38 @@ install()
     # Setup apt repository for php 8
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
     echo "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
-    apt-get update
-    $APTINSTALL apt-utils cron curl
+    installPKG apt-utils cron curl ssl-cert apache2
     ls -l /var/lock || true
-    $APTINSTALL apache2
     # Fix missing lock directory
-    mkdir -p /run/lock
+    mkdir --parents /run/lock
     apache2ctl -V || true
 
     # Create systemd users to keep uids persistent between containers
-    id -u systemd-resolve || {
+    if ! id -u systemd-resolve &>/dev/null; then
       addgroup --quiet --system systemd-journal
       adduser --quiet -u 180 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Network Management" systemd-network
       adduser --quiet -u 181 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Resolver" systemd-resolve
-    }
+    fi
     installWithShadowWorkaround --no-install-recommends systemd
-    $APTINSTALL -t $RELEASE php${PHPVER} php${PHPVER}-curl php${PHPVER}-gd php${PHPVER}-fpm php${PHPVER}-cli php${PHPVER}-opcache \
-                            php${PHPVER}-mbstring php${PHPVER}-xml php${PHPVER}-zip php${PHPVER}-fileinfo php${PHPVER}-ldap \
-                            php${PHPVER}-intl php${PHPVER}-bz2
+    installPKG -t "$RELEASE" php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2, mysql}
 
-    mkdir -p /run/php
+    #installPKG -t "$RELEASE" php"$PHPVER" php"$PHPVER"-curl php"$PHPVER"-gd php"$PHPVER"-fpm php"$PHPVER"-cli php"$PHPVER"-opcache \
+                             php"$PHPVER"-mbstring php"$PHPVER"-xml php"$PHPVER"-zip php"$PHPVER"-fileinfo php"$PHPVER"-ldap \
+                             php"$PHPVER"-intl php"$PHPVER"-bz2
+
+    mkdir --parents /run/php
 
     # mariaDB password
     local DBPASSWD="default"
     echo -e "[client]\npassword=$DBPASSWD" > /root/.my.cnf
     chmod 600 /root/.my.cnf
 
-    debconf-set-selections <<< "mariadb-server-5.5 mysql-server/root_password password $DBPASSWD"
-    debconf-set-selections <<< "mariadb-server-5.5 mysql-server/root_password_again password $DBPASSWD"
-    $APTINSTALL mariadb-server php${PHPVER}-mysql
-    mkdir -p /run/mysqld
+    debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
+    debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
+    installPKG mariadb-server
+    mkdir --parents /run/mysqld
     chown mysql /run/mysqld
 
     # CONFIGURE APACHE
@@ -75,7 +271,7 @@ install()
     a2enmod http2
     a2enconf http2
     a2enmod proxy_fcgi setenvif
-    a2enconf php${PHPVER}-fpm
+    a2enconf php"$PHPVER"-fpm
     a2enmod rewrite
     a2enmod headers
     a2enmod dir
@@ -88,22 +284,21 @@ install()
     # CONFIGURE LAMP FOR NEXTCLOUD
     ##########################################
 
-    $APTINSTALL ssl-cert # self signed snakeoil certs
-
     installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
 
     installTemplate "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
 
   # launch mariadb if not already running
   if ! [[ -f /run/mysqld/mysqld.pid ]]; then
-    echo "Starting mariaDB"
+    echo "Starting MariaDB"
     mysqld &
+    local MARIA_PID="$?"
   fi
 
   # wait for mariadb
   while :; do
     [[ -S /run/mysqld/mysqld.sock ]] && break
-    sleep 0.5
+    sleep 1
   done
 
   cd /tmp
