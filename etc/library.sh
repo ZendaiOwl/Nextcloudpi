@@ -728,7 +728,7 @@ function getIP {
 }
 
 function isDocker {
-  ifFile /.dockerenv || isFile /.docker-image || isEqual "$DOCKERBUILD" 1
+  isFile /.dockerenv || isFile /.docker-image || isEqual "$DOCKERBUILD" 1
 }
 
 function isLXC {

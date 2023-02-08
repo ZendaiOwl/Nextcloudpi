@@ -8,31 +8,186 @@
 # More at https://nextcloudpi.com
 #
 
-WEBADMIN=ncp
-WEBPASSWD=ownyourbits
+# Checks if a given path is a regular file
+# 0: Is a file
+# 1: Not a file
+# 2: Invalid number of arguments
+function isFile {
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -f "$1" ]]
+}
+
+# Checks whether a given user exists
+# Return codes
+# 0: Is user
+# 1: Not user 
+# 2: Invalid number of arguments
+function isUser {
+  [[ "$#" -ne 1 ]] && return 2
+  if id -u "$1" &>/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Checks if 2 given digits are equal
+# Return codes
+# 0: Is equal
+# 1: Not equal
+# 2: Invalid number of arguments
+function isEqual {
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -eq "$2" ]]
+}
+
+function isDocker {
+  isFile /.dockerenv || isFile /.docker-image || isEqual "$DOCKERBUILD" 1
+}
+
+function isLXC {
+  grep -q container=lxc /proc/1/environ &>/dev/null
+}
+
+# A log that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log {
+  if [[ "$#" -gt 0 ]]
+  then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+    then
+      case "$LOGLEVEL" in
+        -2)
+           local -r CYAN='\e[1;36m'
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           ;;
+        -1)
+           local -r BLUE='\e[1;34m'
+           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+           ;;
+         0)
+           local -r GREEN='\e[1;32m'
+           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+           ;;
+         1)
+           local -r YELLOW='\e[1;33m'
+           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+           ;;
+         2)
+           local -r RED='\e[1;31m'
+           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
+
+# Checks if a command exists on the system
+# Return status codes
+# 0: Command exists on the system
+# 1: Command is unavailable on the system
+# 2: Missing command argument to check
+function hasCMD {
+  if [[ "$#" -eq 1 ]]; then
+    local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    return 2
+  fi
+}
+
+# Installs package(s) using the package manager and pre-configured options
+# Return codes
+# 0: Install completed
+# 1: Coudn't update apt list
+# 2: Error during installation
+# 3: Missing package argument
+function installPKG {
+  if [[ "$#" -eq 0 ]]; then
+    log 2 "Requires: [PKG(s) to install]"
+    return 3
+  else
+    local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+             SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+             ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+             ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+    local PKG=()
+    IFS=' ' read -ra PKG <<<"$@"
+    if [[ ! "$EUID" -eq 0 ]]; then
+      if "${SUDOUPDATE[@]}" &>/dev/null; then
+        log 0 "Apt list updated"
+      else
+        log 2 "Couldn't update apt lists"
+        return 1
+      fi
+      log -1 "Installing ${PKG[*]}"
+      if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
+        log 0 "Installation completed"
+        return 0
+      else
+        log 2 "Something went wrong during installation"
+        return 2
+      fi
+    else
+      if "${ROOTUPDATE[@]}" &>/dev/null; then
+        log 0 "Apt list updated"
+      else
+        log 2 "Couldn't update apt lists"
+        return 1
+      fi
+      log -1 "Installing ${PKG[*]}"
+      if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
+        log 0 "Installation completed"
+        return 0
+      else
+        log 2 "Something went wrong during installation"
+        return 1
+      fi
+    fi
+  fi
+}
+
+if isFile 'etc/library.sh'; then
+  # shellcheck disable=SC1090
+  source etc/library.sh
+elif isFile '/usr/local/etc/library.sh'; then
+  # shellcheck disable=SC1090
+  source /usr/local/etc/library.sh
+fi
+
+WEBADMIN='ncp'
+WEBPASSWD='ownyourbits'
 BRANCH="${BRANCH:-master}"
+BINDIR='/usr/local/bin/ncp'
+CONFDIR='/usr/local/etc/ncp-config.d'
 
-BINDIR=/usr/local/bin/ncp
-CONFDIR=/usr/local/etc/ncp-config.d/
-APTINSTALL="apt-get install -y --no-install-recommends"
-export DEBIAN_FRONTEND=noninteractive
-
-
-install()
+function install
 {
   # NCP-CONFIG
-  apt-get update
-  $APTINSTALL git dialog whiptail jq file lsb-release
-  mkdir -p "$CONFDIR" "$BINDIR"
+  installPKG git dialog whiptail jq file lsb-release
+  mkdir --parents "$CONFDIR" "$BINDIR"
 
   # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
   # The raspi-config layout and options have also changed
   # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-  test -f /usr/bin/raspi-config && {
+  if isFile '/usr/bin/raspi-config' ]]; then
     # shellcheck disable=SC1003
     sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' /usr/bin/raspi-config
     sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             /usr/bin/raspi-config
-  }
+  fi
 
   # add the ncc shortcut
   cat > /usr/local/bin/ncc <<'EOF'
@@ -124,19 +279,21 @@ Listen 4443
 </Directory>
 EOF
 
-  $APTINSTALL libapache2-mod-authnz-external pwauth
+  installPKG libapache2-mod-authnz-external pwauth
   a2enmod authnz_external authn_core auth_basic
   a2dissite nextcloud
   a2ensite ncp-activation
 
   ## NCP USER FOR AUTHENTICATION
-  id -u "$WEBADMIN" &>/dev/null || useradd --home-dir /nonexistent "$WEBADMIN"
+  if ! isUser "$WEBADMIN"; then
+    useradd --home-dir /nonexistent "$WEBADMIN"
+  fi
   echo -e "$WEBPASSWD\n$WEBPASSWD" | passwd "$WEBADMIN"
   chsh -s /usr/sbin/nologin "$WEBADMIN"
   chsh -s /usr/sbin/nologin root
 
   ## NCP LAUNCHER
-  mkdir -p /home/www
+  mkdir --parents /home/www
   chown www-data:www-data /home/www
   chmod 700 /home/www
 
@@ -177,7 +334,7 @@ EOF
   echo "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" >> /etc/sudoers
 
   # NCP AUTO TRUSTED DOMAIN
-  mkdir -p /usr/lib/systemd/system
+  mkdir --parents /usr/lib/systemd/system
   cat > /usr/lib/systemd/system/nextcloud-domain.service <<'EOF'
 [Unit]
 Description=Register Current IP as Nextcloud trusted domain
@@ -206,7 +363,7 @@ EOF
   chmod g+w           /var/run/.ncp-latest-version
 
   # Install all ncp-apps
-  ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || exit $?
+  ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || exit "$?"
 
   # LIMIT LOG SIZE
   grep -q maxsize /etc/logrotate.d/apache2 || sed -i /weekly/amaxsize2M /etc/logrotate.d/apache2
@@ -223,11 +380,12 @@ EOF
   chmod 0444 /etc/logrotate.d/ncp
 
   # ONLY FOR IMAGE BUILDS
-  if [[ -f /.ncp-image ]]; then
-    rm -rf /var/log/ncp.log
+  # If-statement closes at the end of the install function()
+  if isFile '/.ncp-image'; then
+    rm --recursive --force /var/log/ncp.log
 
     ## NEXTCLOUDPI MOTD
-    rm -rf /etc/update-motd.d
+    rm --recursive --force /etc/update-motd.d
     mkdir /etc/update-motd.d
     rm /etc/motd
     ln -s /var/run/motd /etc/motd
@@ -245,11 +403,11 @@ EOF
     chmod a+x /etc/update-motd.d/*
 
     ## HOSTNAME AND mDNS
-    [[ -f /.docker-image ]] || {
-      $APTINSTALL avahi-daemon
+    if ! isFile '/.docker-image'; then
+      installPKG avahi-daemon
       sed -i '/^127.0.1.1/d'           /etc/hosts
       sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" /etc/hosts
-    }
+    fi
     echo nextcloudpi > /etc/hostname
 
     ## tag image
