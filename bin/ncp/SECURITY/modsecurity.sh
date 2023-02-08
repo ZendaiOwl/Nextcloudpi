@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # modsecurity WAF installation on Raspbian 
 #

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Periodically sync Nextcloud datafolder through rsync
 #

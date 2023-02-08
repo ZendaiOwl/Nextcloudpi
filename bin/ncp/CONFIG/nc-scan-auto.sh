@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Periodically synchronize NextCloud for externally modified files
 #
@@ -36,7 +36,7 @@ configure()
   [[ "$NONEXTERNAL" == yes ]] && local non_external=--home-only
 
   cat > /usr/local/bin/ncp-scan-auto <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 (
 
   echo -e "\n[ nc-scan-auto ]"

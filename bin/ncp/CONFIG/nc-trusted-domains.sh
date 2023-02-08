@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Manually add trusted domains in NextcloudPi
 #

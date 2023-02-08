@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Namecheap DNS updater client installation on Raspbian 
 #
@@ -34,7 +34,7 @@ configure()
   }
 
   cat > /usr/local/bin/namecheapdns.sh <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 echo "Namecheap DNS client started"
 registeredIP=\$(dig +short "$FULLDOMAIN"|tail -n1)
 currentIP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)

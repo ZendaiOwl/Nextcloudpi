@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Automount configuration for NextcloudPi
 #
@@ -46,7 +46,7 @@ WantedBy=multi-user.target
 EOF
 
   cat > /usr/local/etc/nc-automount-links <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 
 ls -d /media/* &>/dev/null && {
 
@@ -71,7 +71,7 @@ EOF
   chmod +x /usr/local/etc/nc-automount-links
 
   cat > /usr/local/etc/nc-automount-links-mon <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 inotifywait --monitor --event create --event delete --format '%f %e' /media/ | \
   grep --line-buffered ISDIR | while read f; do
     echo $f

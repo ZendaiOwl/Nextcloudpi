@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Activate/deactivate a pretty URL without index.php
 #

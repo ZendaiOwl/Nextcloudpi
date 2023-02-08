@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # no-ip.org installation on NextcloudPi
 #
@@ -50,7 +50,7 @@ EOF
 
   [[ "$DOCKERBUILD" == 1 ]] && {
     cat > /etc/services-available.d/100noip <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # FreeDNS updater client installation on Raspbian 
 #
@@ -26,7 +26,7 @@ configure()
   }
 
   cat > /usr/local/bin/freedns.sh <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 echo "FreeDNS client started"
 echo "${url}"
 registeredIP=\$(dig +short "$DOMAIN"|tail -n1)

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Updater for NextcloudPi
 #
@@ -208,7 +208,7 @@ checkDistro "$NCPCFG" && checkDistro etc/ncp.cfg || {
   notifyAdmin "New distribution available" "${msg}"
   wall "${msg}"
   cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 new_cfg=/usr/local/etc/ncp-recommended.cfg
 [[ -f "\${new_cfg}" ]] || exit 0
 echo -e "${msg}"

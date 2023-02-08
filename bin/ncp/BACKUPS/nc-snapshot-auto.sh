@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
 # NextcloudPi scheduled datadir BTRFS snapshots
@@ -25,7 +25,7 @@ configure()
   }
 
   cat > /etc/cron.hourly/btrfs-snp <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
 

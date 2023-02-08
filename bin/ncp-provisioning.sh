@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # this script runs at startup to provide an unique random passwords for each instance
 

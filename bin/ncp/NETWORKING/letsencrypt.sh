@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Let's encrypt certbot installation on NextcloudPi
 #
@@ -38,7 +38,7 @@ install()
   isDocker && {
     # execute before lamp stack
     cat > /etc/services-available.d/009letsencrypt <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
 persistConfiguration /etc/letsencrypt
@@ -86,7 +86,7 @@ configure()
 
     # Set up auto-renewal
     cat > /etc/cron.weekly/letsencrypt-ncp <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 
 # renew and notify
@@ -104,7 +104,7 @@ EOF
 
     mkdir -p /etc/letsencrypt/renewal-hooks/deploy
     cat > /etc/letsencrypt/renewal-hooks/deploy/ncp <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 notifyAdmin \
   "SSL renewal" \

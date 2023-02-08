@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Nextcloud installation on Raspbian over LAMP base
 #

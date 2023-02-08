@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Batch creation of NextcloudPi Armbian based images
 #

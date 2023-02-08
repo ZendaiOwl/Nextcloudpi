@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # NextcloudPi additions to Raspbian
 #
@@ -191,7 +191,7 @@ function install
 
   # add the ncc shortcut
   cat > /usr/local/bin/ncc <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 [[ ${EUID} -eq 0 ]] && SUDO="sudo -E -u www-data"
 ${SUDO} php /var/www/nextcloud/occ "$@"
 EOF
@@ -298,7 +298,7 @@ EOF
   chmod 700 /home/www
 
   cat > /home/www/ncp-launcher.sh <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
 runApp $1
@@ -306,7 +306,7 @@ EOF
   chmod 700 /home/www/ncp-launcher.sh
 
   cat > /home/www/ncp-backup-launcher.sh <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 action="${1}"
 file="${2}"
 compressed="${3}"
@@ -397,7 +397,7 @@ cat /usr/local/etc/ncp-ascii.txt
 EOF
 
     cat > /etc/update-motd.d/20updates <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 /usr/local/bin/ncp-check-updates
 EOF
     chmod a+x /etc/update-motd.d/*

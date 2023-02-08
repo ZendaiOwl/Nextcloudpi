@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Batch creation of NextcloudPi images and containers
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -13,7 +13,7 @@ ncc upgrade
 
 # update ncc
 cat > /usr/local/bin/ncc <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 [[ ${EUID} -eq 0 ]] && SUDO="sudo -E -u www-data"
 ${SUDO} php /var/www/nextcloud/occ "$@"
 EOF

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Periodically synchronize NextCloud for externally modified files
 #

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # dnsmasq DNS server with cache installation on Raspbian
 #
@@ -29,7 +29,7 @@ install()
 
   [[ "$DOCKERBUILD" == 1 ]] && {
     cat > /etc/services-available.d/100dnsmasq <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
 

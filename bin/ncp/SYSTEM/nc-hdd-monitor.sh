@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Monitor HDD health automatically
 #
@@ -30,7 +30,7 @@ configure()
   }
 
   cat > /usr/local/etc/ncp-hdd-notif.sh <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 EOF
 
   [[ "$EMAIL" != "" ]] && {

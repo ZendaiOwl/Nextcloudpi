@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 is_supported() {
   [[ "${DOCKERBUILD:-0}" == 1 ]] && [[ "$(lsb_release -r)" =~ .*10 ]] && return 1
@@ -140,7 +140,7 @@ EOF
     update-rc.d ncp-metrics-exporter defaults
 
     cat > /etc/services-available.d/101ncp-metrics <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
 [[ "\$1" == "stop" ]] && {

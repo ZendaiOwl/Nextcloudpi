@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Periodically update all installed Nextcloud Apps
 #
@@ -19,7 +19,7 @@ configure()
   }
 
   cat > "$cronfile" <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 OUT="\$(
 echo "[ nc-update-nc-apps-auto ]"

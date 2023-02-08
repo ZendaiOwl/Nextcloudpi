@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Install the latest News third party app
 #
@@ -24,7 +24,7 @@ configure()
 
   # code
   cat > /usr/local/bin/ncp-notify-update <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 VERFILE=/usr/local/etc/ncp-version
 LATEST=/var/run/.ncp-latest-version
@@ -51,7 +51,7 @@ EOF
   chmod +x /usr/local/bin/ncp-notify-update
 
   cat > /usr/local/bin/ncp-notify-unattended-upgrade <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 
 LOGFILE=/var/log/unattended-upgrades/unattended-upgrades.log

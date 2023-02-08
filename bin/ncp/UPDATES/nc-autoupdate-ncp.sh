@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Automatically apply NextcloudPi updates
 #
@@ -18,7 +18,7 @@ configure()
   }
 
   cat > /etc/cron.daily/ncp-autoupdate <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 # Forward all output to the ncp log
 exec >> /var/log/ncp.log 2>&1

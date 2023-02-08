@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # update latest available version in /var/run/.ncp-latest-version
 

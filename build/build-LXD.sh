@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Batch creation of NextcloudPi LXD image
 #

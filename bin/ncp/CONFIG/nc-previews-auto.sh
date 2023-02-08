@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Periodically generate previews for the gallery
 #
@@ -27,7 +27,7 @@ configure()
   chmod 644 /etc/cron.d/ncp-previews-auto
 
   cat > /usr/local/bin/nc-previews <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 echo -e "\n[ nc-previews-auto ]" >> /var/log/ncp.log
 (
     for i in \$(seq 1 \$(nproc)); do

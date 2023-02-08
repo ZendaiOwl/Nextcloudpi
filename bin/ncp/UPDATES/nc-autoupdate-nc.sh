@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Automatically apply Nextcloud updates
 #
@@ -19,7 +19,7 @@ configure()
   }
 
   cat > /etc/cron.daily/ncp-autoupdate-nc <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 
 echo -e "[ncp-update-nc]"                              >> /var/log/ncp.log

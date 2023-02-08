@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -52,7 +52,7 @@ if ! [[ -f /usr/share/bash-completion/completions/ncp ]]; then
   echo ". /etc/bash_completion" >> /etc/bash.bashrc
   echo ". /usr/share/bash-completion/completions/ncp" >> /etc/bash.bashrc
   cat > /usr/local/bin/ncc <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 sudo -E -u www-data php /var/www/nextcloud/occ "$@"
 EOF
   chmod +x /usr/local/bin/ncc

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 GUEST_IP="${1}"
 OP="${2}"

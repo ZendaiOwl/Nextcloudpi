@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Synchronize NextCloud for externally modified files
 #
@@ -12,7 +12,7 @@
 install()
 {
   cat > /usr/local/bin/ncp-scan <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 ncc files:scan -n -v --all
 EOF
   chmod +x /usr/local/bin/ncp-scan

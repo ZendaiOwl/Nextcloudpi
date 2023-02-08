@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 export NCPCFG=/usr/local/etc/ncp.cfg

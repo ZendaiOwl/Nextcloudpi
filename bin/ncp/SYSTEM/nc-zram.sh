@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # NextcloudPi ZRAM settings
 #
@@ -26,7 +26,7 @@ WantedBy=sysinit.target
 EOF
 
 cat > /usr/local/bin/ncp-zram <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 # inspired by https://github.com/novaspirit/rpi_zram/blob/master/zram.sh
 
 case "$1" in

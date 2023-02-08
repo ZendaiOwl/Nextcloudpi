@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # spDYN setup for NextcloudPi
 #
@@ -20,7 +20,7 @@ install()
   mkdir -p "$INSTALLPATH"
   # Write the script to file
   cat > "$INSTALLPATH"/spdnsUpdater.sh <<'EOF' 
-#!/bin/bash
+#!/usr/bin/env bash
 
 ### Usage
 #

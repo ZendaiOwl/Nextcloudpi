@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # HTTPS rewrite configuration script for NextcloudPi
 #

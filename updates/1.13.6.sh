@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 
@@ -57,7 +57,7 @@ EOF
   USER="$(jq -r '.params[2].value' "$CFGDIR"/letsencrypt.cfg)"
   mkdir -p /etc/letsencrypt/renewal-hooks/deploy/
   cat > /etc/letsencrypt/renewal-hooks/deploy/ncp <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 /usr/local/bin/ncc notification:generate $USER "SSL renewal" -l "Your SSL certificate(s) \$RENEWED_DOMAINS has been renewed for another 90 days"
 EOF
   chmod +x /etc/letsencrypt/renewal-hooks/deploy/ncp
@@ -85,7 +85,7 @@ EOF
   apt-get update
   AptInstall file
   cat > /home/www/ncp-launcher.sh <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
 runApp $1
@@ -93,7 +93,7 @@ EOF
   chmod 700 /home/www/ncp-launcher.sh
 
   cat > /home/www/ncp-backup-launcher.sh <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 action="${1}"
 file="${2}"
 compressed="${3}"

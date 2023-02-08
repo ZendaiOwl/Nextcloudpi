@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Format a USB external drive as a unique BTRFS partition
 #

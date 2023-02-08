@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # arguments: $RELEASE $LINUXFAMILY $BOARD $BUILD_DESKTOP
 

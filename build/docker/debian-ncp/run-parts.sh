@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 cleanup()
 {
@@ -20,7 +20,7 @@ fi
 
 # wrapper to simulate update-rc.d
 cat > /usr/local/sbin/update-rc.d <<'EOF'
-#!/bin/bash
+#!/usr/bin/env bash
 FILE=/etc/services-available.d/???"$1"
 
 test -f $FILE || {

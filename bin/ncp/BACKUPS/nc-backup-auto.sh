@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Nextcloud backups
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
@@ -24,7 +24,7 @@ configure()
   }
 
   cat > /usr/local/bin/ncp-backup-auto <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 source /usr/local/etc/library.sh
 failed=
 run_script()

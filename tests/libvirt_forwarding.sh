@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # copy to /etc/libvirt/hooks/qemu and restart libvirtd
 
