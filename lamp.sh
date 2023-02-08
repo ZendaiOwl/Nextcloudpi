@@ -290,7 +290,7 @@ install()
 
   # launch mariadb if not already running
   if ! [[ -f /run/mysqld/mysqld.pid ]]; then
-    echo "Starting MariaDB"
+    log -1 "Starting MariaDB"
     mysqld &
     local MARIA_PID="$?"
   fi
