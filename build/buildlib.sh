@@ -820,7 +820,11 @@ function resizeIMG
   local DEV
   log -1 "Resize IMG"
   fallocate -l"$SIZE" "$IMG"
-  parted "$IMG" -- resizepart 2 -1s
+  if hasCMD parted; then
+    parted "$IMG" -- resizepart 2 -1s
+  else
+    installPKG parted
+  fi
   if isRoot; then
     DEV="$(losetup -f)"
   else
