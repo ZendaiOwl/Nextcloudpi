@@ -422,10 +422,8 @@ function findFullProcess {
 # 3: File not found: [IMG]
 function launchInstallQEMU
 {
-  local IMG="$1" IP="$2" IMGOUT
-  
-  if [[ "$#" -ne 2 ]]; then
-    log 2 ""
+  if [[ "$#" -ge 2 ]]; then
+    log 2 "Invalid number of arguments"
     return 1
   elif isZero "$IP"; then
     log 2 "Invalid argument #2: [IP]"
@@ -434,7 +432,7 @@ function launchInstallQEMU
     log 2 "File not found: $IMG"
     return 3
   fi
-  
+  local IMG="$1" IP="$2" IMGOUT
   IMGOUT="${IMG}-$( date +%s )"
   
   if ! cp --reflink=auto -v "$IMG" "$IMGOUT"; then
@@ -468,7 +466,7 @@ function launchInstallQEMU
 # 3: Missing command: sed
 function launchQEMU
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local IMG="$1"
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
@@ -525,7 +523,7 @@ function sshPi
 # 1: Invalid number of arguments
 function waitSSH
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local IP="$1"
   log -1 "Waiting for SSH on: $IP"
   while true; do
@@ -542,7 +540,7 @@ function waitSSH
 # 4: SSH installation to QEMU target failed
 function launchInstallation
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local IP="$1"
   if isZero "$INSTALLATION_CODE"; then
     log 2 "Configuration is required to be run first"
@@ -568,7 +566,7 @@ set -e$DBG
 # 1: Invalid number of arguments
 function launchInstallationQEMU
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local IP="$1" MATCH="1" CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
 
   if noMatch "$NO_CFG_STEP" "$MATCH"; then
@@ -595,7 +593,7 @@ $HALT_STEP
 # 1: Invalid number of arguments
 function launchInstallationOnline
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local IP="$1" MATCH="1" CFG_STEP INSTALLATION_STEPS
   if noMatch "$NO_CFG_STEP" "$MATCH"; then
     CFG_STEP=configure
@@ -766,7 +764,7 @@ function unmountRPi
 # 3: File not found: /usr/bin/qemu-aarch64-static
 function prepareChrootRPi
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     return 2
@@ -882,7 +880,7 @@ function resizeIMG
 # 3: Failed to mount IMG boot
 function updateBootUUID
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
   local PTUUID
   if isRoot; then
@@ -930,7 +928,7 @@ EOF
 # 3: Failed to create SSH file in IMG boot
 function prepareSSHD
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" BOOTDIR='raspbian_boot'
   if ! mountBoot "$IMG"; then
     log 2 "Failed to mount IMG boot"
@@ -956,7 +954,7 @@ function prepareSSHD
 # 2: Failed to mount IMG root
 function setStaticIP
 {
-  [[ "$#" -ne 2 ]] && return 1
+  [[ "$#" -ge 2 ]] && return 1
   local -r IMG="$1" IP="$2" ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     log 2 "Failed to mount IMG root"
@@ -996,7 +994,7 @@ EOF
 # 3: Copy to image failed
 function copyToImage
 {
-  [[ "$#" -ne 3 ]] && return 1
+  [[ "$#" -ge 3 ]] && return 1
   local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     log 2 "Failed to mount IMG root"
@@ -1022,7 +1020,7 @@ function copyToImage
 # 2: Failed to mount IMG root
 function deactivateUnattendedUpgrades
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     log 2 "Failed to mount IMG root"
@@ -1048,7 +1046,7 @@ function deactivateUnattendedUpgrades
 # 4: Missing command: unxz
 function downloadRaspberryOS
 {
-  [[ "$#" -ne 2 ]] && return 1
+  [[ "$#" -ge 2 ]] && return 1
   local -r URL="$1" IMGFILE="$2" \
            IMG_CACHE='cache/raspios_lite.img' \
            ZIP_CACHE='cache/raspios_lite.xz'
@@ -1090,7 +1088,7 @@ function downloadRaspberryOS
 # 2: Failed packing image
 function packImage
 {
-  [[ "$#" -ne 2 ]] && return 1
+  [[ "$#" -ge 2 ]] && return 1
   local -r IMG="$1" TAR="$2"
   local DIR IMGNAME
   DIR="$( dirname  "$IMG" )"
@@ -1120,7 +1118,7 @@ function packImage
 # 1: Invalid number of arguments
 function createTorrent
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local -r TAR="$1"
   local IMGNAME DIR
   log -1 "Creating torrent"
@@ -1157,7 +1155,7 @@ function genChangelog
 # 4: Directory not found
 function uploadFTP
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local -r IMGNAME="$1"
   local RET
   log -1 "Upload FTP: $IMGNAME"
