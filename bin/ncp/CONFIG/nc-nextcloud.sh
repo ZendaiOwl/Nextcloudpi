@@ -228,7 +228,7 @@ function configure
     log 2 "Couldn't download $URL"
     return 1
   }
-  rm ---recursive --force nextcloud
+  rm --recursive --force nextcloud
 
   log -1 "Installing  Nextcloud: $NCLATESTVER"
   tar -xf nextcloud.tar.bz2
