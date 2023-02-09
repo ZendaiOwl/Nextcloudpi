@@ -749,6 +749,7 @@ function unmountRPi
     fi
   fi
   log 0 "Unmounted IMG"
+  return 0
 }
 
 # Return codes

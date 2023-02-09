@@ -162,14 +162,17 @@ EOFCHROOT
 fi
 
 if isRoot; then
+  log -1 "Image created: $(basename $IMG)"
   basename "$IMG" | tee raspbian_root/usr/local/etc/ncp-baseimage
 else
+  log -1 "Image created: $(sudo basename $IMG)"
   sudo basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
 fi
 
 log -1 "Cleaning chroot"
 
-cleanChroot
+# Gets executed when trap is triggered by exit
+#cleanChroot
 
 ## Pack IMG
 [[ "$*" =~ .*" --pack ".* ]] && { log -1 "Packing image"; packImage "$IMG" "$TAR"; }
