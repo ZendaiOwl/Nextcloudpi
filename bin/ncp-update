@@ -107,6 +107,8 @@ fi
   echo "$TMPDIR"/version > /var/run/.ncp-latest-version
   rm "$TMPDIR"/version
 
+  VER="$(cat /usr/local/etc/ncp-version)"
+  
   # write changelog
   git log --graph --oneline --decorate \
     --pretty=format:"[%D] %s" --date=short | \
