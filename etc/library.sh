@@ -636,7 +636,7 @@ function isNcpActivated {
 }
 
 function isAppActive {
-  local NCP_APP="$1" BINDIR="${2:-.}"
+  local NCP_APP="$1" BINDIR="${2:-$BINDIR}"
   local SCRIPT="${BINDIR}/${NCP_APP}.sh"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
   local LENGTH VAL VAR ONE TWO
