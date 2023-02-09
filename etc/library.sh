@@ -1081,7 +1081,7 @@ fi
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 
-if isFile "${NCPCFG:-etc/ncp.cfg}"; then  
+if isFile "$NCPCFG"; then  
   export NCPCFG
 elif isFile '/usr/local/etc/ncp.cfg'; then
   NCPCFG='/usr/local/etc/ncp.cfg'
