@@ -808,11 +808,11 @@ function cleanChroot
   if isRoot; then
     rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
     rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
-    umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
+    #umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
   else
     sudo rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
     sudo rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
-    sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
+    #sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
   fi
   unmountRPi
 }
@@ -821,7 +821,7 @@ function cleanChroot
 function resizeIMG
 {
   local IMG="$1" SIZE="$2" DEV
-  log -1 "Resize IMG"
+  log -1 "Resize: IMG"
   
   if ! hasCMD fallocate; then
     installPKG util-linux
@@ -836,33 +836,33 @@ function resizeIMG
   fi
   
   if isRoot; then
-    log -1 "fallocate"
+    log -1 "Resize: fallocate"
     fallocate -l"$SIZE" "$IMG"
-    log -1 "parted"
+    log -1 "Resize: parted"
     parted "$IMG" -- resizepart 2 -1s
-    log -1 "losetup"
+    log -1 "Resize: losetup"
     DEV="$( losetup -f )"
   else
-    log -1 "fallocate"
+    log -1 "Resize: fallocate"
     sudo fallocate -l"$SIZE" "$IMG"
-    log -1 "parted"
+    log -1 "Resize: parted"
     sudo parted "$IMG" -- resizepart 2 -1s
-    log -1 "losetup"
+    log -1 "Resize: losetup"
     DEV="$( sudo losetup -f )"
   fi
   
-  log -1 "Mount"
+  log -1 "Resize: Mount IMG"
   mountRoot "$IMG"
   
   if isRoot; then
-    log -1 "resize2fs"
+    log -1 "Resize: resize2fs"
     resize2fs -f "$DEV"
   else
-    log -1 "resize2fs"
+    log -1 "Resize: resize2fs"
     sudo resize2fs -f "$DEV"
   fi
   
-  log -1 "Resized IMG"
+  log 0 "Resized IMG"
   unmountRPi
 }
 
