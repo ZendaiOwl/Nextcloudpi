@@ -783,7 +783,7 @@ function prepareChrootRPi
     sudo mount -o bind /dev/pts "$ROOTDIR"/dev/pts
   fi
 
-  if isFile "qemu-aarch64-static"; then
+  if isFile 'qemu-aarch64-static'; then
     if isRoot; then
       cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
     else
