@@ -368,7 +368,7 @@ function installPKG {
     log 2 "Requires: [PKG(s) to install]"
     return 3
   else
-    local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends --allow-releaseinfo-change)
     local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
              SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
              ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
