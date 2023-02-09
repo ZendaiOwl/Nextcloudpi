@@ -701,6 +701,7 @@ function mountBoot
 function unmountRPi
 {
   local ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
+  log -1 "Unmounting IMG"
   if ! isDirectory "$ROOTDIR" && ! isDirectory "$BOOTDIR"; then
     log -1 "Nothing to unmount"
     return 0
