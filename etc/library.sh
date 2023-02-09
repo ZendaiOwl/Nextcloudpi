@@ -810,7 +810,7 @@ function notifyAdmin {
     return 0
   fi
   while read -r ADMIN; do
-    if ! ncc notification:generate "${ADMIN}" "${HEADER}" -l "${MSG}"; then
+    if ! ncc notification:generate "$ADMIN" "$HEADER" -l "$MSG"; then
       true
     fi
   done <<<"$ADMINS"
