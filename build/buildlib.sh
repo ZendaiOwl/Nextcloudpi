@@ -632,7 +632,7 @@ function mountRoot
     log 2 "Mountpoint already exists"
     return 2
   fi
-
+  log -1 "Mounting: $MP"
   if ! hasCMD fdisk; then
     installPKG fdisk
   fi
@@ -663,21 +663,20 @@ function mountRoot
 }
 
 # Return codes
-# 1: Invalid number of arguments
-# 2: File not found: [IMG]
-# 3: Mountpoint already exists
-# 4: Failed to mount IMG at mountpoint
+# 1: File not found: [IMG]
+# 2: Mountpoint already exists
+# 3: Failed to mount IMG at mountpoint
 function mountBoot
 {
   local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
-    return 2
+    return 1
   elif isPath "$MP"; then
     log 2 "Mountpoint already exists"
-    return 3
+    return 2
   fi
-
+  log -1 "Mounting: $MP"
   if isRoot; then
     SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
   else
@@ -687,17 +686,17 @@ function mountBoot
   OFFSET=$(( "$SECTOR" * 512 ))
   log -1 "Offset: $OFFSET"
   log -1 "Mountpoint: $MP"
-  mkdir --parents "$MP"
+  mkdir -p "$MP"
   
   if isRoot; then
     if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 4
+      return 3
     fi
   else
     if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 4
+      return 3
     fi
   fi
   log -1 "IMG is mounted at: $MP"
