@@ -438,9 +438,7 @@ function installWithShadowWorkaround {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function installApp {
-  [[ "$#" -ne 1 ]] && return 1
   local NCP_APP="$1" SCRIPT 
 
   # $1 can be either an installed app name or an app script

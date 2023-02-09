@@ -8,9 +8,14 @@
 # More at https://ownyourbits.com/
 #
 
-source /usr/local/etc/library.sh
+CONFDIR='/usr/local/etc/ncp-config.d'
+UPDATESDIR='updates'
+LIBRARY='/usr/local/etc/library.sh'
 
-set -e$DBG
+# shellcheck disable=SC1090
+source "$LIBRARY"
+
+set -e"$DBG"
 
 
 if isDocker
@@ -22,8 +27,6 @@ then
   [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
 fi
 
-CONFDIR=/usr/local/etc/ncp-config.d
-UPDATESDIR=updates
 
 # don't make sense in a docker container
 EXCL_DOCKER="
@@ -51,7 +54,7 @@ fail2ban
 NFS
 "
 
-if isDocker &>/dev/null; then
+if isDocker; then
 # in docker, just remove the volume for this
 EXCL_DOCKER+="
 nc-nextcloud
@@ -67,23 +70,24 @@ fi
 # check running apt or apt-get
 pgrep -x "apt|apt-get" &>/dev/null && { echo "apt is currently running. Try again later";  exit 1; }
 
-cp etc/library.sh /usr/local/etc/
+cp etc/library.sh "$LIBRARY"
 
-source /usr/local/etc/library.sh
+# shellcheck disable=SC1090
+source "$LIBRARY"
 
 mkdir -p "$CONFDIR"
 
 # prevent installing some ncp-apps in the containerized versions
 if isDocker || isLXC; then
   for opt in $EXCL_DOCKER; do
-    touch $CONFDIR/$opt.cfg
+    touch "$CONFDIR"/"$opt".cfg
   done
 fi
 
 # copy all files in bin and etc
 cp -r bin/* /usr/local/bin/
 find etc -maxdepth 1 -type f ! -path etc/ncp.cfg -exec cp '{}' /usr/local/etc \;
-cp -n etc/ncp.cfg /usr/local/etc
+cp -n etc/ncp.cfg /usr/local/etc/ncp.cfg
 cp -r etc/ncp-templates /usr/local/etc/
 
 # install new entries of ncp-config and update others
@@ -128,14 +132,16 @@ for file in etc/ncp-config.d/*; do
 done
 
 # update NCVER in ncp.cfg and nc-nextcloud.cfg (for nc-autoupdate-nc and nc-update-nextcloud)
-verNextcloud=$(jq -r .nextcloud_version < etc/ncp.cfg)
-cfg="$(jq '.' /usr/local/etc/ncp.cfg)"
-cfg="$(jq ".nextcloud_version = \"$verNextcloud\"" <<<"$cfg")"
-echo "$cfg" > /usr/local/etc/ncp.cfg
+LOCAL_NCP_CONFIG='/usr/local/etc/ncp.cfg'
+NCP_CONFIG='etc/ncp.cfg'
+verNextcloud="$(jq -r '.nextcloud_version' "$NCP_CONFIG")"
+cfg="$(jq ".nextcloud_version = \"$verNextcloud\"" "$LOCAL_NCP_CONFIG")"
+echo "$cfg" > "$LOCAL_NCP_CONFIG"
 
-cfg="$(jq '.' etc/ncp-config.d/nc-nextcloud.cfg)"
-cfg="$(jq ".params[0].value = \"$verNextcloud\"" <<<"$cfg")"
-echo "$cfg" > /usr/local/etc/ncp-config.d/nc-nextcloud.cfg
+NEXTCLOUD_CONFIG='etc/ncp-config.d/nc-nextcloud.cfg'
+LOCAL_NEXTCLOUD_CONFIG='/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
+cfg="$(jq ".params[0].value = \"$verNextcloud\"" "$NEXTCLOUD_CONFIG")"
+echo "$cfg" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
 cp -rT etc/ncp-config.d/l10n "$CONFDIR"/l10n
@@ -167,7 +173,7 @@ chown -R www-data:     /var/www/nextcloud/apps/nextcloudpi
 # remove unwanted ncp-apps for containerized versions
 if isDocker || isLXC; then
   for opt in $EXCL_DOCKER; do
-    rm $CONFDIR/$opt.cfg
+    rm "$CONFDIR"/"$opt".cfg
     find /usr/local/bin/ncp -name "$opt.sh" -exec rm '{}' \;
   done
 fi
@@ -189,24 +195,24 @@ isAppActive nc-autoupdate-nc && runApp nc-autoupdate-nc
 startNotifyPush
 
 # Refresh ncp config values
-source /usr/local/etc/library.sh
+# shellcheck disable=SC1090
+source "$LIBRARY"
 
 # check dist-upgrade
-checkDistro "$NCPCFG" && checkDistro etc/ncp.cfg || {
-  php_ver_new=$(jq -r '.php_version'   < etc/ncp.cfg)
-  release_new=$(jq -r '.release'       < etc/ncp.cfg)
+checkDistro "$NCPCFG" && checkDistro "$NCP_CONFIG" || {
+  php_ver_new="$(jq -r '.php_version'   "$NCP_CONFIG")"
+  release_new="$(jq -r '.release'       "$NCP_CONFIG")"
 
-  cfg="$(jq '.' "$NCPCFG")"
-  cfg="$(jq '.php_version   = "'$php_ver_new'"' <<<"$cfg")"
-  cfg="$(jq '.release       = "'$release_new'"' <<<"$cfg")"
+  cfg="$(jq '.php_version   = "'$php_ver_new'"' "$NCPCFG")"
+  cfg="$(jq '.release       = "'$release_new'"' "$NCPCFG")"
   echo "$cfg" > /usr/local/etc/ncp-recommended.cfg
 
   [[ -f /.dockerenv ]] && \
     msg="Update to $release_new available. Get the latest container to upgrade" || \
     msg="Update to $release_new available. Type 'sudo ncp-dist-upgrade' to upgrade"
-  echo "${msg}"
-  notifyAdmin "New distribution available" "${msg}"
-  wall "${msg}"
+  echo "$msg"
+  notifyAdmin "New distribution available" "$msg"
+  wall "$msg"
   cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
 #!/usr/bin/env bash
 new_cfg=/usr/local/etc/ncp-recommended.cfg

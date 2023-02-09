@@ -23,7 +23,7 @@ fi
   [[ "$BRANCH" != "master" ]] && echo "INFO: updating to development branch '$BRANCH'"
 
   TMPDIR="$( mktemp -d /tmp/ncp-update.XXXXXX || ( echo "Failed to create temp dir. Exiting" >&2; exit 1 ) )"
-  trap 'cd /; rm -rf "${TMPDIR}"' EXIT
+  trap 'cd /; rm -rf "$TMPDIR"' EXIT
 
   echo -e "Downloading updates"
   git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR" || {

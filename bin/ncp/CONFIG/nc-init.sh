@@ -10,7 +10,7 @@
 
 DBADMIN='ncadmin'
 
-configure()
+function configure
 {
   echo "Setting up a clean Nextcloud instance... wait until message 'NC init done'"
 

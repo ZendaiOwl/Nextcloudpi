@@ -9,13 +9,14 @@
 #
 
 
-configure()
+function configure
 {
+  local opt
   [[ -f /.ncp-image ]] && return 0
-  if [[ $ACTIVE == "no" ]]; then
-    local opt=Off
+  if [[ "$ACTIVE" == "no" ]]; then
+    opt=Off
   else
-    local opt=On
+    opt=On
   fi
   sed -i "s|RewriteEngine .*|RewriteEngine $opt|" /etc/apache2/sites-available/000-default.conf
   apachectl -k graceful
