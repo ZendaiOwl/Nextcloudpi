@@ -817,9 +817,7 @@ function notifyAdmin {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function runApp {
-  [[ "$#" -ne 1 ]] && return 1
   local NCP_APP="$1" SCRIPT
   SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
   if ! isFile "$SCRIPT"; then
@@ -830,9 +828,7 @@ function runApp {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function runAppUnsafe {
-  [[ "$#" -ne 1 ]] && return 1
   local -r SCRIPT="$1" LOG='/var/log/ncp.log'
   local NCP_APP CFG_FILE LENGTH VAR VAL RET
         
@@ -848,7 +844,7 @@ function runAppUnsafe {
   chmod 640           "$LOG"
   chown root:www-data "$LOG"
 
-  echo "Running $NCP_APP"
+  log -1 "Running: $NCP_APP"
   echo " [ $NCP_APP ] ($(date))" >> "$LOG"
 
   # read script
@@ -860,8 +856,8 @@ function runAppUnsafe {
   if isFile "$CFG_FILE"; then
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0; i < "$LENGTH"; i++ )); do
-      VAR="$(jq -r ".params[$i].id"    <<<"$CFG_FILE")"
-      VAL="$(jq -r ".params[$i].value" <<<"$CFG_FILE")"
+      VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
+      VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
       eval "$VAR=$VAL"
     done
   fi
