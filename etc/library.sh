@@ -1127,9 +1127,9 @@ if ! hasCMD jq; then
   fi
 fi
 
-NCLATESTVER="$(jq -r '.nextcloud_version' < "$NCPCFG")"
-PHPVER="$(     jq -r '.php_version'       < "$NCPCFG")"
-RELEASE="$(    jq -r '.release'           < "$NCPCFG")"
+NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
+PHPVER="$(     jq -r '.php_version'       "$NCPCFG")"
+RELEASE="$(    jq -r '.release'           "$NCPCFG")"
 
 # The default security repository in bullseye is bullseye-security
 if grep -Eh '^deb ' /etc/apt/sources.list | grep "${RELEASE}-security" > /dev/null; then
