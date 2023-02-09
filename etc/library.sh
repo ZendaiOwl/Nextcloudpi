@@ -645,7 +645,7 @@ function isAppActive {
     SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
   fi
   if ! isFile "$SCRIPT"; then
-    log 2 "File not found: $SCRIPT"
+    log 2 "File not found: $NCP_APP"
     return 1
   fi
 

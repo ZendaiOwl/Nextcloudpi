@@ -299,7 +299,7 @@ DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" runAppUnsafe bin/ncp/CONFIG/n
 rm /.ncp-image
 
 # skip on Armbian / Vagrant / LXD ...
-[[ "${CODE_DIR}" != "" ]] || bash /usr/local/bin/ncp-provisioning.sh
+[[ "$CODE_DIR" != "" ]] || bash /usr/local/bin/ncp-provisioning.sh
 
 cd -
 rm -rf "$TMPDIR"

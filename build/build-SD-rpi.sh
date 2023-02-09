@@ -162,7 +162,7 @@ EOFCHROOT
 fi
 
 if isRoot; then
- basename "$IMG" | tee raspbian_root/usr/local/etc/ncp-baseimage
+  basename "$IMG" | tee raspbian_root/usr/local/etc/ncp-baseimage
 else
   sudo basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
 fi

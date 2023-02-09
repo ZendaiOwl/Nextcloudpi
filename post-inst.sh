@@ -8,33 +8,33 @@
 # More at nextcloudpi.com
 #
 
-configure()
-{ 
-(
-  set +e
-
-  # stop services
-  pkill -x redis-server
-  [[ -f /run/mysqld/mysqld.pid ]] && mysqladmin -u root shutdown
-  [[ -f /run/crond.pid ]]     && kill "$(cat /run/crond.pid)"
-  pkill -f php-fpm
-  pkill -f notify_push
-  killall postdrop
-  killall sendmail
-
-  # cleanup all NCP extras
-  find /usr/local/bin/ncp -name '*.sh' | \
-    while read script; do cleanupScript $script; done
-
-  # clean packages and installation logs
-  apt-get autoremove -y
-  apt-get clean
-  rm /var/lib/apt/lists/* -r
-  find /var/log -type f -exec rm {} \;
-
-  # clean build flags
-  rm -f /.ncp-image
-)
+function configure
+{
+  (
+    set +e
+    
+    # stop services
+    pkill -x redis-server
+    [[ -f /run/mysqld/mysqld.pid ]] && mysqladmin -u root shutdown
+    [[ -f /run/crond.pid ]]     && kill "$(cat /run/crond.pid)"
+    pkill -f php-fpm
+    pkill -f notify_push
+    killall postdrop
+    killall sendmail
+    
+    # cleanup all NCP extras
+    find /usr/local/bin/ncp -name '*.sh' | \
+      while read script; do cleanupScript $script; done
+    
+    # clean packages and installation logs
+    apt-get autoremove -y
+    apt-get clean
+    rm /var/lib/apt/lists/* -r
+    find /var/log -type f -exec rm {} \;
+    
+    # clean build flags
+    rm -f /.ncp-image
+  )
 }
 
 # License
