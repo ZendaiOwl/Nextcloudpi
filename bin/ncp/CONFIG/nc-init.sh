@@ -210,7 +210,7 @@ EOF
   echo "NC init done"
 }
 
-install(){ :; }
+function install { :; }
 
 # License
 #

@@ -1011,15 +1011,10 @@ function restoreMaintenanceMode {
     fi
   else
     if notZero "${NCP_MAINTENANCE_MODE:-}"; then
-      "$ncc" maintenance:mode --on
+      ${ncc} maintenance:mode --on
     else
-      "$ncc" maintenance:mode --off
+      ${ncc} maintenance:mode --off
     fi
-  fi
-  if [[ "${NCP_MAINTENANCE_MODE:-}" != "" ]]; then
-    "$ncc" maintenance:mode --on
-  else
-    "$ncc" maintenance:mode --off
   fi
 }
 
