@@ -846,7 +846,7 @@ function runAppUnsafe {
 
   log -1 "Running: $NCP_APP"
   echo " [ $NCP_APP ] ($(date))" >> "$LOG"
-  log -1 "Reading script"
+  log -1 "Reading script: $NCP_APP"
   # Read script
   unset configure
   log -1 "Sourcing script: $NCP_APP"
