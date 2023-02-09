@@ -454,6 +454,7 @@ function installApp {
   source "$SCRIPT"
   log -1 "Installing: $NCP_APP"
   ( install )
+  log 0 "Installed: $NCP_APP"
 }
 
 # Return codes
@@ -525,7 +526,7 @@ function configureApp {
             return 1
           fi
 
-          CFG="$(jq ".params[$i].value = \"${RETURN_VALUES[$i]}\"" <<<"$CFG")"
+          CFG="$(jq ".params[$i].value = \"${RETURN_VALUES[$i]}\"" "$CFG_FILE")"
         done
         RET=0
         break
