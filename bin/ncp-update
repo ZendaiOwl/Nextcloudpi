@@ -92,7 +92,13 @@ fi
   VER="$( git describe --always --tags --abbrev=0 | grep -oP "v\d+\.\d+\.\d+" )"
 
   # check format
-  grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || { log 2 "Missing version"; exit 1; }
+  grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || {
+    git clone --bare https://github.com/nextcloud/"$REPO".git temporary
+    cd temporary || exit 1
+    VER="$(git describe --tags `git rev-list --tags --max-count=1` | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; })"
+    cd .. || exit 1
+    rm --recursive --force temporary
+  }
 
   echo "$VER" > /usr/local/etc/ncp-version
   echo "$VER" > /var/run/.ncp-latest-version
