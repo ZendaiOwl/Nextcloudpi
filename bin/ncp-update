@@ -103,8 +103,8 @@ fi
 
   #echo "$VER" > /usr/local/etc/ncp-version
   #echo "$VER" > /var/run/.ncp-latest-version
-  echo "$TMPDIR"/version > /usr/local/etc/ncp-version
-  echo "$TMPDIR"/version > /var/run/.ncp-latest-version
+  cat "$TMPDIR"/version > /usr/local/etc/ncp-version
+  cat "$TMPDIR"/version > /var/run/.ncp-latest-version
   rm "$TMPDIR"/version
 
   VER="$(cat /usr/local/etc/ncp-version)"
