@@ -977,26 +977,24 @@ EOF
 }
 
 # Return codes
-# 1: Invalid number of arguments
-# 2: Failed to mount IMG root
-# 3: Copy to image failed
+# 1: Failed to mount IMG root
+# 2: Copy to image failed
 function copyToImage
 {
-  [[ "$#" -ge 3 ]] && return 1
   local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     log 2 "Failed to mount IMG root"
-    return 2
+    return 1
   fi
   if isRoot; then
     if ! cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
       log 2 "Copy to image failed"
-      return 3
+      return 2
     fi
   else
     if ! sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
       log 2 "Copy to image failed"
-      return 3
+      return 2
     fi
   fi
   sync
