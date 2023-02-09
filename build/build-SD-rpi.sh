@@ -23,22 +23,15 @@ fi
 source build/buildlib.sh
 
 log -1 "Build NCP Raspberry Pi"
-echo "1"
 
 URL="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-09-26/2022-09-22-raspios-bullseye-arm64-lite.img.xz"
-echo "2"
 SIZE=4G                     # Raspbian image size
-echo "3"
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
-echo "4"
 IMG="${IMG:-NextcloudPi_RPi_$( date  "+%m-%d-%y" ).img}"
-echo "4"
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
-echo "5"
 
 ##############################################################################
 
-echo "6"
 if isFile "$TAR"; then
   echo "File exists: $TAR"
   exit 0
@@ -51,18 +44,14 @@ if findFullProcess qemu-aarch64-static; then
   log 2 "qemu-aarch64-static already running"
   exit 1
 fi
-echo "7"
 ## preparations
 
 IMG=tmp/"$IMG"
 
 trap 'cleanChroot' EXIT SIGHUP SIGILL SIGABRT
-echo "8"
 # tmp cache output
 prepareDirectories
-echo "9"
 downloadRaspberryOS "$URL" "$IMG"
-echo "10"
 resizeIMG           "$IMG" "$SIZE"
 # PARTUUID has changed after resize
 updateBootUUID      "$IMG"
