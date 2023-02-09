@@ -846,14 +846,16 @@ function runAppUnsafe {
 
   log -1 "Running: $NCP_APP"
   echo " [ $NCP_APP ] ($(date))" >> "$LOG"
-
-  # read script
+  log -1 "Reading script"
+  # Read script
   unset configure
+  log -1 "Sourcing script: $NCP_APP"
   # shellcheck disable=SC1090
   source "$SCRIPT"
-
+  
   # Read config parameters
   if isFile "$CFG_FILE"; then
+    log -1 "Reading config parameters: $NCP_APP"
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0; i < "$LENGTH"; i++ )); do
       VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
@@ -863,13 +865,16 @@ function runAppUnsafe {
   fi
 
   # Run
+  log -1 "Executing configure: $NCP_APP"
   (configure) 2>&1 | tee -a "$LOG"
   RET="${PIPESTATUS[0]}"
 
   echo "" >> "$LOG"
   if isFile "$CFG_FILE"; then
+    log -1 "Clearing password fields: $NCP_APP"
     clearPasswordFields "$CFG_FILE"
   fi
+  log 0 "Completed: $NCP_APP"
   return "$RET"
 }
 
