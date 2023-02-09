@@ -475,7 +475,7 @@ function configureApp {
         DIALOG_ERROR=254 \
         DIALOG_ESC=255 \
         RES=0
-
+  log -1 "Configuring app: $NCP_APP"
   # Checks
   if ! hasPKG dialog; then
     log 1 "Missing package: dialog"
@@ -486,6 +486,7 @@ function configureApp {
     fi
   fi
   if ! isFile "$CFG_FILE"; then
+    log 1 "No configuration file for: $NCP_APP"
     return 0
   fi
 
@@ -548,15 +549,15 @@ function configureApp {
 
   echo "$CFG" > "$CFG_FILE"
   printf '\033[2J' && tput cup 0 0             # clear screen, don't clear scroll, cursor on top
+  log 0 "Configured app: $NCP_APP"
   return "$RET"
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function persistConfiguration {
-  [[ "$#" -lt 1 ]] && return 1
   local SRC="$1"
   local DST="${2:-/data/etc/$( basename "$SRC" )}"
+  log -1 "Persisting configuration"
   # Trick to disable in dev docker
   if isPath '/changelog.md'; then
     return
@@ -568,17 +569,19 @@ function persistConfiguration {
   fi
   rm --recursive --force "$SRC"
   ln -s "$DST" "$SRC"
+  log 0 "Persist configuration is complete"
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function cleanupScript {
-  [[ "$#" -ne 1 ]] && return 1
   local SCRIPT="$1"
+  log -1 "Cleanup script: $SCRIPT"
   unset cleanup
+  log -1 "Source: $SCRIPT"
   # shellcheck disable=SC1090
   source "$SCRIPT"
   if isMatch "$(type -t cleanup)" "function"; then
+    log -1 "Cleanup function found: $SCRIPT"
     cleanup
     return "$?"
   fi
@@ -587,10 +590,13 @@ function cleanupScript {
 
 function checkDistro {
   local CFG="${1:-$NCPCFG}" SUPPORTED
-  SUPPORTED="$(jq -r .release "$CFG")"
+  SUPPORTED="$(jq -r '.release' "$CFG")"
+  log -1 "Checking support for distro"
   if grep -q "$SUPPORTED" <(lsb_release -sc); then
+    log 0 "Supported"
     return 0
   else
+    log 2 "Not supported"
     return 1
   fi
 }
