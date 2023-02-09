@@ -8,7 +8,7 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-DBADMIN=ncadmin
+DBADMIN='ncadmin'
 
 configure()
 {
@@ -26,13 +26,13 @@ configure()
   if ! [[ -f /run/mysqld/mysqld.pid ]]; then
     echo "Starting mariaDB"
     mysqld &
-    local db_pid=$!
+    local db_pid="$!"
   fi
 
   # wait for mariadb
   while :; do
     [[ -S /run/mysqld/mysqld.sock ]] && break
-    sleep 0.5
+    sleep 1
   done
   sleep 1
 
@@ -61,7 +61,7 @@ EOF
 
   while :; do
     [[ -S /run/redis/redis.sock ]] && break
-    sleep 0.5
+    sleep 1
   done
 
 
@@ -96,9 +96,9 @@ EOF
   mkdir -p "$UPLOADTMPDIR"
   chown www-data:www-data "$UPLOADTMPDIR"
   ncc config:system:set tempdirectory --value "$UPLOADTMPDIR"
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/${PHPVER}/cli/php.ini
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/${PHPVER}/fpm/php.ini
-  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/${PHPVER}/fpm/php.ini
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/"$PHPVER"/cli/php.ini
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/"$PHPVER"/fpm/php.ini
+  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/"$PHPVER"/fpm/php.ini
 
   # 4 Byte UTF8 support
   ncc config:system:set mysql.utf8mb4 --type boolean --value="true"
@@ -118,11 +118,11 @@ EOF
   [[ -e /usr/local/etc/logo ]] && {
     local ID=$( grep instanceid config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )
     [[ "$ID" == "" ]] && { echo "failed to get ID"; return 1; }
-    mkdir -p data/appdata_${ID}/theming/images
-    cp /usr/local/etc/background data/appdata_${ID}/theming/images
-    cp /usr/local/etc/logo data/appdata_${ID}/theming/images/logo
-    cp /usr/local/etc/logo data/appdata_${ID}/theming/images/logoheader
-    chown -R www-data:www-data data/appdata_${ID}
+    mkdir -p data/appdata_"$ID"/theming/images
+    cp /usr/local/etc/background data/appdata_"$ID"/theming/images
+    cp /usr/local/etc/logo data/appdata_"$ID"/theming/images/logo
+    cp /usr/local/etc/logo data/appdata_"$ID"/theming/images/logoheader
+    chown -R www-data:www-data data/appdata_"$ID"
   }
 
   mysql nextcloud <<EOF
@@ -201,10 +201,10 @@ EOF
   }
 
   # dettach mysql during the build
-  if [[ "${db_pid}" != "" ]]; then
-    echo "Shutting down mariaDB (${db_pid})"
+  if [[ "$db_pid" != "" ]]; then
+    echo "Shutting down mariaDB ($db_pid)"
     mysqladmin -u root shutdown
-    wait "${db_pid}"
+    wait "$db_pid"
   fi
 
   echo "NC init done"

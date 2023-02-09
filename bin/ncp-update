@@ -2,7 +2,7 @@
 
 # update latest NextcloudPi code from github
 
-[[ -z "$DBG" ]] || set -$DBG
+[[ -z "$DBG" ]] || set -"$DBG"
 
 if [[ -f /.dockerenv ]] || [[ -f /.docker-image ]] || [[ "$DOCKERBUILD" == 1 ]]
 then
@@ -16,6 +16,8 @@ fi
 {
   [ "$(id -u)" -ne 0 ] && { printf "Must be run as root. Try 'sudo $0'\n"; exit 1; }
 
+  OWNER="${OWNER:-nextcloud}"
+  REPO="${REPO:-nextcloudpi}"
   BRANCH="${1:-master}"
   [[ "$BRANCH" != "master" ]] && echo "INFO: updating to development branch '$BRANCH'"
 
@@ -23,7 +25,7 @@ fi
   trap 'cd /; rm -rf "${TMPDIR}"' EXIT
 
   echo -e "Downloading updates"
-  git clone --depth 20 -b "$BRANCH" -q https://github.com/nextcloud/nextcloudpi.git "$TMPDIR" || {
+  git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR" || {
     echo "No internet connectivity"
     exit 1
   }

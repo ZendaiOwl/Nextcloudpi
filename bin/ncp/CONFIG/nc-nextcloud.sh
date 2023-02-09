@@ -240,15 +240,15 @@ function configure
         HTGROUP='www-data' \
         ROOTUSER='root'
 
-  printf "Creating possible missing Directories\n"
+  log -1 "Creating possible missing directories"
   mkdir -p "$OCPATH"/data
   mkdir -p "$OCPATH"/updater
 
-  printf "chmod Files and Directories\n"
+  log -1 "chmod Files and Directories"
   find "$OCPATH"/ -type f -print0 | xargs -0 chmod 0640
   find "$OCPATH"/ -type d -print0 | xargs -0 chmod 0750
 
-  printf "chown Directories\n"
+  log -1 "chown Directories"
 
   chown -R "$HTUSER":"$HTGROUP" "$OCPATH"/
   chown -R "$HTUSER":"$HTGROUP" "$OCPATH"/apps/
@@ -296,7 +296,7 @@ function configure
     sleep 1
   done
 
-  echo "Setting up database..."
+  log -1 "Setting up database"
 
   # workaround to emulate DROP USER IF EXISTS ..;)
   local DBPASSWD="$( grep password /root/.my.cnf | sed 's|password=||' )"
@@ -313,7 +313,7 @@ EXIT
 EOF
 
 ## SET APACHE VHOST
-  echo "Setting up Apache..."
+  log -1 "Setting up Apache"
   installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback || {
       echo "ERROR: Parsing template failed. Nextcloud will not work."
       exit 1
@@ -352,7 +352,7 @@ EOF
   sed -i 's|^ServerSignature .*|ServerSignature Off|' /etc/apache2/conf-enabled/security.conf
   sed -i 's|^ServerTokens .*|ServerTokens Prod|'      /etc/apache2/conf-enabled/security.conf
 
-  echo "Setting up system..."
+  log -1 "Setting up system"
 
   ## SET LIMITS
   cat > /etc/php/"$PHPVER"/fpm/conf.d/90-ncp.ini <<EOF
@@ -380,7 +380,7 @@ EOF
 
   # dettach mysql during the build
   if [[ "$DB_PID" != "" ]]; then
-    echo "Shutting down MariaDB ($DB_PID)"
+    log -1 "Shutting down MariaDB ($DB_PID)"
     mysqladmin -u root shutdown
     wait "$DB_PID"
   fi
