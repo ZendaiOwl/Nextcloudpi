@@ -1040,13 +1040,11 @@ function deactivateUnattendedUpgrades
 
 # Return codes
 # 0: Success
-# 1: Invalid number of arguments
-# 2: Copy failed
-# 3: Download failed from URL
-# 4: Missing command: unxz
+# 1: Copy failed
+# 2: Download failed from URL
+# 3: Missing command: unxz
 function downloadRaspberryOS
 {
-  [[ "$#" -ge 2 ]] && return 1
   local -r URL="$1" IMGFILE="$2" \
            IMG_CACHE='cache/raspios_lite.img' \
            ZIP_CACHE='cache/raspios_lite.xz'
@@ -1057,7 +1055,7 @@ function downloadRaspberryOS
     log -1 "Skipping download"
     if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
       log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
-      return 2
+      return 1
     fi
     return 0
   elif isFile "$ZIP_CACHE"; then
@@ -1066,7 +1064,7 @@ function downloadRaspberryOS
   else
     if ! wget "$URL" -nv -O "$ZIP_CACHE"; then
       log 2 "Download failed from: $URL"
-      return 3
+      return 2
     fi
   fi
 
@@ -1074,11 +1072,11 @@ function downloadRaspberryOS
     unxz -k -c "$ZIP_CACHE" > "$IMG_CACHE"
     if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
       log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
-      return 2
+      return 1
     fi
   else
     log 2 "Missing command: unxz"
-    return 4
+    return 3
   fi
 }
 
