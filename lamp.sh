@@ -223,7 +223,11 @@ function install
     #set -x
     local -r DBPID_FILE='/run/mysqld/mysqld.pid' \
              DBSOCKET='/run/mysqld/mysqld.sock' \
-             DBDAEMON='/run/mysqld'
+             DBDAEMON='/run/mysqld' \
+             DBUSER='mysql' \
+             PHPDAEMON='/run/php'
+    # MariaDB password
+    local DBPASSWD="default"
     # Setup apt repository for php 8
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
     echo "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
@@ -248,10 +252,8 @@ function install
     #                         php"$PHPVER"-mbstring php"$PHPVER"-xml php"$PHPVER"-zip php"$PHPVER"-fileinfo php"$PHPVER"-ldap \
     #                         php"$PHPVER"-intl php"$PHPVER"-bz2
 
-    mkdir --parents /run/php
+    mkdir --parents "$PHPDAEMON"
 
-    # mariaDB password
-    local DBPASSWD="default"
     echo -e "[client]\npassword=$DBPASSWD" > /root/.my.cnf
     chmod 600 /root/.my.cnf
 
@@ -259,7 +261,7 @@ function install
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
     installPKG mariadb-server
     mkdir --parents "$DBDAEMON"
-    chown mysql "$DBDAEMON"
+    chown "$DBUSER" "$DBDAEMON"
 
     # CONFIGURE APACHE
     ##########################################

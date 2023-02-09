@@ -602,20 +602,19 @@ function checkDistro {
 function clearPasswordFields {
   [[ "$#" -ne 1 ]] && return 1
   local -r CFG_FILE="$1"
+  local LENGTH TYPE VAL
   if ! isFile "$CFG_FILE"; then
     log 2 "File not found: $CFG_FILE"
     return 2
   fi
-  local CFG LENGTH TYPE VAL
-  CFG="$(cat "$CFG_FILE")"
-  LENGTH="$(jq '.params | length' <<<"$CFG")"
+  LENGTH="$(jq '.params | length' "$CFG_FILE")"
   for (( i = 0 ; i < "$LENGTH" ; i++ )); do
-    TYPE="$(jq -r ".params[$i].type"  <<<"$CFG")"
-    VAL="$( jq -r ".params[$i].value" <<<"$CFG")"
+    TYPE="$(jq -r ".params[$i].type" "$CFG_FILE")"
+    VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
     if isMatch "$TYPE" "password"; then
       VAL=""
     fi
-    CFG="$(jq -r ".params[$i].value=\"$VAL\"" <<<"$CFG")"
+    CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
   done
   echo "$CFG" > "$CFG_FILE"
 }
@@ -635,7 +634,7 @@ function isAppActive {
   local NCP_APP="$1" BINDIR="${2:-.}"
   local SCRIPT="${BINDIR}/${NCP_APP}.sh"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-  local CFG LENGTH VAL VAR ONE TWO
+  local LENGTH VAL VAR ONE TWO
 
   if ! isFile "$SCRIPT"; then
     SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
@@ -691,7 +690,7 @@ function infoApp {
   [[ "$#" -ne 1 ]] && return 1
   local -r NCP_APP="$1"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-  local CFG INFO INFOTITLE
+  local INFO INFOTITLE
 
   if isFile "$CFG_FILE"; then
     INFO="$(jq -r '.info' "$CFG_FILE")"
@@ -717,13 +716,13 @@ function infoApp {
 # 1: Invalid number of arguments
 function isIP {
   [[ "$#" -ne 1 ]] && return 1
-  local -r IP_OR_DOMAIN="${1}"
-  grep -oPq '\d{1,3}(.\d{1,3}){3}' <<<"${IP_OR_DOMAIN}"
+  local -r IP_OR_DOMAIN="$1"
+  grep -oPq '\d{1,3}(.\d{1,3}){3}' <<<"$IP_OR_DOMAIN"
 }
 
 function getIP {
   local IFACE
-  IFACE="$( ip r | grep "default via" | awk '{ print $5 }' | head -1 )"
+  IFACE="$(ip r | grep "default via" | awk '{ print $5 }' | head -1)"
   ip a show dev "$IFACE" | grep 'global' | grep -oP '\d{1,3}(.\d{1,3}){3}' | head -1
 }
 
@@ -836,7 +835,7 @@ function runApp {
 function runAppUnsafe {
   [[ "$#" -ne 1 ]] && return 1
   local -r SCRIPT="$1" LOG='/var/log/ncp.log'
-  LOCAL NCP_APP CFG_FILE CFG LENGTH VAR VAL RET
+  local NCP_APP CFG_FILE LENGTH VAR VAL RET
         
   NCP_APP="$(basename "$SCRIPT" .sh)"
   CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
@@ -860,11 +859,10 @@ function runAppUnsafe {
 
   # Read config parameters
   if isFile "$CFG_FILE"; then
-    CFG="$( cat "$CFG_FILE" )"
-    LENGTH="$(jq '.params | length' <<<"$CFG")"
+    LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0; i < "$LENGTH"; i++ )); do
-      VAR="$(jq -r ".params[$i].id"    <<<"$CFG")"
-      VAL="$(jq -r ".params[$i].value" <<<"$CFG")"
+      VAR="$(jq -r ".params[$i].id"    <<<"$CFG_FILE")"
+      VAL="$(jq -r ".params[$i].value" <<<"$CFG_FILE")"
       eval "$VAR=$VAL"
     done
   fi
