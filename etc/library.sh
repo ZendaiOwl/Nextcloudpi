@@ -288,9 +288,7 @@ function isArray {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function isMoreRecent {
-  [[ "$#" -ne 1 ]] && return 1
   local -r VERSION_A="$1" VERSION_B="$2"
   local MAJOR_A MINOR_A PATCH_A MAJOR_B MINOR_B PATCH_B
 
