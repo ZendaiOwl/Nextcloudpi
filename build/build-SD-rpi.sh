@@ -167,10 +167,14 @@ else
   sudo basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
 fi
 
+log -1 "Cleaning chroot"
+
 cleanChroot
 
 ## Pack IMG
-[[ "$*" =~ .*" --pack ".* ]] && packImage "$IMG" "$TAR"
+[[ "$*" =~ .*" --pack ".* ]] && { log -1 "Packing image"; packImage "$IMG" "$TAR"; }
+
+log 0 "Complete"
 
 exit 0
 
