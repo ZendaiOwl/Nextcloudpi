@@ -669,7 +669,6 @@ function mountRoot
 # 4: Failed to mount IMG at mountpoint
 function mountBoot
 {
-  [[ "$#" -ge 1 ]] && return 1
   local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
@@ -684,8 +683,10 @@ function mountBoot
   else
     SECTOR="$( sudo fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
   fi
-  
+  log -1 "Sector: $SECTOR"
   OFFSET=$(( "$SECTOR" * 512 ))
+  log -1 "Offset: $OFFSET"
+  log -1 "Mountpoint: $MP"
   mkdir --parents "$MP"
   
   if isRoot; then
