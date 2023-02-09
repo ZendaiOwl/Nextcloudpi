@@ -220,7 +220,7 @@ function installPKG {
 
 function install
 {
-    #set -x
+    set -x
     local -r DBPID_FILE='/run/mysqld/mysqld.pid' \
              DBSOCKET='/run/mysqld/mysqld.sock' \
              DBDAEMON='/run/mysqld' \
