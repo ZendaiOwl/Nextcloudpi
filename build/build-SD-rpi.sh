@@ -169,10 +169,10 @@ else
   sudo basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
 fi
 
-# Gets executed when trap is triggered by exit
-#cleanChroot
+cleanChroot
 
-log -1 "Packing image"
+trap - EXIT SIGHUP SIGILL SIGABRT
+
 packImage "$IMG" "$TAR"
 
 ## Pack IMG
