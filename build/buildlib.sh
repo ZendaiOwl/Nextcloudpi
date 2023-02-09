@@ -829,29 +829,27 @@ function cleanChroot
 # Sets DEV
 function resizeIMG
 {
-  local IMG="$1" SIZE="$2"
+  local IMG="$1"
+  local SIZE="$2"
   local DEV
   log -1 "Resize IMG"
   if ! hasCMD fallocate; then
     installPKG util-linux
   fi
-  if isRoot; then
-    fallocate -l"$SIZE" "$IMG"
-  else
-    sudo fallocate -l"$SIZE" "$IMG"
-  fi
   if ! hasCMD parted; then
     installPKG parted
   fi
-  if isRoot; then
-    parted "$IMG" -- resizepart 2 -1s
-  else
-    sudo parted "$IMG" -- resizepart 2 -1s
+  if ! hasCMD resize2fs; then
+    installPKG e2fsprogs
   fi
   if isRoot; then
-    DEV="$(losetup -f)"
+    fallocate -l"$SIZE" "$IMG"
+    parted "$IMG" -- resizepart 2 -1s
+    DEV="$( losetup -f )"
   else
-    DEV="$(sudo losetup -f)"
+    sudo fallocate -l"$SIZE" "$IMG"
+    sudo parted "$IMG" -- resizepart 2 -1s
+    DEV="$( sudo losetup -f )"
   fi
   mountRoot "$IMG"
   if isRoot; then
