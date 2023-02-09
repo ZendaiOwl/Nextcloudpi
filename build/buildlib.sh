@@ -806,6 +806,7 @@ function prepareChrootRPi
 function cleanChroot
 {
   local -r ROOTDIR='raspbian_root'
+  log -1 "Cleaning chroot"
   if isRoot; then
     rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
     rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d

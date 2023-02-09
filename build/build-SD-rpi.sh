@@ -169,15 +169,16 @@ else
   sudo basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
 fi
 
-log -1 "Cleaning chroot"
-
 # Gets executed when trap is triggered by exit
 #cleanChroot
 
-## Pack IMG
-[[ "$*" =~ .*" --pack ".* ]] && { log -1 "Packing image"; packImage "$IMG" "$TAR"; }
+log -1 "Packing image"
+packImage "$IMG" "$TAR"
 
-log 0 "Complete"
+## Pack IMG
+[[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; packImage "$IMG" "$TAR"; }
+
+log 0 "Build is complete"
 
 exit 0
 
