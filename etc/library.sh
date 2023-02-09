@@ -913,7 +913,7 @@ function findAppParam {
     log 2 "File not found: $CFG_FILE"
     return 2
   fi
-  jq -r ".params[$P_NUM].value" < "$CFG_FILE"
+  jq -r ".params[$P_NUM].value" "$CFG_FILE"
 }
 
 function setAppParam {
@@ -922,7 +922,7 @@ function setAppParam {
   NCP_APP="$(basename "$SCRIPT" .sh)"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
 
-  if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "${PARAM_VALUE}"; then
+  if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "$PARAM_VALUE"; then
     log 2 "Invalid characters in field ${VARIABLES[$i]}"
     return 1
   fi
@@ -937,7 +937,7 @@ function setAppParam {
   for (( i = 0; i < "$LENGTH"; i++ )); do
     # check for invalid characters
     if isMatch "$(jq -r ".params[$i].id" "$CFG_FILE")" "$PARAM_ID"; then
-      CFG="$(jq ".params[$i].value = \"${PARAM_VALUE}\"" "$CFG_FILE")"
+      CFG="$(jq ".params[$i].value = \"$PARAM_VALUE\"" "$CFG_FILE")"
       PARAM_FOUND=true
     fi
   done
@@ -957,7 +957,7 @@ function installTemplate {
   local BACKUP
   BACKUP="$(mktemp)"
 
-  log -1 "Installing template '$TEMPLATE'"
+  log -1 "Installing template: $TEMPLATE"
 
   mkdir --parents "$(dirname "$TARGET")"
   if isFile "$TARGET"; then
@@ -973,7 +973,7 @@ function installTemplate {
         fi
     fi
   } || {
-    echo "ERROR: Could not generate $TARGET from template $TEMPLATE. Rolling back.."
+    log 2 "Could not generate: $TARGET From template: $TEMPLATE. Rolling back.."
     mv "$BACKUP" "$TARGET"
     return 1
   }
@@ -1011,9 +1011,9 @@ function restoreMaintenanceMode {
     fi
   fi
   if [[ "${NCP_MAINTENANCE_MODE:-}" != "" ]]; then
-    "${ncc}" maintenance:mode --on
+    "$ncc" maintenance:mode --on
   else
-    "${ncc}" maintenance:mode --off
+    "$ncc" maintenance:mode --off
   fi
 }
 
@@ -1025,15 +1025,14 @@ function needsDecryption {
 
 function setNcpConfig {
   local NAME="${1}" VALUE="${2}" CFG
-  CFG="$(jq '.' "${NCPCFG}")"
-  CFG="$(jq ".$NAME = \"$VALUE\"" "${CFG}")"
+  CFG="$(jq ".$NAME = \"$VALUE\"" "$NCPCFG")"
   echo "$CFG" > "$NCPCFG"
 }
 
 function getNcpConfig {
   local NAME="${1}"
   if isFile "$NCPCFG"; then
-    jq -r ".$NAME" < "$NCPCFG"
+    jq -r ".$NAME" "$NCPCFG"
   else
     log 2 "File not found: $NCPCFG" >&2
     return 1
