@@ -1,33 +1,73 @@
 #!/usr/bin/env bash
 
-# update latest NextcloudPi code from github
+# Update to the latest NextcloudPi code from GitHub
+
+# A log that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log
+{
+  if [[ "$#" -gt 0 ]]; then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
+      case "$LOGLEVEL" in
+        -2)
+           local -r CYAN='\e[1;36m'
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           ;;
+        -1)
+           local -r BLUE='\e[1;34m'
+           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+           ;;
+         0)
+           local -r GREEN='\e[1;32m'
+           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+           ;;
+         1)
+           local -r YELLOW='\e[1;33m'
+           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+           ;;
+         2)
+           local -r RED='\e[1;31m'
+           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
 
 [[ -z "$DBG" ]] || set -"$DBG"
 
 if [[ -f /.dockerenv ]] || [[ -f /.docker-image ]] || [[ "$DOCKERBUILD" == 1 ]]
 then
-  echo "WARNING: Docker images should be updated by replacing the container from the latest docker image" \
-    "(refer to the documentation for instructions: https://docs.nextcloudpi.com)." \
-    "If you are sure that you know what you are doing, you can still execute the update script by running it like this:"
-  echo "> ALLOW_UPDATE_SCRIPT=1 ncp-update"
+  log 1 "Docker images should be updated by replacing the container from the latest docker image.
+Refer to the documentation for instructions: https://docs.nextcloudpi.com
+If you are sure that you know what you are doing, you can still execute the update script by running it like this:
+'ALLOW_UPDATE_SCRIPT=1 ncp-update'"
   [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
 fi
 
 {
-  [ "$(id -u)" -ne 0 ] && { printf "Must be run as root. Try 'sudo $0'\n"; exit 1; }
+  [ "$(id -u)" -ne 0 ] && { log 2 "Must be run as root. Try 'sudo $0'"; exit 1; }
 
   #OWNER="${OWNER:-nextcloud}"
   OWNER="${OWNER:-ZendaiOwl}"
   REPO="${REPO:-nextcloudpi}"
   BRANCH="${1:-master}"
-  [[ "$BRANCH" != "master" ]] && echo "INFO: updating to development branch '$BRANCH'"
+  [[ "$BRANCH" != "master" ]] && log -1 "Updating to development branch: $BRANCH"
 
   TMPDIR="$( mktemp -d /tmp/ncp-update.XXXXXX || ( echo "Failed to create temp dir. Exiting" >&2; exit 1 ) )"
   trap 'cd /; rm -rf "$TMPDIR"' EXIT
 
   echo -e "Downloading updates"
   git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR" || {
-    echo "No internet connectivity"
+    log 2 "No internet connectivity"
     exit 1
   }
 
@@ -37,14 +77,14 @@ fi
 
     [[ -z "$2" ]] || {
       git fetch origin "$2" || {
-        echo "Error: Could not fetch $2"
+        log 2 "Could not fetch: $2"
         exit 1
       }
       git checkout FETCH_HEAD
     }
   }
 
-  echo -e "Performing updates"
+  log -1 "Performing updates"
   ./update.sh || exit "$?"
 
   cd "$TMPDIR" || exit 1
@@ -52,7 +92,7 @@ fi
   VER="$( git describe --always --tags --abbrev=0 | grep -oP "v\d+\.\d+\.\d+" )"
 
   # check format
-  grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || { echo "Error: missing version"; exit 1; }
+  grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || { log 2 "Missing version"; exit 1; }
 
   echo "$VER" > /usr/local/etc/ncp-version
   echo "$VER" > /var/run/.ncp-latest-version
@@ -64,7 +104,7 @@ fi
     sed '/HEAD ->\|origin/s|\[.*\(tag: v[0-9]\+\.[0-9]\+\.[0-9]\+\).*\]|[\1]|' | \
     sed 's|* \[tag: |[|' > /usr/local/etc/ncp-changelog
 
-  echo -e "NextcloudPi updated to version $VER"
+  log 0 "NextcloudPi updated to: $VER"
   exit 0
 
 } # force to read the whole thing into memory, as its contents might change in update.sh
