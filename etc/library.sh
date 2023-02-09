@@ -464,7 +464,7 @@ function installApp {
 # 2: Missing package: dialog
 # 3: Failed to install: dialog
 function configureApp {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local -r NCP_APP="$1"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
   local BACKTITLE="NextcloudPi installer configuration" \

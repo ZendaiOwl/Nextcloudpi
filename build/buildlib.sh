@@ -625,7 +625,7 @@ function prepareDirectories
 # 4: Failed to mount IMG at mountpoint
 function mountRoot
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local IMG="$1" MP='raspbian_root' SECTOR OFFSET
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
@@ -668,7 +668,7 @@ function mountRoot
 # 4: Failed to mount IMG at mountpoint
 function mountBoot
 {
-  [[ "$#" -ne 1 ]] && return 1
+  [[ "$#" -ge 1 ]] && return 1
   local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
@@ -784,16 +784,16 @@ function prepareChrootRPi
 
   if isFile "qemu-aarch64-static"; then
     if isRoot; then
-      cp qemu-aarch64-static "$ROOTDIR"/usr/bin/
+      cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
     else
-      sudo cp qemu-aarch64-static "$ROOTDIR"/usr/bin/
+      sudo cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
     fi
   else
     if isFile '/usr/bin/qemu-aarch64-static'; then
       if isRoot; then
-        cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin
+        cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
       else
-        sudo cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin
+        sudo cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
       fi
     else
       log 2 "File not found: /usr/bin/qemu-aarch64-static"
