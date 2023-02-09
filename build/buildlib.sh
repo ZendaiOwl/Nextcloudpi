@@ -619,20 +619,18 @@ function prepareDirectories
 }
 
 # Return codes
-# 1: Invalid number of arguments
-# 2: File not found: [IMG]
-# 3: Mountpoint already exists
-# 4: Failed to mount IMG at mountpoint
+# 1: File not found: [IMG]
+# 2: Mountpoint already exists
+# 3: Failed to mount IMG at mountpoint
 function mountRoot
 {
-  [[ "$#" -ge 1 ]] && return 1
   local IMG="$1" MP='raspbian_root' SECTOR OFFSET
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
-    return 2
+    return 1
   elif isPath "$MP"; then
     log 2 "Mountpoint already exists"
-    return 3
+    return 2
   fi
 
   if ! hasCMD fdisk; then
@@ -650,12 +648,12 @@ function mountRoot
   if isRoot; then
     if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 4
+      return 3
     fi
   else
     if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 4
+      return 3
     fi
   fi
   log -1 "IMG is mounted at: $MP"
