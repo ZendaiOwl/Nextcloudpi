@@ -417,15 +417,12 @@ function findFullProcess {
 
 #
 # Return codes
-# 1: Invalid number of arguments
+# 1: Copying failed
 # 2: Invalid argument #2: [IP]
 # 3: File not found: [IMG]
 function launchInstallQEMU
 {
-  if [[ "$#" -ge 2 ]]; then
-    log 2 "Invalid number of arguments"
-    return 1
-  elif isZero "$IP"; then
+  if isZero "$IP"; then
     log 2 "Invalid argument #2: [IP]"
     return 2
   elif ! isFile "$IMG"; then
@@ -466,7 +463,6 @@ function launchInstallQEMU
 # 3: Missing command: sed
 function launchQEMU
 {
-  [[ "$#" -ge 1 ]] && return 1
   local IMG="$1"
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
@@ -523,7 +519,6 @@ function sshPi
 # 1: Invalid number of arguments
 function waitSSH
 {
-  [[ "$#" -ge 1 ]] && return 1
   local IP="$1"
   log -1 "Waiting for SSH on: $IP"
   while true; do
@@ -540,7 +535,6 @@ function waitSSH
 # 4: SSH installation to QEMU target failed
 function launchInstallation
 {
-  [[ "$#" -ge 1 ]] && return 1
   local IP="$1"
   if isZero "$INSTALLATION_CODE"; then
     log 2 "Configuration is required to be run first"
@@ -566,7 +560,6 @@ set -e$DBG
 # 1: Invalid number of arguments
 function launchInstallationQEMU
 {
-  [[ "$#" -ge 1 ]] && return 1
   local IP="$1" MATCH="1" CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
 
   if noMatch "$NO_CFG_STEP" "$MATCH"; then
@@ -593,7 +586,6 @@ $HALT_STEP
 # 1: Invalid number of arguments
 function launchInstallationOnline
 {
-  [[ "$#" -ge 1 ]] && return 1
   local IP="$1" MATCH="1" CFG_STEP INSTALLATION_STEPS
   if noMatch "$NO_CFG_STEP" "$MATCH"; then
     CFG_STEP=configure
@@ -764,7 +756,6 @@ function unmountRPi
 # 3: File not found: /usr/bin/qemu-aarch64-static
 function prepareChrootRPi
 {
-  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     return 2
@@ -880,7 +871,6 @@ function resizeIMG
 # 3: Failed to mount IMG boot
 function updateBootUUID
 {
-  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
   local PTUUID
   if isRoot; then
@@ -928,7 +918,6 @@ EOF
 # 3: Failed to create SSH file in IMG boot
 function prepareSSHD
 {
-  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" BOOTDIR='raspbian_boot'
   if ! mountBoot "$IMG"; then
     log 2 "Failed to mount IMG boot"
@@ -954,7 +943,6 @@ function prepareSSHD
 # 2: Failed to mount IMG root
 function setStaticIP
 {
-  [[ "$#" -ge 2 ]] && return 1
   local -r IMG="$1" IP="$2" ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     log 2 "Failed to mount IMG root"
@@ -1020,7 +1008,6 @@ function copyToImage
 # 2: Failed to mount IMG root
 function deactivateUnattendedUpgrades
 {
-  [[ "$#" -ge 1 ]] && return 1
   local -r IMG="$1" ROOTDIR='raspbian_root'
   if ! mountRoot "$IMG"; then
     log 2 "Failed to mount IMG root"
@@ -1086,7 +1073,6 @@ function downloadRaspberryOS
 # 2: Failed packing image
 function packImage
 {
-  [[ "$#" -ge 2 ]] && return 1
   local -r IMG="$1" TAR="$2"
   local DIR IMGNAME
   DIR="$( dirname  "$IMG" )"
@@ -1116,7 +1102,6 @@ function packImage
 # 1: Invalid number of arguments
 function createTorrent
 {
-  [[ "$#" -ge 1 ]] && return 1
   local -r TAR="$1"
   local IMGNAME DIR
   log -1 "Creating torrent"
@@ -1153,7 +1138,6 @@ function genChangelog
 # 4: Directory not found
 function uploadFTP
 {
-  [[ "$#" -ge 1 ]] && return 1
   local -r IMGNAME="$1"
   local RET
   log -1 "Upload FTP: $IMGNAME"
