@@ -642,8 +642,11 @@ function mountRoot
   else
     SECTOR="$( sudo fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
   fi
+  log -1 "Sector: $SECTOR"
   OFFSET=$(( "$SECTOR" * 512 ))
-  mkdir --parents "$MP"
+  log -1 "Offset: $OFFSET"
+  log -1 "Mountpoint: $MP"
+  mkdir -p "$MP"
   
   if isRoot; then
     if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
