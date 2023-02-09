@@ -125,7 +125,7 @@ function configure
   else
     mv "$SRCDIR" "$DATADIR"
   fi
-  chown www-data: "$DATADIR"
+  chown -R www-data:www-data "$DATADIR"
 
   # datadir
   ncc config:system:set datadirectory  --value="$DATADIR" \
