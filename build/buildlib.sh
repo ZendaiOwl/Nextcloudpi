@@ -659,7 +659,7 @@ function mountRoot
       return 3
     fi
   fi
-  log -1 "IMG is mounted at: $MP"
+  log 0 "IMG is mounted at: $MP"
 }
 
 # Return codes
@@ -699,7 +699,7 @@ function mountBoot
       return 3
     fi
   fi
-  log -1 "IMG is mounted at: $MP"
+  log 0 "IMG is mounted at: $MP"
 }
 
 # Return codes
@@ -757,7 +757,7 @@ function unmountRPi
       fi
     fi
   fi
-  log -1 "Unmounted IMG"
+  log 0 "Unmounted IMG"
 }
 
 # Return codes
