@@ -51,15 +51,18 @@ if findFullProcess qemu-aarch64-static; then
   log 2 "qemu-aarch64-static already running"
   exit 1
 fi
-
+echo "7"
 ## preparations
 
 IMG=tmp/"$IMG"
 
 trap 'cleanChroot' EXIT SIGHUP SIGILL SIGABRT
+echo "8"
 # tmp cache output
 prepareDirectories
+echo "9"
 downloadRaspberryOS "$URL" "$IMG"
+echo "10"
 resizeIMG           "$IMG" "$SIZE"
 # PARTUUID has changed after resize
 updateBootUUID      "$IMG"
