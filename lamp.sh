@@ -297,7 +297,6 @@ function install
   if ! [[ -f "$DBPID_FILE" ]]; then
     log -1 "Starting MariaDB"
     mysqld &
-    local DB_PID="$?"
   fi
 
   # wait for mariadb
