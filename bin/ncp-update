@@ -96,12 +96,15 @@ fi
     git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
     cd "$TMPDIR"/temporary || exit 1
     VER="$(git describe --tags `git rev-list --tags --max-count=1` | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; })"
+    echo "$VER" > "$TMPDIR"/version
     cd "$TMPDIR" || exit 1
     rm --recursive --force "$TMPDIR"/temporary
   }
 
-  echo "$VER" > /usr/local/etc/ncp-version
-  echo "$VER" > /var/run/.ncp-latest-version
+  #echo "$VER" > /usr/local/etc/ncp-version
+  #echo "$VER" > /var/run/.ncp-latest-version
+  echo "$TMPDIR"/version > /usr/local/etc/ncp-version
+  echo "$TMPDIR"/version > /var/run/.ncp-latest-version
 
   # write changelog
   git log --graph --oneline --decorate \
