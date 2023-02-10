@@ -340,8 +340,7 @@ function hasCMD {
 # 2: Package is not installed and is not available in apt
 # 3: Missing package argument to check
 function hasPKG {
-  if [[ "$#" -eq 1 ]]
-  then
+  if [[ "$#" -eq 1 ]]; then
     local -r CHECK="$1"
     if dpkg-query --status "$CHECK" &>/dev/null; then
       return 0
@@ -597,15 +596,13 @@ function checkDistro {
 }
 
 # Return codes
-# 1: Invalid number of arguments
-# 2: File not found: $CFG_FILE
+# 1: File not found: $CFG_FILE
 function clearPasswordFields {
-  [[ "$#" -ne 1 ]] && return 1
   local -r CFG_FILE="$1"
   local LENGTH TYPE VAL
   if ! isFile "$CFG_FILE"; then
     log 2 "File not found: $CFG_FILE"
-    return 2
+    return 1
   fi
   LENGTH="$(jq '.params | length' "$CFG_FILE")"
   for (( i = 0 ; i < "$LENGTH" ; i++ )); do
@@ -677,9 +674,7 @@ function isAppActive {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function isAppEnabled {
-  [[ "$#" -ne 1 ]] && return 1
   local -r APP="$1"
    ncc app:list | sed '0,/Disabled/!d' | grep -q "$APP"
 }
@@ -713,9 +708,7 @@ function infoApp {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function isIP {
-  [[ "$#" -ne 1 ]] && return 1
   local -r IP_OR_DOMAIN="$1"
   grep -oPq '\d{1,3}(.\d{1,3}){3}' <<<"$IP_OR_DOMAIN"
 }
@@ -799,9 +792,7 @@ function startNotifyPush {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function notifyAdmin {
-  [[ "$#" -ne 2 ]] && return 1
   local HEADER="$1" MSG="$2" ADMINS
   ADMINS=$(mysql -u root nextcloud -Nse "select uid from oc_group_user where gid='admin';")
   if isZero "$ADMINS"; then
@@ -878,9 +869,7 @@ function runAppUnsafe {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 function findAppParamNumber {
-  [[ "$#" -ne 2 ]] && return 1
   local SCRIPT="${1?}" PARAM_ID="${2?}" \
         NCP_APP CFG_FILE LENGTH VAL VAR P_ID
   NCP_APP="$(basename "$SCRIPT" .sh)"

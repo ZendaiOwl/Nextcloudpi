@@ -319,7 +319,8 @@ function hasPKG
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-function installPKG {
+function installPKG
+{
   if [[ "$#" -eq 0 ]]; then
     log 2 "Requires: [PKG(s) to install]"
     return 3
@@ -395,7 +396,8 @@ function findProcess
 # 1: No such running process
 # 2: Missing argument: process
 # 3: Missing command: pgrep
-function findFullProcess {
+function findFullProcess
+{
   if hasCMD pgrep &>/dev/null
   then
     if [[ "$#" -eq 1 ]]
@@ -1280,23 +1282,23 @@ function uploadDocker
 function isDocker
 {
   (
-  if isDirectory build/docker; then
-    if ! cd build/docker; then
-      log 2 "Failed to change directory to: build/docker"
-      return 3
+    if isDirectory build/docker; then
+      if ! cd build/docker; then
+        log 2 "Failed to change directory to: build/docker"
+        return 3
+      fi
+    else
+      log 2 "Directory not found:  build/docker"
+      return 4
     fi
-  else
-    log 2 "Directory not found:  build/docker"
-    return 4
-  fi
-  docker compose down
-  docker volume rm docker_ncdata
-  docker compose up -d
-  sleep 30
-  ../../tests/activation_tests.py
-  ../../tests/nextcloud_tests.py
-  ../../tests/system_tests.py
-  docker compose down
+    docker compose down
+    docker volume rm docker_ncdata
+    docker compose up -d
+    sleep 30
+    ../../tests/activation_tests.py
+    ../../tests/nextcloud_tests.py
+    ../../tests/system_tests.py
+    docker compose down
   )
 }
 
