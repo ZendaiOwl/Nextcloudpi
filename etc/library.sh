@@ -456,12 +456,9 @@ function installApp {
 }
 
 # Return codes
-# 0:
-# 1: Invalid number of arguments
 # 2: Missing package: dialog
 # 3: Failed to install: dialog
 function configureApp {
-  [[ "$#" -ge 1 ]] && return 1
   local -r NCP_APP="$1"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
   local BACKTITLE="NextcloudPi installer configuration" \
@@ -749,10 +746,8 @@ function verNextcloud {
 }
 
 # Return codes
-# 1: Invalid number of arguments
 # 2: Missing command: ncc
 function setNextcloudDomain {
-  [[ "$#" -ne 1 ]] && return 1
   local DOMAIN="${1?}" PROTOCOL URL
   DOMAIN="$(sed 's|http.\?://||;s|\(/.*\)||' <<<"$DOMAIN")"
   if ! ping -c1 -w1 -q "$DOMAIN" &>/dev/null; then
