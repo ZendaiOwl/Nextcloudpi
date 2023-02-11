@@ -2,7 +2,7 @@ English | [Traditional Chinese 繁體中文](i18n/README-zh_TW.md) | [Simplified
 
 _(The translated README pages are not updated at this time)_
 
-# NextcloudPi
+# NextCloudPi
 
 [![Telegram icon][telegram-badge]][chat-telegram] [![Matrix icon][matrix-badge]][chat-matrix] [![Docker icon][docker-badge]][ncp-docker-hub] [![Nextcloud icon][nc-badge]][nc-github]
 
@@ -12,14 +12,14 @@ _(The translated README pages are not updated at this time)_
   <img src="https://github.com/nextcloud/nextcloudpi/blob/master/ncp-app/img/app.svg"
        width="120"
        height="85"
-       alt="NextcloudPi logo">
+       alt="NextCloudPi logo">
 </p>
 
-This is the build code for the [NextcloudPi][ncp-website] open-source community project.
+This is the build code for the [NextCloudPi][ncp-website] open-source community project.
 
-NextcloudPi is a ready to use image for Virtual Machines, Raspberry Pi, Odroid HC1, Rock64 and other boards. ([⇒ Downloads][ncp-releases])
+NextCloudPi is a ready to use image for Virtual Machines, Raspberry Pi, Odroid HC1, Rock64 and other boards. ([⇒ Downloads][ncp-releases])
 
-This code also generates the NextcloudPi [Docker image][ncp-docker-hub], LXD container & VM, there is an install script for the latest stable Debian based system as well.
+This code also generates the NextCloudPi [Docker image][ncp-docker-hub], LXD container & VM, there is an install script for the latest stable Debian based system as well.
 
 Find the documentation at [docs.nextcloudpi.com][ncp-docs-website], the documentation is all written by volunteers.
 
@@ -63,7 +63,7 @@ Please reach out in the [Matrix][chat-matrix-wiki] or [Telegram][chat-telegram-w
 ## Extras
 
  * Setup wizard
- * NextcloudPi Web Panel
+ * NextCloudPi Web Panel
  * Wi-Fi ready
  * Ram logs
  * Automatic security updates, activated by default.
@@ -142,7 +142,7 @@ It takes a moment to start completely, you can check this with `docker logs next
 
 ```
 # Imports the LXC image, replace the X's with version number
-lxc image import "NextcloudPi_LXD_vX.XX.X.tar.gz" --alias "nextcloudpi"
+lxc image import "NextCloudPi_LXD_vX.XX.X.tar.gz" --alias "nextcloudpi"
 
 # Launches a container from the image
 lxc launch "nextcloudpi" ncp
@@ -161,7 +161,7 @@ Installation: `bash -c "$(wget -qLO - https://github.com/tteck/Proxmox/raw/main/
 
 Default Settings: `2GB RAM - 8GB Storage - 2vCPU`
 
-_(Check his [website][website-helper-scripts] if this has changed and we haven't had the time to update it here yet, it's located under: Media - Photo > NextcloudPi LXC)_
+_(Check his [website][website-helper-scripts] if this has changed and we haven't had the time to update it here yet, it's located under: Media - Photo > NextCloudPi LXC)_
 
 Thenk you [tteck][tteck-profile] :heart: for making the helper script & letting us use this for Proxmox installations :pray:
 
@@ -224,7 +224,7 @@ build/build-docker.sh arm64
 ./build/build-LXD.sh
 ```
 
-NextcloudPi can be installed in any architecture running the latest Debian
+NextCloudPi can be installed in any architecture running the latest Debian
 
 _Note: this assumes a clean Debian install, and there is no rollback method_
 
@@ -286,7 +286,7 @@ You can find us on the [Forum][nc-forum], [Telegram][chat-telegram] or [Matrix][
 
 [chat-matrix-wiki]: https://matrix.to/#/#NCP_Wiki_Team:matrix.org
 
-[chat-telegram]: https://t.me/NextcloudPi
+[chat-telegram]: https://t.me/NextCloudPi
 
 [chat-telegram-wiki]: https://t.me/NCP_Wiki_Team
 

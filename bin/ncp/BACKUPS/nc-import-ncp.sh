@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Import NextcloudPi configuration
+# Import NextCloudPi configuration
 #
 #
 # Copyleft 2017 by Courtney Hicks

@@ -2,7 +2,7 @@
 
 # arguments: $RELEASE $LINUXFAMILY $BOARD $BUILD_DESKTOP
 
-# This is the image customization script for NextcloudPi on Armbian
+# This is the image customization script for NextCloudPi on Armbian
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -25,12 +25,12 @@ source etc/library.sh # sets RELEASE
 chage -d -1 root
 
 # install NCP
-echo -e "\nInstalling NextcloudPi"
+echo -e "\nInstalling NextCloudPi"
 
 hostname -F /etc/hostname # fix 'sudo resolve host' errors
 
 CODE_DIR="$(pwd)" bash install.sh
-run_appUnsafe post-inst.sh
+run_app_unsafe post-inst.sh
 
 # disable SSH by default, it can be enabled through ncp-web
 systemctl disable ssh

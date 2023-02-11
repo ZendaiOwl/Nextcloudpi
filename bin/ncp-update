@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Update to the latest NextcloudPi code from GitHub
+# Update to the latest NextCloudPi code from GitHub
 
 # A log that uses log levels for logging different outputs
 # Log levels
@@ -116,7 +116,7 @@ fi
     sed '/HEAD ->\|origin/s|\[.*\(tag: v[0-9]\+\.[0-9]\+\.[0-9]\+\).*\]|[\1]|' | \
     sed 's|* \[tag: |[|' > /usr/local/etc/ncp-changelog
 
-  log 0 "NextcloudPi updated to: $VER"
+  log 0 "NextCloudPi updated to: $VER"
   exit 0
 
 } # force to read the whole thing into memory, as its contents might change in update.sh

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# spDYN setup for NextcloudPi
+# spDYN setup for NextCloudPi
 #
 #
 # Copyleft 2017/2018 by Timm Goldenstein and Timo Stiefel

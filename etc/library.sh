@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# NextcloudPi function library
+# NextCloudPi function library
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -287,34 +287,6 @@ function isArray {
   fi
 }
 
-# Return codes
-function is_more_recent_than {
-  local -r VERSION_A="$1" VERSION_B="$2"
-  local MAJOR_A MINOR_A PATCH_A MAJOR_B MINOR_B PATCH_B
-
-  MAJOR_A="$(cut -d. -f1 <<<"$VERSION_A")"
-  MINOR_A="$(cut -d. -f2 <<<"$VERSION_A")"
-  PATCH_A="$(cut -d. -f3 <<<"$VERSION_A")"
-
-  MAJOR_B="$(cut -d. -f1 <<<"$VERSION_B")"
-  MINOR_B="$(cut -d. -f2 <<<"$VERSION_B")"
-  PATCH_B="$(cut -d. -f3 <<<"$VERSION_B")"
-
-  # Compare version A with version B
-  # Returns a 1 if A is more recent than B
-  if isGreater "$MAJOR_B" "$MAJOR_A"; then
-    return 1
-  elif isEqual "$MAJOR_B" "$MAJOR_A" && \
-       isGreater "$MINOR_B" "$MINOR_A"; then
-    return 1
-  elif isEqual "$MAJOR_B" "$MAJOR_A" && \
-       isEqual "$MINOR_B" "$MINOR_A" && \
-       isGreaterOrEqual "$PATCH_B" "$PATCH_A"; then
-    return 1
-  fi
-  return 0
-}
-
 # Checks if a command exists on the system
 # Return status codes
 # 0: Command exists on the system
@@ -417,7 +389,7 @@ function install_with_shadow_workaround {
     RESTORE_SHADOW=true
     [[ -L /etc/shadow ]] || RESTORE_SHADOW=false
     [[ "$RESTORE_SHADOW" == "false" ]] || {
-      trap "mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow" EXIT
+      trap "mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow" EXIT SIGINT SIGABRT SIGHUP
       rm /etc/shadow
       cp /data/etc/shadow /etc/shadow
     }
@@ -434,205 +406,32 @@ function install_with_shadow_workaround {
   )
 }
 
-# Appends '/usr/local/sbin:/usr/sbin:/sbin' to PATH
-function appendPath
-{
-  PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
-  export PATH
-}
-
-# Checks for MariaDB installation
 # Return codes
-# 0: No such database: nextcloud
-# 1: Database exists: nextcloud
-# 2: Missing command: Database command, default: MySQL
-function hasDatabase {
-  local CMD1="${1:-mysqld}" CMD2="${2:-mysql}"
-  # Check for installed software
-  if hasCMD "$CMD1"; then
-    log 1 "Existing MySQL configuration will be changed"
-    if "$CMD2" -e 'use nextcloud' &>/dev/null; then
-      log 2 "Database exists: nextcloud"
-      return 1
-    else
-      return 0
-    fi
-  else
-    return 2
-  fi
-}
+function is_more_recent_than {
+  local -r VERSION_A="$1" VERSION_B="$2"
+  local MAJOR_A MINOR_A PATCH_A MAJOR_B MINOR_B PATCH_B
 
-function addUnsetVariable
-{
-  UNSETVAR+=("$@")
-  declare -x -g -a UNSETVAR
-}
+  MAJOR_A="$(cut -d. -f1 <<<"$VERSION_A")"
+  MINOR_A="$(cut -d. -f2 <<<"$VERSION_A")"
+  PATCH_A="$(cut -d. -f3 <<<"$VERSION_A")"
 
-function cleanupLibraryVariables
-{
-  unset "${UNSETVAR[@]}"
-  unset UNSETVAR
-}
+  MAJOR_B="$(cut -d. -f1 <<<"$VERSION_B")"
+  MINOR_B="$(cut -d. -f2 <<<"$VERSION_B")"
+  PATCH_B="$(cut -d. -f3 <<<"$VERSION_B")"
 
-function createTmpDirectory
-{
-  declare -x -g TMPDIR
-  if isRoot; then
-    TMPDIR="$(mktemp -d /tmp/nextcloudpi.XXXXXX || ( log 2 "Failed to create a temporary directory" >&2; exit 1; ))"
-  else
-    TMPDIR="$(sudo mktemp -d /tmp/nextcloudpi.XXXXXX || ( log 2 "Failed to create a temporary directory" >&2; exit 1; ))"
-  fi
-  #trap 'cd -; rm -rf "$TMPDIR"; unset TMPDIR' EXIT SIGHUP SIGILL SIGABRT SIGINT
-}
-
-function cleanupCodeDir
-{
-  cd - || return 1
-  if isSet CODE_DIR; then
-    if isRoot; then
-      rm --recursive --force "$CODE_DIR"
-    else
-      sudo rm --recursive --force "$CODE_DIR"
-    fi
-  else
-    log 2 "No code directory set to: CODE_DIR $CODE_DIR"
-    return 2
-  fi
-}
-
-function cleanupTempDirectory
-{
-  if isSet TMPDIR; then
-    cd - || return 1
-    rm --recursive --force "$TMPDIR"
-    unset TMPDIR
-  else
-    log -1 "No temporary directory to cleanup"
-  fi
-}
-
-function cleanupLibrary
-{
-  cleanupTempDirectory
-  cleanupLibraryVariables
-  if isSet CODE_DIR; then
-    cleanupCodeDir
-  fi
-}
-
-function setOwner
-{
-  declare -x -g OWNER
-  if isEqual "$#" 1; then
-    OWNER="$1"
-  else
-    OWNER="${OWNER:-ZendaiOwl}"
-  fi
-  addUnsetVariable OWNER
-  #trap 'unset OWNER' EXIT SIGILL SIGHUP SIGABRT SIGINT
-}
-
-function setRepository
-{
-  declare -x -g REPO
-  if isEqual "$#" 1; then
-    REPO="$1"
-  else
-    REPO="${REPO:-nextcloudpi}"
-  fi
-  addUnsetVariable REPO
-  #trap 'unset REPO' EXIT SIGILL SIGHUP SIGABRT SIGINT
-}
-
-function setBranch
-{
-  declare -x -g BRANCH
-  if isEqual "$#" 1; then
-    BRANCH="$1"
-  else
-    BRANCH="${BRANCH:-Refactoring}"
-  fi
-  addUnsetVariable BRANCH
-  #trap 'unset BRANCH' EXIT SIGILL SIGHUP SIGABRT SIGINT
-}
-
-# Fetch build code
-function fetchBuildCode
-{
-  if isEqual "$#" 3; then
-    #local -r OWNER="$1" REPO="$2" BRANCH="$3"
-    setOwner "$1"
-    setRepository "$2"
-    setBranch "$3"
-  elif isEqual "$#" 4; then
-    setOwner "$1"
-    setRepository "$2"
-    setBranch "$3"
-    local -r DIRECTORY="$4"
-  else
-    local -r OWNER="${OWNER:-ZendaiOwl}" \
-             REPO="${REPO:-nextcloudpi}" \
-             BRANCH="${BRANCH:-Refactoring}"
-  fi
-  
-  # Get installation code from repository
-  if isZero "$CODE_DIR"; then
-    log -1 "Fetching build code"
-    if isSet DIRECTORY; then
-      CODE_DIR="$DIRECTORY"/"$REPO"
-    elif isSet TMPDIR; then
-      CODE_DIR="$TMPDIR"/"$REPO"
-    else
-      createTmpDirectory
-      CODE_DIR="$TMPDIR"/"$REPO"
-    fi
-    declare -x -g CODE_DIR
-  fi
-    git clone -b "$BRANCH" https://github.com/"$OWNER"/"$REPO".git "$CODE_DIR"
-  fi
-}
-
-function basePackages
-{
-  PACKAGES+=(
-    git
-    ca-certificates
-    sudo
-    lsb-release
-    wget
-    libzip2
-    curl
-    bc
-    dialog
-    psmisc
-    procps
-    zip
-    unzip
-    xz-utils
-    apt-utils
-    apt-transport-https
-    binutils
-  )
-  declare -x -a -g PACKAGES
-}
-
-function addPackages
-{
-  PACKAGES+=("$@")
-  declare -x -a -g PACKAGES
-}
-
-# Installs packages stored in the PACKAGES array variable
-# Return codes
-# 1: Array variable not set: PACKAGES
-function installPackages
-{
-  if isSet PACKAGES; then
-    installPKG "${PACKAGES[@]}"
-  else
-    log 2 "No packages found for installation" 1>&2
+  # Compare version A with version B
+  # Returns a 1 if A is more recent than B
+  if isGreater "$MAJOR_B" "$MAJOR_A"; then
+    return 1
+  elif isEqual "$MAJOR_B" "$MAJOR_A" && \
+       isGreater "$MINOR_B" "$MINOR_A"; then
+    return 1
+  elif isEqual "$MAJOR_B" "$MAJOR_A" && \
+       isEqual "$MINOR_B" "$MINOR_A" && \
+       isGreaterOrEqual "$PATCH_B" "$PATCH_A"; then
     return 1
   fi
+  return 0
 }
 
 # Return codes
@@ -661,7 +460,7 @@ function install_app {
 function configure_app {
   local -r NCP_APP="$1"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-  local BACKTITLE="NextcloudPi installer configuration" \
+  local BACKTITLE="NextCloudPi installer configuration" \
         RET=1 CFG LENGTH VAR VAL IDX VALUE \
         PARAMETERS=() VARIABLES=() VALUES=() RETURN_VALUES=()
   # Dialog
@@ -901,7 +700,7 @@ function info_app {
   fi
 
   whiptail --yesno \
-	  --backtitle "NextcloudPi configuration" \
+	  --backtitle "NextCloudPi configuration" \
 	  --title "$INFOTITLE" \
 	  --yes-button "I understand" \
 	  --no-button "Go back" \
@@ -1015,11 +814,11 @@ function run_app {
     log 2 "File not found: $SCRIPT"
     return 1
   fi
-  run_appUnsafe "$SCRIPT"
+  run_app_unsafe "$SCRIPT"
 }
 
 # Return codes
-function run_appUnsafe {
+function run_app_unsafe {
   local -r SCRIPT="$1" LOG='/var/log/ncp.log'
   local NCP_APP CFG_FILE LENGTH VAR VAL RET
         
@@ -1070,7 +869,7 @@ function run_appUnsafe {
 }
 
 # Return codes
-function find_app_paramNumber {
+function find_app_param_num {
   local SCRIPT="${1?}" PARAM_ID="${2?}" \
         NCP_APP CFG_FILE LENGTH VAL VAR P_ID
   NCP_APP="$(basename "$SCRIPT" .sh)"
@@ -1094,7 +893,7 @@ function find_app_param {
   NCP_APP="$(basename "$SCRIPT" .sh)"
   CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
 
-  if ! P_NUM="$(find_app_paramNumber "$SCRIPT" "$PARAM_ID")"; then
+  if ! P_NUM="$(find_app_param_num "$SCRIPT" "$PARAM_ID")"; then
     log 2 "Parameter index not found: $SCRIPT"
     return 1
   fi
@@ -1203,7 +1002,7 @@ function restore_maintenance_mode {
 
 function needs_decrypt {
   local ACTIVE
-  ACTIVE="$(find_app_paramNumber nc-encrypt ACTIVE)"
+  ACTIVE="$(find_app_param_num nc-encrypt ACTIVE)"
   (! isActiveApp nc-encrypt) && isMatch "$ACTIVE" "yes"
 }
 
@@ -1228,7 +1027,7 @@ function get_nc_config_value {
   #ncc config:system:get "${1?Missing required argument: config key}"
 }
 
-function clear_opcache() {
+function clear_opcache {
   # shellcheck disable=SC2155
   local DATA_DIR="$(get_nc_config_value datadirectory)"
   if isDirectory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"; then
@@ -1331,8 +1130,6 @@ export NCVER
 export NCLATESTVER
 export PHPVER
 export RELEASE
-
-trap 'cleanupLibrary' EXIT SIGILL SIGHUP SIGABRT SIGINT
 
 # License
 #

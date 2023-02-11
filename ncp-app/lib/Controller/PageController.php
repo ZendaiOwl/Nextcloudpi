@@ -1,5 +1,5 @@
 <?php
-namespace OCA\NextcloudPi\Controller;
+namespace OCA\NextCloudPi\Controller;
 
 use OCP\IRequest;
 use OCP\AppFramework\Http\TemplateResponse;

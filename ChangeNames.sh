@@ -121,8 +121,10 @@ if isFile ReplaceNames.txt; then
   done
   LENGTH="${#IN[@]}"
   for (( i = 0; i < "$LENGTH"; i+=2 )); do
-    echo "Replacing: ${IN[$i]} | With: ${IN[$(($i + 1))]}"
-    replaceTextInAllFiles "${IN[$i]}" "${IN[$(($i + 1))]}"
+    #echo "Replacing: ${IN[$i]} | With: ${IN[$(($i + 1))]}"
+    #replaceTextInAllFiles "${IN[$i]}" "${IN[$(($i + 1))]}"
+    echo "Replacing: ${IN[$(($i + 1))]} | With: ${IN[$i]}"
+    replaceTextInAllFiles "${IN[$(($i + 1))]}" "${IN[$i]}"
   done
   mv "$BACKUP" "$CURRENT"
   unset IN LENGTH CURRENT BACKUP

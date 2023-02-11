@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# DuckDNS installation on Raspbian for NextcloudPi
+# DuckDNS installation on Raspbian for NextCloudPi
 #
 #
 # Copyleft 2017 by Courtney Hicks

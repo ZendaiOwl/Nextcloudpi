@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# NextcloudPi installation script
+# NextCloudPi installation script
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -253,7 +253,7 @@ if isDirectory "$CODE_DIR"; then
 fi 
 
 # install NCP
-log -1 "Installing NextcloudPi"
+log -1 "Installing NextCloudPi"
 
 if isFile 'etc/library.sh'; then
   # shellcheck disable=SC1091
@@ -285,11 +285,11 @@ cp etc/ncp.cfg /usr/local/etc/
 cp -r etc/ncp-templates /usr/local/etc/
 install_app    lamp.sh
 install_app    bin/ncp/CONFIG/nc-nextcloud.sh
-run_appUnsafe bin/ncp/CONFIG/nc-nextcloud.sh
+run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh
 rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg    # armbian overlay is ro
 systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
 install_app    ncp.sh
-run_appUnsafe bin/ncp/CONFIG/nc-init.sh
+run_app_unsafe bin/ncp/CONFIG/nc-init.sh
 log -1 'Moving data directory to a more sensible location'
 df -h
 mkdir -p /opt/ncdata
@@ -297,7 +297,7 @@ mkdir -p /opt/ncdata
   should_rm_datadir_cfg=true
   cp etc/ncp-config.d/nc-datadir.cfg /usr/local/etc/ncp-config.d/nc-datadir.cfg
 }
-DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_appUnsafe bin/ncp/CONFIG/nc-datadir.sh
+DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe bin/ncp/CONFIG/nc-datadir.sh
 [[ -z "$should_rm_datadir_cfg" ]] || rm /usr/local/etc/ncp-config.d/nc-datadir.cfg
 rm /.ncp-image
 
