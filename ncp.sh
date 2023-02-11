@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# NextCloudPi additions to Raspbian
+# NextcloudPi additions to Raspbian
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -185,7 +185,7 @@ function install
   # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
   if isFile '/usr/bin/raspi-config' ]]; then
     # shellcheck disable=SC1003
-    sed -i '/S3 Password/i "S0 NextCloudPi Configuration" "Configuration of NextCloudPi" \\' /usr/bin/raspi-config
+    sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' /usr/bin/raspi-config
     sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             /usr/bin/raspi-config
   fi
 
@@ -413,7 +413,7 @@ EOF
     ## tag image
     is_docker && local DOCKER_TAG="_docker"
     is_lxc && local DOCKER_TAG="_lxc"
-    echo "NextCloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
+    echo "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
 
     ## SSH hardening
     if [[ -f /etc/ssh/sshd_config ]]; then

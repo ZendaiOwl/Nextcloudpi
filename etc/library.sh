@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# NextCloudPi function library
+# NextcloudPi function library
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -460,7 +460,7 @@ function install_app {
 function configure_app {
   local -r NCP_APP="$1"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-  local BACKTITLE="NextCloudPi installer configuration" \
+  local BACKTITLE="NextcloudPi installer configuration" \
         RET=1 CFG LENGTH VAR VAL IDX VALUE \
         PARAMETERS=() VARIABLES=() VALUES=() RETURN_VALUES=()
   # Dialog
@@ -700,7 +700,7 @@ function info_app {
   fi
 
   whiptail --yesno \
-	  --backtitle "NextCloudPi configuration" \
+	  --backtitle "NextcloudPi configuration" \
 	  --title "$INFOTITLE" \
 	  --yes-button "I understand" \
 	  --no-button "Go back" \

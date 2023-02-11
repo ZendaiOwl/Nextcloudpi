@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# NextCloudPi installation script
+# NextcloudPi installation script
 #
 # Copyleft 2017 by Ignacio Nunez Hernanz <nacho _a_t_ ownyourbits _d_o_t_ com>
 # GPL licensed (see end of file) * Use at your own risk!
@@ -253,7 +253,7 @@ if isDirectory "$CODE_DIR"; then
 fi 
 
 # install NCP
-log -1 "Installing NextCloudPi"
+log -1 "Installing NextcloudPi"
 
 if isFile 'etc/library.sh'; then
   # shellcheck disable=SC1091
