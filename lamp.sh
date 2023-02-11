@@ -70,6 +70,36 @@ function isRoot {
   [[ "$EUID" -eq 0 ]]
 }
 
+# Checks if a user exists
+# Return codes
+# 0: Is a user
+# 1: Not a user
+# 2: Invalid number of arguments
+function isUser
+{
+  [[ "$#" -ne 1 ]] && return 2
+  if id -u "$1" &>/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Checks if a user does not exist
+# Return codes
+# 0: Not a user
+# 1: Is a user
+# 2: Invalid number of arguments
+function notUser
+{
+  [[ "$#" -ne 1 ]] && return 2
+  if ! id -u "$1" &>/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Checks if a given path to a file exists
 # Return codes
 # 0: Path exist
