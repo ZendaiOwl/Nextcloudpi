@@ -2,10 +2,12 @@
 
 set -e
 set +u
+
+# shellcheck disable=SC1090
 source /usr/local/etc/library.sh
 
-[[ "$1" != "--defaults" ]] || echo "INFO: Restoring template to default settings" >&2
-isDocker && echo "INFO: Docker installation detected" >&2
+[[ "$1" != "--defaults" ]] || log -1 "Restoring template to default settings" >&2
+is_docker && echo "INFO: Docker installation detected" >&2
 
 if [[ "$1" != "--defaults" ]]; then
   LETSENCRYPT_DOMAIN="$(
@@ -17,7 +19,7 @@ if [[ "$1" != "--defaults" ]]; then
   )"
 fi
 
-[[ -z "$LETSENCRYPT_DOMAIN" ]] || echo "INFO: Letsencrypt domain is ${LETSENCRYPT_DOMAIN}" >&2
+[[ -z "$LETSENCRYPT_DOMAIN" ]] || log -1 "Letsencrypt domain: $LETSENCRYPT_DOMAIN" >&2
 
 # skip during build
 if ! [[ -f /.ncp-image ]] && [[ "$1" != "--defaults" ]] && [[ -f "${BINDIR}/SYSTEM/metrics.sh" ]]; then
@@ -29,7 +31,7 @@ else
   METRICS_IS_ENABLED=no
 fi
 
-echo "INFO: Metrics enabled: ${METRICS_IS_ENABLED}" >&2
+log -1 "Metrics enabled: $METRICS_IS_ENABLED" >&2
 
 echo "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
 echo ""
@@ -41,7 +43,7 @@ cat <<EOF
 EOF
 
 if [[ "$1" != "--defaults" ]] && [[ -n "$LETSENCRYPT_DOMAIN" ]]; then
-  echo "    ServerName ${LETSENCRYPT_DOMAIN}"
+  echo "    ServerName $LETSENCRYPT_DOMAIN"
 
   # try the obvious path first
   LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/${LETSENCRYPT_DOMAIN,,}"
@@ -140,6 +142,6 @@ cat <<EOF
 EOF
 
 if ! [[ -f /.ncp-image ]]; then
-  echo "Apache self check:" >&2
+  log -1 "Apache self check:" >&2
   apache2ctl -t 1>&2
 fi

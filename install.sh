@@ -220,7 +220,7 @@ BRANCH="${BRANCH:-Refactoring}"
 [[ -z "$DBG" ]] && set -e
 
 TMPDIR="$(mktemp -d /tmp/nextcloudpi.XXXXXX || (echo "Failed to create temp dir. Exiting" >&2 ; exit 1) )"
-trap "rm -rf \"${TMPDIR}\"" EXIT SIGHUP SIGILL SIGABRT
+trap 'rm -rf "$TMPDIR"' EXIT SIGHUP SIGILL SIGABRT
 
 if ! isRoot; then
   log 2 "Must be run as root or with sudo. Try 'sudo $0'"
@@ -242,18 +242,21 @@ fi
 installPKG git ca-certificates sudo lsb-release wget
 
 # get install code
-if isMatch "$CODE_DIR" ""; then
+if isZero "$CODE_DIR"; then
   log -1 "Fetching build code"
   CODE_DIR="$TMPDIR"/"$REPO"
   git clone -b "$BRANCH" https://github.com/"$OWNER"/"$REPO".git "$CODE_DIR"
 fi
-cd "$CODE_DIR"
+
+if isDirectory "$CODE_DIR"; then
+  cd "$CODE_DIR"
+fi 
 
 # install NCP
 log -1 "Installing NextcloudPi"
 
 if isFile 'etc/library.sh'; then
-  # shellcheck disable=SC1090
+  # shellcheck disable=SC1091
   source etc/library.sh
 else
   log 2 "File not found: etc/library.sh"
@@ -261,7 +264,7 @@ else
 fi
 
 if isFile 'etc/ncp.cfg'; then
-  if ! checkDistro etc/ncp.cfg; then
+  if ! check_distro etc/ncp.cfg; then
     log 2 "Distro not supported"
     cat /etc/issue
     exit 1
@@ -280,13 +283,13 @@ cp etc/library.sh /usr/local/etc/
 cp etc/ncp.cfg /usr/local/etc/
 
 cp -r etc/ncp-templates /usr/local/etc/
-installApp    lamp.sh
-installApp    bin/ncp/CONFIG/nc-nextcloud.sh
-runAppUnsafe bin/ncp/CONFIG/nc-nextcloud.sh
+install_app    lamp.sh
+install_app    bin/ncp/CONFIG/nc-nextcloud.sh
+run_appUnsafe bin/ncp/CONFIG/nc-nextcloud.sh
 rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg    # armbian overlay is ro
 systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
-installApp    ncp.sh
-runAppUnsafe bin/ncp/CONFIG/nc-init.sh
+install_app    ncp.sh
+run_appUnsafe bin/ncp/CONFIG/nc-init.sh
 log -1 'Moving data directory to a more sensible location'
 df -h
 mkdir -p /opt/ncdata
@@ -294,7 +297,7 @@ mkdir -p /opt/ncdata
   should_rm_datadir_cfg=true
   cp etc/ncp-config.d/nc-datadir.cfg /usr/local/etc/ncp-config.d/nc-datadir.cfg
 }
-DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" runAppUnsafe bin/ncp/CONFIG/nc-datadir.sh
+DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_appUnsafe bin/ncp/CONFIG/nc-datadir.sh
 [[ -z "$should_rm_datadir_cfg" ]] || rm /usr/local/etc/ncp-config.d/nc-datadir.cfg
 rm /.ncp-image
 
@@ -304,7 +307,7 @@ rm /.ncp-image
 cd -
 rm -rf "$TMPDIR"
 
-IP="$(getIP)"
+IP="$(get_ip)"
 
 echo "Done.
 

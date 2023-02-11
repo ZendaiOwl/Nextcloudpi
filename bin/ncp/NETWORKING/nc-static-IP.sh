@@ -88,7 +88,7 @@ EOF
   }
  
   ncc config:system:set trusted_domains 1 --value="$IP"
-  setNextcloudDomain "${IP}"
+  set-nc-domain "${IP}"
   echo "Static IP set to $IP"
 }
 

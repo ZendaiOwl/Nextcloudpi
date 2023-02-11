@@ -135,7 +135,7 @@ REDIS_MEM=3gb
 
 function tmpl_max_transfer_time
 {
-  findAppParam nc-nextcloud MAXTRANSFERTIME
+  find_app_param nc-nextcloud MAXTRANSFERTIME
 }
 
 function install
@@ -182,7 +182,7 @@ function install
   echo "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
   echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
 
-  if isLXC; then
+  if is_lxc; then
     # Otherwise it fails to start in Buster LXC container
     mkdir -p /etc/systemd/system/redis-server.service.d
     cat > /etc/systemd/system/redis-server.service.d/lxc_fix.conf <<'EOF'
@@ -197,7 +197,7 @@ EOF
 
   service redis-server restart
   update-rc.d redis-server enable
-  clearOpCache
+  clear_opcache
 
   # service to randomize passwords on first boot
   mkdir -p /usr/lib/systemd/system
@@ -276,11 +276,11 @@ function configure
   )"
   if [[ -z "${OPCACHEDIR}" ]]
   then
-    installTemplate "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
   else
     mkdir -p "$OPCACHEDIR"
     chown -R "$HTUSER":"$HTUSER" "$OPCACHEDIR"
-    installTemplate "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
   fi
 
   ## RE-CREATE DATABASE TABLE
@@ -314,7 +314,7 @@ EOF
 
 ## SET APACHE VHOST
   log -1 "Setting up Apache"
-  installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback || {
+  install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback || {
       echo "ERROR: Parsing template failed. Nextcloud will not work."
       exit 1
   }
@@ -345,7 +345,7 @@ EOF
 
   arch="$(uname -m)"
   [[ "${arch}" =~ "armv7" ]] && arch="armv7"
-  installTemplate systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
+  install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
   [[ -f /.docker-image ]] || systemctl enable notify_push
 
   # some added security

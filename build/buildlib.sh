@@ -422,7 +422,7 @@ function findFullProcess
 # 1: Copying failed
 # 2: Invalid argument #2: [IP]
 # 3: File not found: [IMG]
-function launchInstallQEMU
+function launch_install_qemu
 {
   if isZero "$IP"; then
     log 2 "Invalid argument #2: [IP]"
@@ -450,10 +450,10 @@ function launchInstallQEMU
   fi
 
   # TODO
-  launchQEMU "$IMGOUT" &
+  launch_qemu "$IMGOUT" &
   sleep 10
-  waitSSH "$IP"
-  launchInstallation_qemu "$IP" || return 1 # uses $INSTALLATION_CODE
+  wait_SSH "$IP"
+  launch_installation_qemu "$IP" || return 1 # uses $INSTALLATION_CODE
   wait
   echo "$IMGOUT generated successfully"
 }
@@ -463,7 +463,7 @@ function launchInstallQEMU
 # 1: Invalid number of arguments
 # 2: File not found: [IMG]
 # 3: Missing command: sed
-function launchQEMU
+function launch_qemu
 {
   local IMG="$1"
   if ! isFile "$IMG"; then
@@ -491,7 +491,7 @@ function launchQEMU
 }
 
 # TODO: NEEDS TO BE REWORKED - PI USER NO LONGER EXISTS
-function sshPi
+function ssh_pi
 {
   local IP="$1" ARGS=("${@:2}") \
         PIUSER="${PIUSER:-pi}" \
@@ -519,12 +519,12 @@ function sshPi
 
 # Return codes
 # 1: Invalid number of arguments
-function waitSSH
+function wait_SSH
 {
   local IP="$1"
   log -1 "Waiting for SSH on: $IP"
   while true; do
-    sshPi "$IP" : && break
+    ssh_pi "$IP" : && break
     sleep 1
   done
   log -1 "SSH is up"
@@ -535,7 +535,7 @@ function waitSSH
 # 2: Needs to run configuration first
 # 3: No installation instructions available
 # 4: SSH installation to QEMU target failed
-function launchInstallation
+function launch_installation
 {
   local IP="$1"
   if isZero "$INSTALLATION_CODE"; then
@@ -552,7 +552,7 @@ sudo su
 set -e$DBG
 "
   log 2 "Launching installation"
-  if ! sshPi "$IP" "$PREINST_CODE" "$INSTALLATION_CODE" "$INSTALLATION_STEPS"; then
+  if ! ssh_pi "$IP" "$PREINST_CODE" "$INSTALLATION_CODE" "$INSTALLATION_STEPS"; then
     log 2 "SSH installation failed to QEMU target at: $IP"
     return 4
   fi
@@ -560,7 +560,7 @@ set -e$DBG
 
 # Return codes
 # 1: Invalid number of arguments
-function launchInstallationQEMU
+function launch_installationQEMU
 {
   local IP="$1" MATCH="1" CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
 
@@ -581,12 +581,12 @@ $CLEANUP_STEP
 $HALT_STEP
 "
   # Uses $INSTALLATION_CODE
-  launchInstallation "$IP"
+  launch_installation "$IP"
 }
 
 # Return codes
 # 1: Invalid number of arguments
-function launchInstallationOnline
+function launch_installationOnline
 {
   local IP="$1" MATCH="1" CFG_STEP INSTALLATION_STEPS
   if noMatch "$NO_CFG_STEP" "$MATCH"; then
@@ -597,10 +597,10 @@ install
 $CFG_STEP
 "
   # Uses $INSTALLATION_CODE
-  launchInstallation "$IP"
+  launch_installation "$IP"
 }
 
-function prepareDirectories
+function prepare_dirs
 {
   local DIRS=(tmp output cache)
   if noMatch "$CLEAN" "0"; then
@@ -614,7 +614,7 @@ function prepareDirectories
 # 1: File not found: [IMG]
 # 2: Mountpoint already exists
 # 3: Failed to mount IMG at mountpoint
-function mountRoot
+function mount_raspbian
 {
   local IMG="$1" MP='raspbian_root' SECTOR OFFSET
   if ! isFile "$IMG"; then
@@ -658,7 +658,7 @@ function mountRoot
 # 1: File not found: [IMG]
 # 2: Mountpoint already exists
 # 3: Failed to mount IMG at mountpoint
-function mountBoot
+function mount_raspbian_boot
 {
   local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
   if ! isFile "$IMG"; then
@@ -700,7 +700,7 @@ function mountBoot
 # 2: Could not remove directory: Root
 # 3: Could not unmount directory: Boot
 # 4: Could not remove directory: Boot
-function unmountRPi
+function umount_raspbian
 {
   local ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
   log -1 "Unmounting IMG"
@@ -758,10 +758,10 @@ function unmountRPi
 # 1: Invalid number of arguments
 # 2: Failed to mount IMG root
 # 3: File not found: /usr/bin/qemu-aarch64-static
-function prepareChrootRPi
+function prepare_chroot_raspbian
 {
   local -r IMG="$1" ROOTDIR='raspbian_root'
-  if ! mountRoot "$IMG"; then
+  if ! mount_raspbian "$IMG"; then
     return 2
   fi
   if isRoot; then
@@ -805,7 +805,7 @@ function prepareChrootRPi
   fi
 }
 
-function cleanChroot
+function clean_chroot_raspbian
 {
   local -r ROOTDIR='raspbian_root'
   log -1 "Cleaning chroot"
@@ -818,11 +818,11 @@ function cleanChroot
     sudo rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
     #sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
   fi
-  unmountRPi
+  umount_raspbian
 }
 
 # Sets DEV
-function resizeIMG
+function resize_image
 {
   local IMG="$1" SIZE="$2" DEV
   log -1 "Resize: IMG"
@@ -856,7 +856,7 @@ function resizeIMG
   fi
   
   log -1 "Resize: Mount IMG"
-  mountRoot "$IMG"
+  mount_raspbian "$IMG"
   
   if isRoot; then
     log -1 "Resize: resize2fs"
@@ -867,14 +867,14 @@ function resizeIMG
   fi
   
   log 0 "Resized IMG"
-  unmountRPi
+  umount_raspbian
 }
 
 # Return codes
 # 1: Invalid number of arguments
 # 2: Failed to mount IMG root
 # 3: Failed to mount IMG boot
-function updateBootUUID
+function update_boot_uuid
 {
   local -r IMG="$1" ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
   local PTUUID
@@ -885,7 +885,7 @@ function updateBootUUID
   fi
   log -1 "Updating IMG Boot UUID's"
 
-  if ! mountRoot "$IMG"; then
+  if ! mount_raspbian "$IMG"; then
     log 2 "Failed to mount IMG root"
     return 2
   fi
@@ -901,9 +901,9 @@ PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
 EOF
   fi
   
-  unmountRPi
+  umount_raspbian
 
-  if ! mountBoot "$IMG"; then
+  if ! mount_raspbian_boot "$IMG"; then
     log 2 "Failed to mount IMG boot"
     return 3
   fi
@@ -914,17 +914,17 @@ EOF
     sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
   fi
   
-  unmountRPi
+  umount_raspbian
 }
 
 # Return codes
 # 1: Invalid number of arguments
 # 2: Failed to mount IMG boot
 # 3: Failed to create SSH file in IMG boot
-function prepareSSHD
+function prepare_sshd_raspbian
 {
   local -r IMG="$1" BOOTDIR='raspbian_boot'
-  if ! mountBoot "$IMG"; then
+  if ! mount_raspbian_boot "$IMG"; then
     log 2 "Failed to mount IMG boot"
     return 2
   fi
@@ -940,16 +940,16 @@ function prepareSSHD
       return 3
     fi
   fi
-  unmountRPi
+  umount_raspbian
 }
 
 # Return codes
 # 1: Invalid number of arguments
 # 2: Failed to mount IMG root
-function setStaticIP
+function set_static_IP
 {
   local -r IMG="$1" IP="$2" ROOTDIR='raspbian_root'
-  if ! mountRoot "$IMG"; then
+  if ! mount_raspbian "$IMG"; then
     log 2 "Failed to mount IMG root"
     return 2
   fi
@@ -978,16 +978,16 @@ iface lo inet loopback
 EOF
   fi
   
-  unmountRPi
+  umount_raspbian
 }
 
 # Return codes
 # 1: Failed to mount IMG root
 # 2: Copy to image failed
-function copyToImage
+function copy_to_image
 {
   local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR='raspbian_root'
-  if ! mountRoot "$IMG"; then
+  if ! mount_raspbian "$IMG"; then
     log 2 "Failed to mount IMG root"
     return 1
   fi
@@ -1003,16 +1003,16 @@ function copyToImage
     fi
   fi
   sync
-  unmountRPi
+  umount_raspbian
 }
 
 # Return codes
 # 1: Invalid number of arguments
 # 2: Failed to mount IMG root
-function deactivateUnattendedUpgrades
+function deactivate_unattended_upgrades
 {
   local -r IMG="$1" ROOTDIR='raspbian_root'
-  if ! mountRoot "$IMG"; then
+  if ! mount_raspbian "$IMG"; then
     log 2 "Failed to mount IMG root"
     return 2
   fi
@@ -1025,7 +1025,7 @@ function deactivateUnattendedUpgrades
       sudo rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
     fi
   fi
-  unmountRPi
+  umount_raspbian
 }
 
 # Return codes
@@ -1033,7 +1033,7 @@ function deactivateUnattendedUpgrades
 # 1: Copy failed
 # 2: Download failed from URL
 # 3: Missing command: unxz
-function downloadRaspberryOS
+function download_raspbian
 {
   local -r URL="$1" IMGFILE="$2" \
            IMG_CACHE='cache/raspios_lite.img' \
@@ -1074,7 +1074,7 @@ function downloadRaspberryOS
 # 0: Success
 # 1: Invalid number of arguments
 # 2: Failed packing image
-function packImage
+function pack_image
 {
   local -r IMG="$1" TAR="$2"
   local DIR IMGNAME
@@ -1103,7 +1103,7 @@ function packImage
 # Return codes
 # 0: Success
 # 1: Invalid number of arguments
-function createTorrent
+function create_torrent
 {
   local -r TAR="$1"
   local IMGNAME DIR
@@ -1124,7 +1124,7 @@ function createTorrent
   transmission-remote -w "$PWD"/torrent -a "$DIR".torrent
 }
 
-function genChangelog
+function generate_changelog
 {
   git log --graph --oneline --decorate \
     --pretty=format:"[%<(13)%D](https://github.com/nextcloud/nextcloudpi/commit/%h) (%ad) %s" --date=short | \
@@ -1139,7 +1139,7 @@ function genChangelog
 # 2: File not found: $IMGNAME
 # 3: Failed to change directory to: torrent
 # 4: Directory not found
-function uploadFTP
+function upload_ftp
 {
   local -r IMGNAME="$1"
   local RET
@@ -1205,7 +1205,7 @@ EOF
   return "$RET"
 }
 
-function uploadImages
+function upload_images
 {
   if ! isDirectory output; then
     log 2 "Directory not found: output"
@@ -1219,11 +1219,11 @@ function uploadImages
 
   mkdir --parents archive
   for IMG in output/*.tar.bz2; do
-    uploadFTP "$(basename "$IMG" .tar.bz2)" && mv "$IMG" archive
+    upload_ftp "$(basename "$IMG" .tar.bz2)" && mv "$IMG" archive
   done
 }
 
-function uploadDocker
+function upload_docker
 {
   export DOCKER_CLI_EXPERIMENTAL=enabled
   local -r OWNER='ownyourbits'
@@ -1279,7 +1279,7 @@ function uploadDocker
   docker manifest push -p "$OWNER"/nextcloudpi:latest
 }
 
-function isDocker
+function is_docker
 {
   (
     if isDirectory build/docker; then
@@ -1302,21 +1302,21 @@ function isDocker
   )
 }
 
-function isLXC
+function is_lxc
 {
   local IP
   lxc stop ncp || true
   lxc start ncp
   # shellcheck disable=SC2016
   lxc exec ncp -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
-  IP="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && getIP')"
+  IP="$(lxc exec ncp -- bash -c 'source /usr/local/etc/library.sh && get_ip')"
   tests/activation_tests.py "$IP"
   tests/nextcloud_tests.py  "$IP"
   tests/system_tests.py
   lxc stop ncp
 }
 
-function isVM
+function test_vm
 {
   local IP
   virsh --connect qemu:///system shutdown ncp-vm &>/dev/null || true

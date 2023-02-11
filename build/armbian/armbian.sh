@@ -30,7 +30,7 @@ echo -e "\nInstalling NextcloudPi"
 hostname -F /etc/hostname # fix 'sudo resolve host' errors
 
 CODE_DIR="$(pwd)" bash install.sh
-runAppUnsafe post-inst.sh
+run_appUnsafe post-inst.sh
 
 # disable SSH by default, it can be enabled through ncp-web
 systemctl disable ssh

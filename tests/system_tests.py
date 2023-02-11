@@ -165,7 +165,7 @@ def check_notify_push():
         print(result.stdout)
         return False
 
-def isLXC():
+def is_lxc():
     "check that we are running inside a LXC container"
     (exitcode, output) = getstatusoutput('grep -q container=lxc /proc/1/environ')
     return exitcode == 0
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     # local method
     if os.path.exists('/usr/local/etc/ncp-baseimage'):
         print(tc.brown + "* local NCP instance detected" + tc.normal)
-        if not isLXC():
+        if not is_lxc():
             binaries_must_be_installed = binaries_must_be_installed + binaries_no_docker
         pre_cmd = []
 

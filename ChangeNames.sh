@@ -53,14 +53,11 @@ function hasCMD {
     local -r CHECK="$1"
     if command -v "$CHECK" &>/dev/null
     then
-      log -1 "Available"
       return 0
     else
-      log -1 "Unavailable"
       return 1
     fi
   else
-    log 2 "Requires: [Command]"
     return 2
   fi
 }
@@ -77,18 +74,16 @@ function isFile {
 # Search for files with pattern(s) recursively
 # Return codes
 # 0: Success
-# 1: Missing argument: String
+# 1: Missing argument: String pattern to locate
 # 2: Missing command: grep
 function getFilesWithText {
   if hasCMD grep &>/dev/null
   then
-    if [[ "$#" -gt 0 ]]
-    then
+    if [[ "$#" -gt 0 ]]; then
       local -r PATTERN="$*" ARGS=(--recursive --files-with-matches --exclude-dir=".*")
       grep "${ARGS[@]}" "$PATTERN" 2>/dev/null
       return 0
     else
-      log 2 "Requires: [Pattern(s) to locate]"
       return 1
     fi
   else
@@ -103,18 +98,13 @@ function getFilesWithText {
 # 1: Missing arguments: String, String
 # 2: Missing command: sed
 function replaceTextInAllFiles {
-  if ! hasCMD sed &>/dev/null
-  then
-    log 2 "Missing command: sed"
+  if ! hasCMD sed &>/dev/null; then
     return 2
-  elif [[ "$#" -ne 2 ]]
-  then
-    log 2 "Requires: [Text to replace] [New text]"
+  elif [[ "$#" -ne 2 ]]; then
     return 1
   else
     local -r FINDTEXT="$1" NEWTEXT="$2"
-    for F in $(getFilesWithText "$FINDTEXT")
-    do
+    for F in $(getFilesWithText "$FINDTEXT"); do
       sed -i "s|${FINDTEXT}|${NEWTEXT}|g" "$F"
     done
     return 0

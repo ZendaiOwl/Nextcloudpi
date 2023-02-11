@@ -12,15 +12,15 @@
 tmpl_get_destination() {
   (
   . /usr/local/etc/library.sh
-  findAppParam nc-snapshot-sync DESTINATION
+  find_app_param nc-snapshot-sync DESTINATION
   )
 }
 
 tmpl_is_destination_local() {
   (
   . /usr/local/etc/library.sh
-  isAppActive nc-snapshot-sync || exit 1
-  ! [[ "$(findAppParam nc-snapshot-sync DESTINATION)" =~ .*"@".*":".* ]]
+  is_active_app nc-snapshot-sync || exit 1
+  ! [[ "$(find_app_param nc-snapshot-sync DESTINATION)" =~ .*"@".*":".* ]]
   )
 }
 

@@ -60,7 +60,7 @@ source /usr/local/etc/library.sh
   exit 0
 }
 
-persistConfiguration /usr/local/etc/noip2 /data/etc/noip2
+persistent_cfg /usr/local/etc/noip2 /data/etc/noip2
 
 echo "Starting noip..."
 service noip2 start
@@ -85,7 +85,7 @@ configure()
 
   update-rc.d noip2 enable
   service noip2 restart
-  setNextcloudDomain "$DOMAIN"
+  set-nc-domain "$DOMAIN"
   echo "noip DDNS enabled"
 
 }

@@ -21,8 +21,8 @@ is_active()
 tmpl_letsencrypt_domain() {
   (
   . /usr/local/etc/library.sh
-  if isAppActive letsencrypt; then
-    findAppParam letsencrypt DOMAIN
+  if is_active_app letsencrypt; then
+    find_app_param letsencrypt DOMAIN
   fi
   )
 }
@@ -35,13 +35,13 @@ install()
   rm -f /etc/cron.d/certbot
   mkdir -p /etc/letsencrypt/live
 
-  isDocker && {
+  is_docker && {
     # execute before lamp stack
     cat > /etc/services-available.d/009letsencrypt <<EOF
 #!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
-persistConfiguration /etc/letsencrypt
+persistent_cfg /etc/letsencrypt
 
 exit 0
 EOF
@@ -57,7 +57,7 @@ configure()
     rm -f /etc/cron.weekly/letsencrypt-ncp
     rm -f /etc/letsencrypt/renewal-hooks/deploy/ncp
     [[ "$DOCKERBUILD" == 1 ]] && update-rc.d letsencrypt disable
-    installTemplate nextcloud.conf.sh "${nc_vhostcfg}"
+    install_template nextcloud.conf.sh "${nc_vhostcfg}"
     local cert_path="$(grep SSLCertificateFile   "${nc_vhostcfg}" | awk '{ print $2 }')"
     local key_path="$(grep SSLCertificateKeyFile "${nc_vhostcfg}" | awk '{ print $2 }')"
     sed -i "s|SSLCertificateFile.*|SSLCertificateFile ${cert_path}|"      "${ncp_vhostcfg}"
@@ -93,7 +93,7 @@ source /usr/local/etc/library.sh
 $letsencrypt renew --quiet
 
 # notify if fails
-[[ \$? -ne 0 ]] && notifyAdmin \
+[[ \$? -ne 0 ]] && notify_admin \
                      "SSL renewal error" \
                      "SSL certificate renewal failed. See /var/log/letsencrypt/letsencrypt.log"
 
@@ -106,7 +106,7 @@ EOF
     cat > /etc/letsencrypt/renewal-hooks/deploy/ncp <<EOF
 #!/usr/bin/env bash
 source /usr/local/etc/library.sh
-notifyAdmin \
+notify_admin \
   "SSL renewal" \
   "Your SSL certificate(s) \$RENEWED_DOMAINS has been renewed for another 90 days"
 exit 0
@@ -114,7 +114,7 @@ EOF
     chmod +x /etc/letsencrypt/renewal-hooks/deploy/ncp
 
     # Configure Apache
-    installTemplate nextcloud.conf.sh "${nc_vhostcfg}"
+    install_template nextcloud.conf.sh "${nc_vhostcfg}"
     local cert_path="$(grep SSLCertificateFile   "${nc_vhostcfg}" | awk '{ print $2 }')"
     local key_path="$(grep SSLCertificateKeyFile "${nc_vhostcfg}" | awk '{ print $2 }')"
     sed -i "s|SSLCertificateFile.*|SSLCertificateFile ${cert_path}|"      "${ncp_vhostcfg}"
@@ -133,13 +133,13 @@ EOF
         ((domain_index++))
       }
     done
-    setNextcloudDomain "$DOMAIN"
+    set-nc-domain "$DOMAIN"
 
     apachectl -k graceful
     rm -rf $ncdir/.well-known
 
     # Update configuration
-    isDocker && update-rc.d letsencrypt enable
+    is_docker && update-rc.d letsencrypt enable
 
     return 0
   }

@@ -18,7 +18,7 @@ install()
 configure() 
 {
   local ip
-  ip="$(getIP)"
+  ip="$(get_ip)"
   upnpc -d "$HTTPSPORT" TCP
   upnpc -d "$HTTPPORT"  TCP
   upnpc -a "$ip" 443 "$HTTPSPORT" TCP | tee >(cat - >&2) | grep -q "is redirected to internal" || \

@@ -40,9 +40,9 @@ build/build-VM.sh
 
 # Tests
 [[ "${SKIP_TESTS}" != 1 ]] && {
-  isLXC
-  isDocker
-  isVM
+  is_lxc
+  is_docker
+  test_vm
 }
 
 # Docker other
@@ -67,8 +67,8 @@ build/build-SD-armbian.sh odroidc2 OdroidC2
 
 # Uploads
 [[ "$FTPPASS" == "" ]] && exit
-uploadDocker
-uploadImages
+upload_docker
+upload_images
 
 
 # License

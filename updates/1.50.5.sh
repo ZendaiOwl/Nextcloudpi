@@ -6,4 +6,4 @@ source /usr/local/etc/library.sh
 
 # Reinstall auto snapshot script to apply fix
 [[ -f "$BINDIR/BACKUPS/nc-snapshot-auto.sh" ]] || exit 0
-runApp nc-snapshot-auto
+run_app nc-snapshot-auto

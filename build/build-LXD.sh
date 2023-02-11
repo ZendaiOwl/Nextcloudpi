@@ -27,7 +27,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 set -e
-prepareDirectories                   # tmp cache output
+prepare_dirs                   # tmp cache output
 
 ## BUILD NCP
 
@@ -39,7 +39,7 @@ systemd-run --user --scope -p "Delegate=yes" "${LXC_LAUNCH[@]}"
 lxc config device add ncp buildcode disk source="$(pwd)" path=/build
 lxc exec ncp -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
 lxc exec ncp -- bash -c 'CODE_DIR=/build DBG=x bash /build/install.sh'
-lxc exec ncp -- bash -c 'source /build/etc/library.sh; runAppUnsafe /build/post-inst.sh'
+lxc exec ncp -- bash -c 'source /build/etc/library.sh; run_appUnsafe /build/post-inst.sh'
 lxc exec ncp -- bash -c "echo '$(basename "$IMG")' > /usr/local/etc/ncp-baseimage"
 lxc stop ncp
 lxc config device remove ncp buildcode
@@ -51,12 +51,12 @@ lxc publish -q ncp -f --alias ncp/"${version}"
 exit 0
 
 ## test
-#setStaticIP "$IMG" "$IP"
+#set_static_IP "$IMG" "$IP"
 #test_image    "$IMG" "$IP"
 
 # upload
-#createTorrent "$TAR"
-#uploadFTP "$( basename "$TAR" .tar.bz2 )"
+#create_torrent "$TAR"
+#upload_ftp "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

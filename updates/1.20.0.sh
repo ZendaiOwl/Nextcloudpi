@@ -14,15 +14,15 @@ source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
     cp -raT /var/www/nextcloud/apps/{previewgenerator,previewgenerator.orig}
     cp -r /var/www/ncp-previewgenerator /var/www/nextcloud/apps/previewgenerator
     chown -R www-data: /var/www/nextcloud/apps/previewgenerator
-    isAppActive nc-previews-auto && runApp nc-previews-auto
+    is_active_app nc-previews-auto && run_app nc-previews-auto
   }
 }
 
 # reduce nc-scan-auto verbosity
-isAppActive nc-scan-auto && runApp nc-scan-auto
+is_active_app nc-scan-auto && run_app nc-scan-auto
 
 # if using NCP original logo, replace with the new version
-datadir=$(getNextcloudConfigValue datadirectory)
+datadir=$(get_nc_config_value datadirectory)
 id=$(grep instanceid /var/www/nextcloud/config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g")
 logo_dir="${datadir}/appdata_${id}/theming/images"
 [[ -f "${logo_dir}"/logo ]] && {

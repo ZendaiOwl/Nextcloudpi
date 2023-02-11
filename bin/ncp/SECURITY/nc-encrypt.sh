@@ -15,7 +15,7 @@ is_active()
 
 install()
 {
-  AptInstall gocryptfs
+  apt_install gocryptfs
 }
 
 configure()
@@ -23,7 +23,7 @@ configure()
 (
   set -e -o pipefail
   local datadir parentdir encdir tmpdir
-  datadir="$(getNcpConfig datadir)"
+  datadir="$(get_ncpcfg datadir)"
   [[ "${datadir?}" == "null" ]] && datadir=/var/www/nextcloud/data
   parentdir="$(dirname "${datadir}")"
   encdir="${parentdir?}/ncdata_enc"
@@ -34,8 +34,8 @@ configure()
       echo "Data not currently encrypted"
       return 0
     fi
-    saveMaintenanceMode
-    trap restoreMaintenanceMode EXIT
+    save_maintenance_mode
+    trap restore_maintenance_mode EXIT
     echo "Decrypting data..."
     mkdir "${tmpdir?}"
     chown www-data: "${tmpdir}"
@@ -69,8 +69,8 @@ configure()
   fi
   mkdir -p "${encdir?}"
   echo "${PASSWORD?}" | gocryptfs -init -q "${encdir}"
-  saveMaintenanceMode
-  trap restoreMaintenanceMode EXIT
+  save_maintenance_mode
+  trap restore_maintenance_mode EXIT
 
   mv "${datadir?}" "${tmpdir?}"
 
@@ -82,7 +82,7 @@ configure()
   chown -R www-data: "${datadir}"
   rmdir "${tmpdir}"
 
-  setNcpConfig datadir "${datadir}"
+  set_ncpcfg datadir "${datadir}"
 
   echo "Data is now encrypted"
 )

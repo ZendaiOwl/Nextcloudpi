@@ -40,18 +40,18 @@ EOF
   ncc config:system:set jpeg_quality --value 60
 
   # update unattended labels
-  isAppActive unattended-upgrades && runApp unattended-upgrades
+  is_active_app unattended-upgrades && run_app unattended-upgrades
 
   # update sury keys
   wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
 
   # fix cron path
-  isAppActive nc-backup-auto && runApp nc-backup-auto
-  isAppActive nc-scan-auto && runApp nc-scan-auto
-  isAppActive nc-autoupdate-ncp && runApp nc-autoupdate-ncp
-  isAppActive nc-notify-updates && runApp nc-notify-updates
-  isAppActive nc-previews-auto && runApp nc-previews-auto
-  isAppActive nc-update-nc-apps-auto && runApp nc-update-nc-apps-auto
+  is_active_app nc-backup-auto && run_app nc-backup-auto
+  is_active_app nc-scan-auto && run_app nc-scan-auto
+  is_active_app nc-autoupdate-ncp && run_app nc-autoupdate-ncp
+  is_active_app nc-notify-updates && run_app nc-notify-updates
+  is_active_app nc-previews-auto && run_app nc-previews-auto
+  is_active_app nc-update-nc-apps-auto && run_app nc-update-nc-apps-auto
 
   # rework letsencrypt notification
   USER="$(jq -r '.params[2].value' "$CFGDIR"/letsencrypt.cfg)"
@@ -63,8 +63,8 @@ EOF
   chmod +x /etc/letsencrypt/renewal-hooks/deploy/ncp
 
   # update nc-backup
-  installApp nc-backup
-  installApp nc-restore
+  install_app nc-backup
+  install_app nc-restore
 
   # create UPDATES section
   updates_dir=/usr/local/bin/ncp/UPDATES
@@ -79,16 +79,16 @@ EOF
   rm -f /etc/apt/apt.conf.d/02-armbian-periodic
 
   # switch back to the apt LE version
-  which letsencrypt &>/dev/null || installApp letsencrypt
+  which letsencrypt &>/dev/null || install_app letsencrypt
 
   # update launchers
   apt-get update
-  AptInstall file
+  apt_install file
   cat > /home/www/ncp-launcher.sh <<'EOF'
 #!/usr/bin/env bash
 grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
-runApp $1
+run_app $1
 EOF
   chmod 700 /home/www/ncp-launcher.sh
 

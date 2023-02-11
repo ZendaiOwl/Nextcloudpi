@@ -12,18 +12,18 @@ source /usr/local/etc/library.sh # sets NCLATESTVER PHPVER RELEASE
 sed -i "s/buster/$RELEASE/g" /etc/apt/sources.list.d/* &>/dev/null || true
 
 # restore smbclient after dist upgrade
-AptInstall php${PHPVER}-gmp
+apt_install php${PHPVER}-gmp
 
 # Update modsecurity config file only if user is already in buster and
 # modsecurity is used.
 # https://github.com/nextcloud/nextcloudpi/issues/959
-isAppActive modsecurity && runApp modsecurity
+is_active_app modsecurity && run_app modsecurity
 
 # fix armbian disabling unattended-upgrades
-isAppActive unattended-upgrades && runApp unattended-upgrades
+is_active_app unattended-upgrades && run_app unattended-upgrades
 
 # groupfolders fix
-installApp nc-backup
+install_app nc-backup
 
 # docker images only
 [[ -f /.docker-image ]] && {

@@ -27,7 +27,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 set -e
-prepareDirectories                   # tmp cache output
+prepare_dirs                   # tmp cache output
 
 ## BUILD NCP
 
@@ -38,22 +38,22 @@ sudo cp lxc_config /var/lib/lxc/ncp/config
 sudo lxc-start -n ncp
 sudo lxc-attach -n ncp --clear-env -- bash -c 'while [ "$(systemctl is-system-running 2>/dev/null)" != "running" ] && [ "$(systemctl is-system-running 2>/dev/null)" != "degraded" ]; do :; done'
 sudo lxc-attach -n ncp --clear-env -- CODE_DIR="$(pwd)" bash /build/install.sh
-sudo lxc-attach -n ncp --clear-env -- bash -c 'source /build/etc/library.sh; runAppUnsafe /build/post-inst.sh'
+sudo lxc-attach -n ncp --clear-env -- bash -c 'source /build/etc/library.sh; run_appUnsafe /build/post-inst.sh'
 sudo lxc-attach -n ncp --clear-env -- bash -c "echo '$(basename "$IMG")' > /usr/local/etc/ncp-baseimage"
 sudo lxc-attach -n ncp --clear-env -- poweroff
 
 exit 0 # TODO
 
 ## pack
-packImage "$IMG" "$TAR"
+pack_image "$IMG" "$TAR"
 
 ## test
-#setStaticIP "$IMG" "$IP"
+#set_static_IP "$IMG" "$IP"
 #test_image    "$IMG" "$IP" # TODO fix tests
 
 # upload
-createTorrent "$TAR"
-#uploadFTP "$( basename "$TAR" .tar.bz2 )"
+create_torrent "$TAR"
+#upload_ftp "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

@@ -160,12 +160,12 @@ EOF
   # ncp-previewgenerator
   local ncver
   ncver="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-  if isMoreRecent "21.0.0" "${ncver}"; then
+  if is_more_recent_than "21.0.0" "${ncver}"; then
     local ncprev=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20
   else
     ncc app:install notify_push
     ncc app:enable  notify_push
-    test -f /.ncp-image || startNotifyPush # don't start during build
+    test -f /.ncp-image || start_notify_push # don't start during build
     local ncprev=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21
   fi
   ln -snf "${ncprev}" /var/www/nextcloud/apps/previewgenerator
@@ -186,7 +186,7 @@ EOF
   ncc config:system:set overwrite.cli.url --value="https://nextcloudpi/"
 
   # bash completion for ncc
-  AptInstall bash-completion
+  apt_install bash-completion
   ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
   echo ". /etc/bash_completion" >> /etc/bash.bashrc
   echo ". /usr/share/bash-completion/completions/ncp" >> /etc/bash.bashrc

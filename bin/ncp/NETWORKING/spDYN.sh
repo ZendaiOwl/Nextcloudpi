@@ -33,7 +33,7 @@ HOST=$1
 TOKEN=$2
 
 # Get current IP address from
-getIP_url="http://checkip.spdyn.de"
+get_ip_url="http://checkip.spdyn.de"
 
 update_url="https://update.spdyn.de/nic/update"
 
@@ -75,7 +75,7 @@ function spdnsUpdater {
 	# Get registered IP address
 	registered_ip=$(dig +short "$HOST"|tail -n1)
 	# Get current IP address
-	current_ip=$(wget -qO- "$getIP_url");
+	current_ip=$(wget -qO- "$get_ip_url");
 	# Update only when IP address has changed.
 	[ "\$current_ip" == "\$registered_ip" ] && {
     	return 0

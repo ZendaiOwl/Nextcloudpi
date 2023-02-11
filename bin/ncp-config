@@ -50,7 +50,7 @@ function generate_list()
     local cfg="$cfgdir/$app".cfg
 
     [[ -f "$cfg" ]] && local desc=$( jq -r .description "$cfg" ) || local desc="No description."
-    isAppActive "$app" "$dir" && local on="*" || local on=" "
+    is_active_app "$app" "$dir" && local on="*" || local on=" "
 
     list+=( "$on $app" "$desc" )
   done
@@ -96,9 +96,9 @@ function config_menu()
     }
 
     # launch selected ncp_app
-    infoApp      "$ncp_app" || continue
-    configureApp "$ncp_app" && \
-    runApp       "$ncp_app"
+    info_app      "$ncp_app" || continue
+    configure_app "$ncp_app" && \
+    run_app       "$ncp_app"
     echo "Done. Press any key..."
     read -r
   done

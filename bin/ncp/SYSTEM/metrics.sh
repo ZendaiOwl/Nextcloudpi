@@ -16,7 +16,7 @@ is_active() {
 tmpl_metrics_enabled() {
   (
   . /usr/local/etc/library.sh
-  local param_active="$(findAppParam metrics.sh ACTIVE)"
+  local param_active="$(find_app_param metrics.sh ACTIVE)"
   [[ "$param_active" == yes ]] || exit 1
   )
 }
@@ -24,7 +24,7 @@ tmpl_metrics_enabled() {
 reload_metrics_config() {
   is_supported || return 0
 
-  installTemplate ncp-metrics.cfg.sh "/usr/local/etc/ncp-metrics.cfg" || {
+  install_template ncp-metrics.cfg.sh "/usr/local/etc/ncp-metrics.cfg" || {
     echo -e "ERROR while generating ncp-metrics.conf!"
     return 1
   }
@@ -43,7 +43,7 @@ metrics_services() {
 
   if [[ "$cmd" =~ (start|stop|restart|reload|status) ]]
   then
-    if ! isDocker && [[ "$INIT_SYSTEM" != "systemd" ]]
+    if ! is_docker && [[ "$INIT_SYSTEM" != "systemd" ]]
     then
       echo "Probably running in chroot. Ignoring 'metrics_services $cmd'..."
       return 0
@@ -62,7 +62,7 @@ metrics_services() {
     exit 1
   fi
 
-  if isDocker
+  if is_docker
   then
     rc1=0
     rc2=0
@@ -107,9 +107,9 @@ EOF
   sed -i 's|status_of_proc "$DAEMON" "$NAME" ${PIDFILE:="-p ${PIDFILE}"}|status_of_proc ${PIDFILE:+-p "$PIDFILE"} "$DAEMON" "$NAME"|' /lib/init/init-d-script
 
   apt-get update --allow-releaseinfo-change
-  installWithShadowWorkaround -o Dpkg::Options::=--force-confdef -o Dpkg::Options::="--force-confold" prometheus-node-exporter
+  install_with_shadow_workaround -o Dpkg::Options::=--force-confdef -o Dpkg::Options::="--force-confold" prometheus-node-exporter
 
-  if isDocker
+  if is_docker
   then
     cat > /etc/init.d/ncp-metrics-exporter <<'EOF'
 #!/bin/sh
@@ -153,7 +153,7 @@ source /usr/local/etc/library.sh
   exit 0
 }
 
-persistConfiguration /etc/default/prometheus-node-exporter
+persistent_cfg /etc/default/prometheus-node-exporter
 
 echo "starting prometheus-node-exporter..."
 service prometheus-node-exporter start
@@ -163,7 +163,7 @@ service ncp-metrics-exporter start
 EOF
   chmod +x /etc/services-available.d/101ncp-metrics
 
-  else #=> if not isDocker
+  else #=> if not is_docker
 
     cat <<EOF > /etc/systemd/system/ncp-metrics-exporter.service
 [Unit]
@@ -196,8 +196,8 @@ configure() {
   if [[ "$ACTIVE" != yes ]]
   then
 
-    installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
-      installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
+    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
+      install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
       echo -e "ERROR while generating nextcloud.conf! Exiting..."
       return 1
     }
@@ -248,8 +248,8 @@ configure() {
     echo "done."
 
 
-    installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
-      installTemplate nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
+    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
+      install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
       echo -e "ERROR while generating nextcloud.conf! Exiting..."
       return 1
     }

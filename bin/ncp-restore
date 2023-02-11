@@ -95,8 +95,8 @@ mysql -u root nextcloud <  "$TMPDIR"/nextcloud-sqlbkp_*.bak || { echo "Error res
 
 ## RESTORE DATADIR
 
-DATADIR="$(getNextcloudConfigValue datadirectory)"
-if isDocker && [[ "$DATADIR" == "/var/www/nextcloud/data" ]]; then
+DATADIR="$(get_nc_config_value datadirectory)"
+if is_docker && [[ "$DATADIR" == "/var/www/nextcloud/data" ]]; then
   DATADIR=/data/nextcloud/data
 fi
 [[ "$DATADIR" == "" ]] && { echo "Error reading data directory"; exit 1; }
@@ -134,7 +134,7 @@ else
   [[ -e "$DATADIR" ]] || {
     echo -n "${DATADIR} not found."
     DATADIR="/data/ncdata/data"
-    isDocker || DATADIR="/opt/data"
+    is_docker || DATADIR="/opt/data"
     echo "Resetting to ${DATADIR}"
     mkdir -p "${DATADIR}"
     touch "${DATADIR}"/.ocdata
@@ -151,7 +151,7 @@ fi
 sed -i "s|'datadirectory' =>.*|'datadirectory' => '${DATADIR}',|" "${NCDIR}"/config/config.php
 
 # Just in case we moved the opcache dir
-installTemplate "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
 
 # tmp upload dir
 mkdir -p "$DATADIR/tmp"
@@ -181,5 +181,5 @@ ncc files:scan-app-data
 
 # restart PHP if needed
 [[ "$NEED_RESTART" == "1" ]] && {
-  bash -c "sleep 5; source /usr/local/etc/library.sh; clearOpCache; service php${PHPVER}-fpm restart" &>/dev/null &
+  bash -c "sleep 5; source /usr/local/etc/library.sh; clear_opcache; service php${PHPVER}-fpm restart" &>/dev/null &
 }

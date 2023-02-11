@@ -144,7 +144,7 @@ class NcpRobotLib:
         d_run = self.run_on_ncp('bash', '-c', "set -x "
                                               "&& source /usr/local/etc/library.sh "
                                               "&& echo \"ncp library loaded.\" "
-                                              "&& runApp nc-backup")
+                                              "&& run_app nc-backup")
         logger.info(d_run.stdout)
         if d_run.returncode != 0:
             raise AssertionError(f"An error occurred while creating backup: \n{d_run.stderr}")

@@ -25,7 +25,7 @@ exec >> /var/log/ncp.log 2>&1
 echo "\$(date) - Running \$0..."
 if /usr/local/bin/ncp-test-updates; then
   /usr/local/bin/ncp-update || exit 1
-  notifyAdmin "NextcloudPi" "NextcloudPi was updated to \$(cat /usr/local/etc/ncp-version)"
+  notify_admin "NextcloudPi" "NextcloudPi was updated to \$(cat /usr/local/etc/ncp-version)"
 fi
 EOF
   chmod 755 /etc/cron.daily/ncp-autoupdate

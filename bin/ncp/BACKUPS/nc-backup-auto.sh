@@ -10,7 +10,7 @@
 tmpl_get_destination() {
   (
   . /usr/local/etc/library.sh
-  findAppParam nc-backup-auto DESTDIR
+  find_app_param nc-backup-auto DESTDIR
   )
 }
 
@@ -36,13 +36,13 @@ run_script()
 }
 
 run_script before
-saveMaintenanceMode
+save_maintenance_mode
 /usr/local/bin/ncp-backup "$DESTDIR" "$INCLUDEDATA" "$COMPRESS" "$BACKUPLIMIT" || failed="\$failed\${failed:+, } main"
-restoreMaintenanceMode
+restore_maintenance_mode
 run_script after
 if [[ -n "\$failed" ]]
 then
-  notifyAdmin "Auto-backup failed" "The \$failed backup script(s) failed"
+  notify_admin "Auto-backup failed" "The \$failed backup script(s) failed"
 fi
 EOF
   chmod +x /usr/local/bin/ncp-backup-auto

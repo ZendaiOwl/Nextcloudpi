@@ -225,7 +225,7 @@
 
 ## [v1.39.16](https://github.com/nextcloud/nextcloudpi/commit/2be666b) (2021-09-27) nc-https: proto logic was inverted fix
 
-## [v1.39.15](https://github.com/nextcloud/nextcloudpi/commit/b067844) (2021-09-27) add getIP function
+## [v1.39.15](https://github.com/nextcloud/nextcloudpi/commit/b067844) (2021-09-27) add get_ip function
 
 ## [v1.39.14](https://github.com/nextcloud/nextcloudpi/commit/6ad96ed) (2021-09-25) nc-https:only fix infinite redirects behind proxy
 
@@ -385,7 +385,7 @@
 
 ## [v1.24.2 ](https://github.com/nextcloud/nextcloudpi/commit/ff565d6) (2020-04-06) build: small tweaks
 
-## [v1.24.1 ](https://github.com/nextcloud/nextcloudpi/commit/ae6c88f) (2020-04-06) nc-backup-auto: fix notifyAdmin
+## [v1.24.1 ](https://github.com/nextcloud/nextcloudpi/commit/ae6c88f) (2020-04-06) nc-backup-auto: fix notify_admin
 
 ## [v1.24.0 ](https://github.com/nextcloud/nextcloudpi/commit/a3dbec1) (2020-03-24) upgrade to NC18.0.3
 
@@ -409,7 +409,7 @@
 
 ## [v1.20.10](https://github.com/nextcloud/nextcloudpi/commit/c0cee6b) (2020-02-12) fail2ban: fix regex for NC18
 
-## [v1.20.9 ](https://github.com/nextcloud/nextcloudpi/commit/0c538ae) (2020-02-04) add notifyAdmin functionality
+## [v1.20.9 ](https://github.com/nextcloud/nextcloudpi/commit/0c538ae) (2020-02-04) add notify_admin functionality
 
 ## [v1.20.8 ](https://github.com/nextcloud/nextcloudpi/commit/986046f) (2020-02-05) nc-backup: add more info to description (#1073)
 

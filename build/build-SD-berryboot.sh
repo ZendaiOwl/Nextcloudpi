@@ -23,7 +23,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 # convert to Berryboot
 
-mountRoot "$SRC"
+mount_raspbian "$SRC"
   sudo bash -c "cat > raspbian_root/etc/fstab" <<EOF
 /dev/mmcblk0p1  /boot           vfat    defaults          0       2
 /dev/mmcblk0p2  /               ext4    defaults,noatime  0       1
@@ -32,14 +32,14 @@ EOF
 
 
 sudo mksquashfs raspbian_root "$IMG"  -comp lzo -e lib/modules
-unmountRPi
+umount_raspbian
 
 ## pack
-packImage "$IMG" "$TAR"
+pack_image "$IMG" "$TAR"
 
 # upload
-createTorrent "$TAR"
-#uploadFTP "$( basename "$TAR" .tar.bz2 )"
+create_torrent "$TAR"
+#upload_ftp "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

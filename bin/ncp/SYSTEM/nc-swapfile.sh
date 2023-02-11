@@ -48,7 +48,7 @@ configure()
 install()
 {
   if [[ "$(stat -fc%T /var)" != "btrfs" ]]; then
-    AptInstall dphys-swapfile
+    apt_install dphys-swapfile
   fi
 }
 

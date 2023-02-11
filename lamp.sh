@@ -225,12 +225,15 @@ function install
              DBSOCKET='/run/mysqld/mysqld.sock' \
              DBDAEMON='/run/mysqld' \
              DBUSER='mysql' \
-             PHPDAEMON='/run/php'
+             PHPDAEMON='/run/php' \
+             PHPREPO='https://packages.sury.org/php' \
+             PHPREPO_GPGKEY='https://packages.sury.org/php/apt.gpg' \
+             PHPAPTLIST='/etc/apt/sources.list.d/php.list'
     # MariaDB password
     local DBPASSWD="default"
     # Setup apt repository for php 8
-    wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-    echo "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
+    wget -O /etc/apt/trusted.gpg.d/php.gpg "$PHPREPO_GPGKEY"
+    echo "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
     installPKG apt-utils cron curl ssl-cert apache2
     ls -l /var/lock || true
     # Fix missing lock directory
@@ -245,12 +248,8 @@ function install
       adduser --quiet -u 181 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Resolver" systemd-resolve
     fi
-    installWithShadowWorkaround --no-install-recommends systemd
+    install_with_shadow_workaround --no-install-recommends systemd
     installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql}
-
-    #installPKG -t "$RELEASE" php"$PHPVER" php"$PHPVER"-curl php"$PHPVER"-gd php"$PHPVER"-fpm php"$PHPVER"-cli php"$PHPVER"-opcache \
-    #                         php"$PHPVER"-mbstring php"$PHPVER"-xml php"$PHPVER"-zip php"$PHPVER"-fileinfo php"$PHPVER"-ldap \
-    #                         php"$PHPVER"-intl php"$PHPVER"-bz2
 
     mkdir --parents "$PHPDAEMON"
 
@@ -266,12 +265,12 @@ function install
     # CONFIGURE APACHE
     ##########################################
 
-    installTemplate apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
+    install_template apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
 
     # CONFIGURE PHP7
     ##########################################
 
-    installTemplate "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
 
     a2enmod http2
     a2enconf http2
@@ -289,9 +288,9 @@ function install
     # CONFIGURE LAMP FOR NEXTCLOUD
     ##########################################
 
-    installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
+    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
 
-    installTemplate "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
+    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
 
   # launch mariadb if not already running
   if ! [[ -f "$DBPID_FILE" ]]; then

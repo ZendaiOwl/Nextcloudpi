@@ -41,11 +41,11 @@ function isEqual {
   [[ "$1" -eq "$2" ]]
 }
 
-function isDocker {
+function is_docker {
   isFile /.dockerenv || isFile /.docker-image || isEqual "$DOCKERBUILD" 1
 }
 
-function isLXC {
+function is_lxc {
   grep -q container=lxc /proc/1/environ &>/dev/null
 }
 
@@ -301,7 +301,7 @@ EOF
 #!/usr/bin/env bash
 grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
-runApp $1
+run_app $1
 EOF
   chmod 700 /home/www/ncp-launcher.sh
 
@@ -411,8 +411,8 @@ EOF
     echo nextcloudpi > /etc/hostname
 
     ## tag image
-    isDocker && local DOCKER_TAG="_docker"
-    isLXC && local DOCKER_TAG="_lxc"
+    is_docker && local DOCKER_TAG="_docker"
+    is_lxc && local DOCKER_TAG="_lxc"
     echo "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
 
     ## SSH hardening

@@ -16,10 +16,10 @@ OUT="$@"
 
 source /usr/local/etc/library.sh
   
-checkDistro || \
+check_distro || \
   echo -e "You are using an outdated distro release. You should upgrade to latest Debian/Raspbian"
 
-isAppActive dnsmasq && \
+is_active_app dnsmasq && \
   grep -q "NAT loopback|no" <<<"$OUT" && \
     echo -e "\nYou should enable dnsmasq to use your domain inside home"
 

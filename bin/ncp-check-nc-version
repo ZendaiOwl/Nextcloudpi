@@ -15,9 +15,9 @@ test -e "${NOTIFIED}" && [[ "${LATEST}" == "$( cat "${NOTIFIED}" )" ]] && {
   exit 0
 }
 
-if isMoreRecent "${LATEST}" "${CURRENT}"; then
-  notifyAdmin \
+if is_more_recent_than "${LATEST}" "${CURRENT}"; then
+  notify_admin \
     "Nextcloud update" \
-    "Update from ${CURRENT} to ${LATEST} is available. Update from https://$(getIP):4443"
+    "Update from ${CURRENT} to ${LATEST} is available. Update from https://$(get_ip):4443"
   echo "${LATEST}" > "${NOTIFIED}"
 fi

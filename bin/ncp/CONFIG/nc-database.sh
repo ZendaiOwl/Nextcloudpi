@@ -16,8 +16,8 @@ is_active()
 }
 
 tmpl_db_dir() {
-  if isAppActive nc-database; then
-    findAppParam nc-database DBDIR
+  if is_active_app nc-database; then
+    find_app_param nc-database DBDIR
   fi
 }
 
@@ -44,15 +44,15 @@ configure()
   [[ $( stat -fc%d / ) == $( stat -fc%d "$BASEDIR" ) ]] && \
     echo -e "INFO: moving database to the SD card\nIf you want to use an external mount, make sure it is properly set up"
 
-  saveMaintenanceMode
+  save_maintenance_mode
 
   echo "moving database to $DBDIR..."
   service mysql stop
   mv "$SRCDIR" "$DBDIR"
-  installTemplate "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf"
+  install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf"
   service mysql start
 
-  restoreMaintenanceMode
+  restore_maintenance_mode
 }
 
 install(){ :; }

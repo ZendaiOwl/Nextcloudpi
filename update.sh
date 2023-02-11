@@ -18,7 +18,7 @@ source "$LIBRARY"
 set -e"$DBG"
 
 
-if isDocker
+if is_docker
 then
   echo "WARNING: Docker images should be updated by replacing the container from the latest docker image" \
     "(refer to the documentation for instructions: https://docs.nextcloudpi.com)." \
@@ -54,7 +54,7 @@ fail2ban
 NFS
 "
 
-if isDocker; then
+if is_docker; then
 # in docker, just remove the volume for this
 EXCL_DOCKER+="
 nc-nextcloud
@@ -78,7 +78,7 @@ source "$LIBRARY"
 mkdir -p "$CONFDIR"
 
 # prevent installing some ncp-apps in the containerized versions
-if isDocker || isLXC; then
+if is_docker || is_lxc; then
   for opt in $EXCL_DOCKER; do
     touch "$CONFDIR"/"$opt".cfg
   done
@@ -96,7 +96,7 @@ for file in etc/ncp-config.d/*; do
 
   # install new ncp_apps
   [ -f /usr/local/"$file" ] || {
-    installApp "$(basename "$file" .cfg)"
+    install_app "$(basename "$file" .cfg)"
   }
 
   # keep saved cfg values
@@ -123,7 +123,7 @@ for file in etc/ncp-config.d/*; do
     [[ "$(jq -r ".params[0].id"    "$file")" == "ACTIVE" ]] && \
     [[ "$(jq -r ".params[0].value" "$file")" == "yes"    ]] && {
       cp "$file" /usr/local/"$file"
-      runApp "$(basename "$file" .cfg)"
+      run_app "$(basename "$file" .cfg)"
     }
   }
 
@@ -134,13 +134,13 @@ done
 # update NCVER in ncp.cfg and nc-nextcloud.cfg (for nc-autoupdate-nc and nc-update-nextcloud)
 LOCAL_NCP_CONFIG='/usr/local/etc/ncp.cfg'
 NCP_CONFIG='etc/ncp.cfg'
-verNextcloud="$(jq -r '.nextcloud_version' "$NCP_CONFIG")"
-cfg="$(jq ".nextcloud_version = \"$verNextcloud\"" "$LOCAL_NCP_CONFIG")"
+nc_version="$(jq -r '.nextcloud_version' "$NCP_CONFIG")"
+cfg="$(jq ".nextcloud_version = \"$nc_version\"" "$LOCAL_NCP_CONFIG")"
 echo "$cfg" > "$LOCAL_NCP_CONFIG"
 
 NEXTCLOUD_CONFIG='etc/ncp-config.d/nc-nextcloud.cfg'
 LOCAL_NEXTCLOUD_CONFIG='/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
-cfg="$(jq ".params[0].value = \"$verNextcloud\"" "$NEXTCLOUD_CONFIG")"
+cfg="$(jq ".params[0].value = \"$nc_version\"" "$NEXTCLOUD_CONFIG")"
 echo "$cfg" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
@@ -171,7 +171,7 @@ cp -r /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
 chown -R www-data:     /var/www/nextcloud/apps/nextcloudpi
 
 # remove unwanted ncp-apps for containerized versions
-if isDocker || isLXC; then
+if is_docker || is_lxc; then
   for opt in $EXCL_DOCKER; do
     rm "$CONFDIR"/"$opt".cfg
     find /usr/local/bin/ncp -name "$opt.sh" -exec rm '{}' \;
@@ -179,7 +179,7 @@ if isDocker || isLXC; then
 fi
 
 # update services for docker
-if isDocker; then
+if is_docker; then
   cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} /etc/services-enabled.d
 fi
 
@@ -190,16 +190,16 @@ fi
 ./run_update_history.sh "$UPDATESDIR"
 
 # update to the latest NC version
-isAppActive nc-autoupdate-nc && runApp nc-autoupdate-nc
+is_active_app nc-autoupdate-nc && run_app nc-autoupdate-nc
 
-startNotifyPush
+start_notify_push
 
 # Refresh ncp config values
 # shellcheck disable=SC1090
 source "$LIBRARY"
 
 # check dist-upgrade
-checkDistro "$NCPCFG" && checkDistro "$NCP_CONFIG" || {
+check_distro "$NCPCFG" && check_distro "$NCP_CONFIG" || {
   php_ver_new="$(jq -r '.php_version'   "$NCP_CONFIG")"
   release_new="$(jq -r '.release'       "$NCP_CONFIG")"
 
@@ -211,7 +211,7 @@ checkDistro "$NCPCFG" && checkDistro "$NCP_CONFIG" || {
     msg="Update to $release_new available. Get the latest container to upgrade" || \
     msg="Update to $release_new available. Type 'sudo ncp-dist-upgrade' to upgrade"
   echo "$msg"
-  notifyAdmin "New distribution available" "$msg"
+  notify_admin "New distribution available" "$msg"
   wall "$msg"
   cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
 #!/usr/bin/env bash

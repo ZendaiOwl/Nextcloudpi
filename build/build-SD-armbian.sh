@@ -27,7 +27,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 
 source etc/library.sh # sets RELEASE
 
-prepareDirectories                   # tmp cache output
+prepare_dirs                   # tmp cache output
 
 # get latest armbian
 [[ -d armbian ]] || git clone https://github.com/armbian/build armbian
@@ -76,7 +76,7 @@ rm "$CONF"
 
 # pack image
 
-[[ " $* " =~ " --pack " ]] && { mv armbian/output/images/Armbian*.img "$IMG" && packImage "$IMG" "$TAR"; }
+[[ " $* " =~ " --pack " ]] && { mv armbian/output/images/Armbian*.img "$IMG" && pack_image "$IMG" "$TAR"; }
 
 exit 0
 
@@ -84,5 +84,5 @@ exit 0
 # TODO
 
 # upload
-#createTorrent "$TAR"
-#uploadFTP "$( basename "$TAR" .tar.bz2 )"
+#create_torrent "$TAR"
+#upload_ftp "$( basename "$TAR" .tar.bz2 )"

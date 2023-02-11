@@ -25,12 +25,12 @@ configure()
     if [[ "${app}" == "letsencrypt" ]] || [[ "${app}" == "dnsmasq" ]]; then
       continue
     fi
-    isAppActive "${app}" && runApp "${app}"
+    is_active_app "${app}" && run_app "${app}"
   done
 
   # order is important for these
-  isAppActive "dnsmasq"     && runApp "dnsmasq"
-  isAppActive "letsencrypt" && runApp "letsencrypt"
+  is_active_app "dnsmasq"     && run_app "dnsmasq"
+  is_active_app "letsencrypt" && run_app "letsencrypt"
 
   echo -e "\nconfiguration restored"
 

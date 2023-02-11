@@ -42,7 +42,7 @@ function log {
            ;;
          2)
            local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           printf "${RED}ERROR${Z} %s\n" "$TEXT" 1>&2
            ;;
       esac
     else
@@ -288,7 +288,7 @@ function isArray {
 }
 
 # Return codes
-function isMoreRecent {
+function is_more_recent_than {
   local -r VERSION_A="$1" VERSION_B="$2"
   local MAJOR_A MINOR_A PATCH_A MAJOR_B MINOR_B PATCH_B
 
@@ -406,12 +406,12 @@ function installPKG {
   fi
 }
 
-function AptInstall {
+function apt_install {
   apt-get update --allow-releaseinfo-change
   DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends -o Dpkg::Options::=--force-confdef -o Dpkg::Options::="--force-confold" "$@"
 }
 
-function installWithShadowWorkaround {
+function install_with_shadow_workaround {
   # Subshell to trap trap :P
   (
     RESTORE_SHADOW=true
@@ -430,12 +430,213 @@ function installWithShadowWorkaround {
       mv /etc/shadow /data/etc/shadow
       ln -s /data/etc/shadow /etc/shadow
     }
-    trap - EXIT
+    trap - EXIT SIGINT SIGABRT SIGHUP
   )
 }
 
+# Appends '/usr/local/sbin:/usr/sbin:/sbin' to PATH
+function appendPath
+{
+  PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
+  export PATH
+}
+
+# Checks for MariaDB installation
 # Return codes
-function installApp {
+# 0: No such database: nextcloud
+# 1: Database exists: nextcloud
+# 2: Missing command: Database command, default: MySQL
+function hasDatabase {
+  local CMD1="${1:-mysqld}" CMD2="${2:-mysql}"
+  # Check for installed software
+  if hasCMD "$CMD1"; then
+    log 1 "Existing MySQL configuration will be changed"
+    if "$CMD2" -e 'use nextcloud' &>/dev/null; then
+      log 2 "Database exists: nextcloud"
+      return 1
+    else
+      return 0
+    fi
+  else
+    return 2
+  fi
+}
+
+function addUnsetVariable
+{
+  UNSETVAR+=("$@")
+  declare -x -g -a UNSETVAR
+}
+
+function cleanupLibraryVariables
+{
+  unset "${UNSETVAR[@]}"
+  unset UNSETVAR
+}
+
+function createTmpDirectory
+{
+  declare -x -g TMPDIR
+  if isRoot; then
+    TMPDIR="$(mktemp -d /tmp/nextcloudpi.XXXXXX || ( log 2 "Failed to create a temporary directory" >&2; exit 1; ))"
+  else
+    TMPDIR="$(sudo mktemp -d /tmp/nextcloudpi.XXXXXX || ( log 2 "Failed to create a temporary directory" >&2; exit 1; ))"
+  fi
+  #trap 'cd -; rm -rf "$TMPDIR"; unset TMPDIR' EXIT SIGHUP SIGILL SIGABRT SIGINT
+}
+
+function cleanupCodeDir
+{
+  cd - || return 1
+  if isSet CODE_DIR; then
+    if isRoot; then
+      rm --recursive --force "$CODE_DIR"
+    else
+      sudo rm --recursive --force "$CODE_DIR"
+    fi
+  else
+    log 2 "No code directory set to: CODE_DIR $CODE_DIR"
+    return 2
+  fi
+}
+
+function cleanupTempDirectory
+{
+  if isSet TMPDIR; then
+    cd - || return 1
+    rm --recursive --force "$TMPDIR"
+    unset TMPDIR
+  else
+    log -1 "No temporary directory to cleanup"
+  fi
+}
+
+function cleanupLibrary
+{
+  cleanupTempDirectory
+  cleanupLibraryVariables
+  if isSet CODE_DIR; then
+    cleanupCodeDir
+  fi
+}
+
+function setOwner
+{
+  declare -x -g OWNER
+  if isEqual "$#" 1; then
+    OWNER="$1"
+  else
+    OWNER="${OWNER:-ZendaiOwl}"
+  fi
+  addUnsetVariable OWNER
+  #trap 'unset OWNER' EXIT SIGILL SIGHUP SIGABRT SIGINT
+}
+
+function setRepository
+{
+  declare -x -g REPO
+  if isEqual "$#" 1; then
+    REPO="$1"
+  else
+    REPO="${REPO:-nextcloudpi}"
+  fi
+  addUnsetVariable REPO
+  #trap 'unset REPO' EXIT SIGILL SIGHUP SIGABRT SIGINT
+}
+
+function setBranch
+{
+  declare -x -g BRANCH
+  if isEqual "$#" 1; then
+    BRANCH="$1"
+  else
+    BRANCH="${BRANCH:-Refactoring}"
+  fi
+  addUnsetVariable BRANCH
+  #trap 'unset BRANCH' EXIT SIGILL SIGHUP SIGABRT SIGINT
+}
+
+# Fetch build code
+function fetchBuildCode
+{
+  if isEqual "$#" 3; then
+    #local -r OWNER="$1" REPO="$2" BRANCH="$3"
+    setOwner "$1"
+    setRepository "$2"
+    setBranch "$3"
+  elif isEqual "$#" 4; then
+    setOwner "$1"
+    setRepository "$2"
+    setBranch "$3"
+    local -r DIRECTORY="$4"
+  else
+    local -r OWNER="${OWNER:-ZendaiOwl}" \
+             REPO="${REPO:-nextcloudpi}" \
+             BRANCH="${BRANCH:-Refactoring}"
+  fi
+  
+  # Get installation code from repository
+  if isZero "$CODE_DIR"; then
+    log -1 "Fetching build code"
+    if isSet DIRECTORY; then
+      CODE_DIR="$DIRECTORY"/"$REPO"
+    elif isSet TMPDIR; then
+      CODE_DIR="$TMPDIR"/"$REPO"
+    else
+      createTmpDirectory
+      CODE_DIR="$TMPDIR"/"$REPO"
+    fi
+    declare -x -g CODE_DIR
+  fi
+    git clone -b "$BRANCH" https://github.com/"$OWNER"/"$REPO".git "$CODE_DIR"
+  fi
+}
+
+function basePackages
+{
+  PACKAGES+=(
+    git
+    ca-certificates
+    sudo
+    lsb-release
+    wget
+    libzip2
+    curl
+    bc
+    dialog
+    psmisc
+    procps
+    zip
+    unzip
+    xz-utils
+    apt-utils
+    apt-transport-https
+    binutils
+  )
+  declare -x -a -g PACKAGES
+}
+
+function addPackages
+{
+  PACKAGES+=("$@")
+  declare -x -a -g PACKAGES
+}
+
+# Installs packages stored in the PACKAGES array variable
+# Return codes
+# 1: Array variable not set: PACKAGES
+function installPackages
+{
+  if isSet PACKAGES; then
+    installPKG "${PACKAGES[@]}"
+  else
+    log 2 "No packages found for installation" 1>&2
+    return 1
+  fi
+}
+
+# Return codes
+function install_app {
   local NCP_APP="$1" SCRIPT 
 
   # $1 can be either an installed app name or an app script
@@ -457,7 +658,7 @@ function installApp {
 # Return codes
 # 2: Missing package: dialog
 # 3: Failed to install: dialog
-function configureApp {
+function configure_app {
   local -r NCP_APP="$1"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
   local BACKTITLE="NextcloudPi installer configuration" \
@@ -548,7 +749,7 @@ function configureApp {
 }
 
 # Return codes
-function persistConfiguration {
+function persistent_cfg {
   local SRC="$1"
   local DST="${2:-/data/etc/$( basename "$SRC" )}"
   log -1 "Persisting configuration"
@@ -567,7 +768,7 @@ function persistConfiguration {
 }
 
 # Return codes
-function cleanupScript {
+function cleanup_script {
   local SCRIPT="$1"
   log -1 "Cleanup script: $SCRIPT"
   unset cleanup
@@ -582,7 +783,7 @@ function cleanupScript {
   return 0
 }
 
-function checkDistro {
+function check_distro {
   local CFG="${1:-$NCPCFG}" SUPPORTED
   SUPPORTED="$(jq -r '.release' "$CFG")"
   log -1 "Checking support for distro"
@@ -597,7 +798,7 @@ function checkDistro {
 
 # Return codes
 # 1: File not found: $CFG_FILE
-function clearPasswordFields {
+function clear_password_fields {
   local -r CFG_FILE="$1"
   local LENGTH TYPE VAL
   if ! isFile "$CFG_FILE"; then
@@ -618,7 +819,7 @@ function clearPasswordFields {
 
 # Return codes
 # 1: Missing command: a2query
-function isNcpActivated {
+function is_ncp_activated {
   if hasCMD a2query; then
     ! a2query -s ncp-activation -q
   else
@@ -627,7 +828,7 @@ function isNcpActivated {
   fi
 }
 
-function isAppActive {
+function is_active_app {
   local NCP_APP="$1" BINDIR="${2:-$BINDIR}"
   local SCRIPT="${BINDIR}/${NCP_APP}.sh"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
@@ -674,14 +875,14 @@ function isAppActive {
 }
 
 # Return codes
-function isAppEnabled {
+function is_app_enabled {
   local -r APP="$1"
    ncc app:list | sed '0,/Disabled/!d' | grep -q "$APP"
 }
 
 # Return codes
 # 1: Invalid number of arguments
-function infoApp {
+function info_app {
   [[ "$#" -ne 1 ]] && return 1
   local -r NCP_APP="$1"
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
@@ -708,28 +909,28 @@ function infoApp {
 }
 
 # Return codes
-function isIP {
+function is_an_ip {
   local -r IP_OR_DOMAIN="$1"
   grep -oPq '\d{1,3}(.\d{1,3}){3}' <<<"$IP_OR_DOMAIN"
 }
 
-function getIP {
+function get_ip {
   local IFACE
   IFACE="$(ip r | grep "default via" | awk '{ print $5 }' | head -1)"
   ip a show dev "$IFACE" | grep 'global' | grep -oP '\d{1,3}(.\d{1,3}){3}' | head -1
 }
 
-function isDocker {
+function is_docker {
   isFile /.dockerenv || isFile /.docker-image || isEqual "$DOCKERBUILD" 1
 }
 
-function isLXC {
+function is_lxc {
   grep -q container=lxc /proc/1/environ &>/dev/null
 }
 
 # Return codes
 # 1: Missing command: ncc
-function verNextcloud {
+function nc_version {
   if hasCMD ncc; then
     ncc status | grep "version:" | awk '{ print $3 }'
   else
@@ -740,13 +941,13 @@ function verNextcloud {
 
 # Return codes
 # 2: Missing command: ncc
-function setNextcloudDomain {
+function set-nc-domain {
   local DOMAIN="${1?}" PROTOCOL URL
   DOMAIN="$(sed 's|http.\?://||;s|\(/.*\)||' <<<"$DOMAIN")"
   if ! ping -c1 -w1 -q "$DOMAIN" &>/dev/null; then
     unset DOMAIN
   fi
-  if [[ "$DOMAIN" == "" ]] || isIP "$DOMAIN"; then
+  if [[ "$DOMAIN" == "" ]] || is_an_ip "$DOMAIN"; then
     log 1 "No domain found. Defaulting to hostname: $(hostname)"
     DOMAIN="$(hostname)"
   fi
@@ -762,7 +963,7 @@ function setNextcloudDomain {
     if hasCMD ncc; then
       ncc config:system:set trusted_domains 3 --value="${DOMAIN%*/}"
       ncc config:system:set overwrite.cli.url --value="${URL}/"
-      if isNcpActivated && isAppEnabled notify_push; then
+      if is_ncp_activated && is_app_enabled notify_push; then
         ncc config:system:set trusted_proxies 11 --value="127.0.0.1"
         ncc config:system:set trusted_proxies 12 --value="::1"
         ncc config:system:set trusted_proxies 13 --value="$DOMAIN"
@@ -781,7 +982,7 @@ function setNextcloudDomain {
   fi
 }
 
-function startNotifyPush {
+function start_notify_push {
   pgrep notify_push &>/dev/null && return
   if isFile /.docker-image; then
     NEXTCLOUD_URL=https://localhost sudo -E -u www-data "/var/www/nextcloud/apps/notify_push/bin/${ARCH}/notify_push" --allow-self-signed /var/www/nextcloud/config/config.php &>/dev/null &
@@ -792,7 +993,7 @@ function startNotifyPush {
 }
 
 # Return codes
-function notifyAdmin {
+function notify_admin {
   local HEADER="$1" MSG="$2" ADMINS
   ADMINS=$(mysql -u root nextcloud -Nse "select uid from oc_group_user where gid='admin';")
   if isZero "$ADMINS"; then
@@ -807,18 +1008,18 @@ function notifyAdmin {
 }
 
 # Return codes
-function runApp {
+function run_app {
   local NCP_APP="$1" SCRIPT
   SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
   if ! isFile "$SCRIPT"; then
     log 2 "File not found: $SCRIPT"
     return 1
   fi
-  runAppUnsafe "$SCRIPT"
+  run_appUnsafe "$SCRIPT"
 }
 
 # Return codes
-function runAppUnsafe {
+function run_appUnsafe {
   local -r SCRIPT="$1" LOG='/var/log/ncp.log'
   local NCP_APP CFG_FILE LENGTH VAR VAL RET
         
@@ -862,14 +1063,14 @@ function runAppUnsafe {
   echo "" >> "$LOG"
   if isFile "$CFG_FILE"; then
     log -1 "Clearing password fields: $NCP_APP"
-    clearPasswordFields "$CFG_FILE"
+    clear_password_fields "$CFG_FILE"
   fi
   log 0 "Completed: $NCP_APP"
   return "$RET"
 }
 
 # Return codes
-function findAppParamNumber {
+function find_app_paramNumber {
   local SCRIPT="${1?}" PARAM_ID="${2?}" \
         NCP_APP CFG_FILE LENGTH VAL VAR P_ID
   NCP_APP="$(basename "$SCRIPT" .sh)"
@@ -887,13 +1088,13 @@ function findAppParamNumber {
   return 1
 }
 
-function findAppParam {
+function find_app_param {
   local -r SCRIPT="${1?}" PARAM_ID="${2?}"
   local NCP_APP CFG_FILE P_NUM
   NCP_APP="$(basename "$SCRIPT" .sh)"
   CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
 
-  if ! P_NUM="$(findAppParamNumber "$SCRIPT" "$PARAM_ID")"; then
+  if ! P_NUM="$(find_app_paramNumber "$SCRIPT" "$PARAM_ID")"; then
     log 2 "Parameter index not found: $SCRIPT"
     return 1
   fi
@@ -904,7 +1105,7 @@ function findAppParam {
   jq -r ".params[$P_NUM].value" "$CFG_FILE"
 }
 
-function setAppParam {
+function set_app_param {
   local SCRIPT="${1?}" PARAM_ID="${2?}" PARAM_VALUE="${3?}"
   local NCP_APP CFG LENGTH PARAM_FOUND
   NCP_APP="$(basename "$SCRIPT" .sh)"
@@ -940,7 +1141,7 @@ function setAppParam {
 }
 
 # Return codes
-function installTemplate {
+function install_template {
   local -r TEMPLATE="${1?}" TARGET="${2?}"
   local BACKUP
   BACKUP="$(mktemp)"
@@ -968,7 +1169,7 @@ function installTemplate {
   rm "$BACKUP"
 }
 
-function saveMaintenanceMode {
+function save_maintenance_mode {
   unset NCP_MAINTENANCE_MODE
   if hasCMD ncc; then
     if grep -q 'enabled' <(ncc maintenance:mode); then
@@ -984,7 +1185,7 @@ function saveMaintenanceMode {
   fi
 }
 
-function restoreMaintenanceMode {
+function restore_maintenance_mode {
   if hasCMD ncc; then
     if notZero "${NCP_MAINTENANCE_MODE:-}"; then
       ncc maintenance:mode --on
@@ -1000,19 +1201,19 @@ function restoreMaintenanceMode {
   fi
 }
 
-function needsDecryption {
+function needs_decrypt {
   local ACTIVE
-  ACTIVE="$(findAppParamNumber nc-encrypt ACTIVE)"
+  ACTIVE="$(find_app_paramNumber nc-encrypt ACTIVE)"
   (! isActiveApp nc-encrypt) && isMatch "$ACTIVE" "yes"
 }
 
-function setNcpConfig {
+function set_ncpcfg {
   local NAME="${1}" VALUE="${2}" CFG
   CFG="$(jq ".$NAME = \"$VALUE\"" "$NCPCFG")"
   echo "$CFG" > "$NCPCFG"
 }
 
-function getNcpConfig {
+function get_ncpcfg {
   local NAME="${1}"
   if isFile "$NCPCFG"; then
     jq -r ".$NAME" "$NCPCFG"
@@ -1022,14 +1223,14 @@ function getNcpConfig {
   fi
 }
 
-function getNextcloudConfigValue {
+function get_nc_config_value {
   sudo -u www-data php -r "include(\"/var/www/nextcloud/config/config.php\"); echo(\$CONFIG[\"${1?Missing required argument: config key}\"]);"
   #ncc config:system:get "${1?Missing required argument: config key}"
 }
 
-function clearOpCache() {
+function clear_opcache() {
   # shellcheck disable=SC2155
-  local DATA_DIR="$(getNextcloudConfigValue datadirectory)"
+  local DATA_DIR="$(get_nc_config_value datadirectory)"
   if isDirectory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"; then
     log -1 "Clearing opcache"
     log -1 "This can take some time, please don't interrupt by closing or refreshing your browser tab"
@@ -1131,6 +1332,7 @@ export NCLATESTVER
 export PHPVER
 export RELEASE
 
+trap 'cleanupLibrary' EXIT SIGILL SIGHUP SIGABRT SIGINT
 
 # License
 #

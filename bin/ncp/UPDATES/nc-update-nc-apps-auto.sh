@@ -30,7 +30,7 @@ echo "\$OUT" >> /var/log/ncp.log
 
 APPS=\$( echo "\$OUT" | grep 'updated\$' | awk '{ print \$1 }')
 [[ "\$APPS" == "" ]] && exit 0
-notifyAdmin "Apps updated" "\$APPS"
+notify_admin "Apps updated" "\$APPS"
 EOF
   chmod 755 "$cronfile"
   echo "automatic app updates enabled"

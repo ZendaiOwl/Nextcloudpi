@@ -10,7 +10,7 @@
 tmpl_get_destination() {
   (
   . /usr/local/etc/library.sh
-  findAppParam nc-backup DESTDIR
+  find_app_param nc-backup DESTDIR
   )
 }
 

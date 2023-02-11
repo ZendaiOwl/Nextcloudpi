@@ -144,7 +144,7 @@ echo "Port 443|$PORT443"
 # LAN
 IFACE=$( ip r | grep "default via" | awk '{ print $5 }' | head -1 )
 GW=$(    ip r | grep "default via" | awk '{ print $3 }' | head -1 )
-IP="$(getIP)"
+IP="$(get_ip)"
 
 echo "IP|$IP"
 echo "Gateway|$GW"

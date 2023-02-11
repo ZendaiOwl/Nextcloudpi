@@ -29,7 +29,7 @@ test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
 ## preparations
 
 test -f "$TAR" && { echo "$TAR already exists. Skipping... "; exit 0; }
-prepareDirectories                   # tmp cache output
+prepare_dirs                   # tmp cache output
 
 ## BUILD NCP
 
@@ -46,15 +46,15 @@ sudo chown "$USER" "$VM"
 sudo cp -a --reflink=auto --sparse=auto "$VM" "$IMG"
 
 ## pack
-packImage "$IMG" "$TAR"
+pack_image "$IMG" "$TAR"
 
 ## test
-#setStaticIP "$IMG" "$IP"
+#set_static_IP "$IMG" "$IP"
 #test_image    "$IMG" "$IP" # TODO fix tests
 
 # upload
-createTorrent "$TAR"
-#uploadFTP "$( basename "$TAR" .tar.bz2 )"
+create_torrent "$TAR"
+#upload_ftp "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

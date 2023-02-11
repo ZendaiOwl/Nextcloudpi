@@ -12,7 +12,7 @@
 
 install()
 {
-  AptInstall smartmontools
+  apt_install smartmontools
   systemctl disable smartd
   return
 }

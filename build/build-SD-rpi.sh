@@ -29,7 +29,10 @@ SIZE=4G                     # Raspbian image size
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
 IMG="${IMG:-NextcloudPi_RPi_$( date  "+%m-%d-%y" ).img}"
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
-
+ROOTDIR='raspbian_root'
+BUILD_DIR='tmp/ncp-build'
+BOOTDIR='raspbian_boot'
+SHELL='/bin/bash'
 ##############################################################################
 
 if isFile "$TAR"; then
@@ -48,13 +51,13 @@ fi
 
 IMG=tmp/"$IMG"
 
-trap 'cleanChroot' EXIT SIGHUP SIGILL SIGABRT
+trap 'clean_chroot_raspbian' EXIT SIGHUP SIGILL SIGABRT
 # tmp cache output
-prepareDirectories
-downloadRaspberryOS "$URL" "$IMG"
-resizeIMG           "$IMG" "$SIZE"
+prepare_dirs
+download_raspbian "$URL" "$IMG"
+resize_image      "$IMG" "$SIZE"
 # PARTUUID has changed after resize
-updateBootUUID      "$IMG"
+update_boot_uuid  "$IMG"
 
 # Make sure we don't accidentally disable first run wizard
 if isRoot; then
@@ -65,23 +68,23 @@ fi
 
 ## BUILD NCP
 
-prepareChrootRPi "$IMG"
+prepare_chroot_raspbian "$IMG"
 
 if isRoot; then
-  mkdir raspbian_root/tmp/ncp-build
+  mkdir "$ROOTDIR"/"$BUILD_DIR"
 else
-  sudo mkdir raspbian_root/tmp/ncp-build
+  sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
 fi
 
 if isRoot; then
-  rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . raspbian_root/tmp/ncp-build
+  rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 else
-  sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . raspbian_root/tmp/ncp-build
+  sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 fi
 
 if isRoot; then
   PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
-  chroot raspbian_root /bin/bash <<'EOFCHROOT'
+  chroot "$ROOTDIR" "$SHELL" <<'EOFCHROOT'
     set -ex
 
     # allow oldstable
@@ -115,13 +118,13 @@ if isRoot; then
     sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
     # cleanup
-    source etc/library.sh && runAppUnsafe post-inst.sh
+    source etc/library.sh && run_appUnsafe post-inst.sh
     rm /etc/resolv.conf
     rm -rf /tmp/ncp-build
 EOFCHROOT
 else
   PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
-  sudo chroot raspbian_root /bin/bash <<'EOFCHROOT'
+  sudo chroot "$ROOTDIR" "$SHELL" <<'EOFCHROOT'
     set -ex
 
     # allow oldstable
@@ -155,7 +158,7 @@ else
     sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
     # cleanup
-    source etc/library.sh && runAppUnsafe post-inst.sh
+    source etc/library.sh && run_appUnsafe post-inst.sh
     rm /etc/resolv.conf
     rm -rf /tmp/ncp-build
 EOFCHROOT
@@ -163,20 +166,20 @@ fi
 
 if isRoot; then
   log -1 "Image created: $(basename $IMG)"
-  basename "$IMG" | tee raspbian_root/usr/local/etc/ncp-baseimage
+  basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 else
   log -1 "Image created: $(sudo basename $IMG)"
-  sudo basename "$IMG" | sudo tee raspbian_root/usr/local/etc/ncp-baseimage
+  sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
-cleanChroot
+clean_chroot_raspbian
 
 trap - EXIT SIGHUP SIGILL SIGABRT
 
-packImage "$IMG" "$TAR"
+pack_image "$IMG" "$TAR"
 
 ## Pack IMG
-[[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; packImage "$IMG" "$TAR"; }
+[[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; pack_image "$IMG" "$TAR"; }
 
 log 0 "Build is complete"
 
@@ -184,12 +187,12 @@ exit 0
 
 ## test
 
-#setStaticIP "$IMG" "$IP"
+#set_static_IP "$IMG" "$IP"
 #test_image    "$IMG" "$IP" # TODO fix tests
 
 # upload
-#createTorrent "$TAR"
-#uploadFTP "$( basename "$TAR" .tar.bz2 )"
+#create_torrent "$TAR"
+#upload_ftp "$( basename "$TAR" .tar.bz2 )"
 
 
 # License

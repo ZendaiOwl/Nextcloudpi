@@ -42,9 +42,9 @@ test -e $NOTIFIED && [[ "$( cat $LATEST )" == "$( cat $NOTIFIED )" ]] && {
 
 echo "Found update from $( cat $VERFILE ) to $( cat $LATEST ). Sending notification..."
 
-notifyAdmin \
+notify_admin \
   "NextcloudPi update" \
-  "Update from $( cat $VERFILE ) to $( cat $LATEST ) is available. Update from https://$(getIP):4443"
+  "Update from $( cat $VERFILE ) to $( cat $LATEST ) is available. Update from https://$(get_ip):4443"
 
 cat $LATEST > $NOTIFIED
 EOF
@@ -74,7 +74,7 @@ sed -i 's|INFO Packages that will be upgraded:|INFO Packages that will be upgrad
 echo -e "Packages automatically upgraded: $PKGS\n"
 
 # notify
-notifyAdmin \
+notify_admin \
   "NextcloudPi Unattended Upgrades" \
   "Packages automatically upgraded $PKGS"
 EOF

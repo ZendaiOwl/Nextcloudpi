@@ -5,7 +5,7 @@ set -e
 source /usr/local/etc/library.sh
 
 
-isDocker || {
+is_docker || {
   arch="$(uname -m)"
   [[ "${arch}" =~ "armv7" ]] && arch="armv7"
   cat > /etc/systemd/system/notify_push.service <<EOF
@@ -24,7 +24,7 @@ User=www-data
 [Install]
 WantedBy = multi-user.target
 EOF
-  startNotifyPush
+  start_notify_push
 }
 
 exit 0

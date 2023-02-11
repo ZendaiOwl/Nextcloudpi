@@ -11,7 +11,7 @@
 ob_start();
 
 // check for encrypted data to present unlock dialog
-exec("bash -c 'source /usr/local/etc/library.sh; needsDecryption'", $output, $ret);
+exec("bash -c 'source /usr/local/etc/library.sh; needs_decrypt'", $output, $ret);
 if ($ret == 0) {
   header("Location: /decrypt");
   exit();
