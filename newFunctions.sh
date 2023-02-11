@@ -398,7 +398,7 @@ function addUnsetVariable
   declare -x -a UNSETVAR
 }
 
-function cleanupLibraryVariables
+function cleanupVariables
 {
   unset "${UNSETVAR[@]}"
   unset UNSETVAR
@@ -445,7 +445,7 @@ function cleanupTempDirectory
   fi
 }
 
-function cleanupLibrary
+function cleanupFunctionsLibrary
 {
   if isSet TMPDIR; then
     cleanupTempDirectory
@@ -453,7 +453,7 @@ function cleanupLibrary
   if isSet CODE_DIR; then
     cleanupCodeDir
   fi
-  cleanupLibraryVariables
+  cleanupVariables
 }
 
 function setOwner
@@ -465,7 +465,6 @@ function setOwner
     OWNER="${OWNER:-ZendaiOwl}"
   fi
   addUnsetVariable OWNER
-  #trap 'unset OWNER' EXIT SIGILL SIGHUP SIGABRT SIGINT
 }
 
 function setRepository
@@ -477,7 +476,6 @@ function setRepository
     REPO="${REPO:-nextcloudpi}"
   fi
   addUnsetVariable REPO
-  #trap 'unset REPO' EXIT SIGILL SIGHUP SIGABRT SIGINT
 }
 
 function setBranch
@@ -489,14 +487,12 @@ function setBranch
     BRANCH="${BRANCH:-Refactoring}"
   fi
   addUnsetVariable BRANCH
-  #trap 'unset BRANCH' EXIT SIGILL SIGHUP SIGABRT SIGINT
 }
 
 # Fetch build code
 function fetchBuildCode
 {
   if isEqual "$#" 3; then
-    #local -r OWNER="$1" REPO="$2" BRANCH="$3"
     setOwner "$1"
     setRepository "$2"
     setBranch "$3"
@@ -611,5 +607,5 @@ function hasDatabase
 
 
 
-#trap 'cleanupLibrary' EXIT SIGILL SIGHUP SIGABRT SIGINT
+#trap 'cleanupFunctionsLibrary' EXIT SIGILL SIGHUP SIGABRT SIGINT
 
