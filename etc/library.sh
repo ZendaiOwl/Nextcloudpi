@@ -242,7 +242,7 @@ function isMatch {
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function noMatch {
+function notMatch {
   [[ "$#" -ne 2 ]] && return 2
   [[ "$1" != "$2" ]]
 }
@@ -758,7 +758,7 @@ function set-nc-domain {
     PROTOCOL="https"
   fi
   URL="${PROTOCOL}://${DOMAIN%*/}"
-  if noMatch "$2" "--no-trusted-domain"; then
+  if notMatch "$2" "--no-trusted-domain"; then
     if hasCMD ncc; then
       ncc config:system:set trusted_domains 3 --value="${DOMAIN%*/}"
       ncc config:system:set overwrite.cli.url --value="${URL}/"
@@ -930,7 +930,7 @@ function set_app_param {
     fi
   done
 
-  if noMatch "$PARAM_FOUND" "true"; then
+  if notMatch "$PARAM_FOUND" "true"; then
     log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"
     return 1
   fi

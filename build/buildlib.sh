@@ -228,7 +228,7 @@ function isMatch
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function noMatch
+function notMatch
 {
   [[ "$#" -ne 2 ]] && return 2
   [[ "$1" != "$2" ]]
@@ -564,13 +564,13 @@ function launch_installation_qemu
 {
   local IP="$1" MATCH="1" CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
 
-  if noMatch "$NO_CFG_STEP" "$MATCH"; then
+  if notMatch "$NO_CFG_STEP" "$MATCH"; then
     CFG_STEP=configure
   fi
-  if noMatch "$NO_CLEANUP" "$MATCH"; then
+  if notMatch "$NO_CLEANUP" "$MATCH"; then
     CLEANUP_STEP="if [[ \$( type -t cleanup ) == function ]];then cleanup; fi"
   fi
-  if noMatch "$NO_HALT_STEP" "$MATCH"; then
+  if notMatch "$NO_HALT_STEP" "$MATCH"; then
     HALT_STEP="nohup halt &>/dev/null &"
   fi
   
@@ -589,7 +589,7 @@ $HALT_STEP
 function launch_installation_online
 {
   local IP="$1" MATCH="1" CFG_STEP INSTALLATION_STEPS
-  if noMatch "$NO_CFG_STEP" "$MATCH"; then
+  if notMatch "$NO_CFG_STEP" "$MATCH"; then
     CFG_STEP=configure
   fi
   INSTALLATION_STEPS="
@@ -603,7 +603,7 @@ $CFG_STEP
 function prepare_dirs
 {
   local DIRS=(tmp output cache)
-  if noMatch "$CLEAN" "0"; then
+  if notMatch "$CLEAN" "0"; then
     rm --recursive --force "${DIRS[2]}"
   fi
   rm --recursive --force "${DIRS[0]}"

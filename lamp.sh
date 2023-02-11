@@ -133,7 +133,7 @@ function isMatch {
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function noMatch {
+function notMatch {
   [[ "$#" -ne 2 ]] && return 2
   [[ "$1" != "$2" ]]
 }
