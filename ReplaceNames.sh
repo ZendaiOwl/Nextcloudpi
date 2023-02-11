@@ -113,7 +113,11 @@ function replaceTextInAllFiles {
 
 if isFile ReplaceNames.txt; then
   IN=()
-  CURRENT='./ReplaceNames.txt'
+  CURRENT='ReplaceNames.txt'
+  SECOND='RevertNames.txt'
+  if isFile "$SECOND"; then
+    mv "$SECOND" "../$SECOND"
+  fi
   BACKUP='../.backup'
   cat "$CURRENT" > "$BACKUP"
   for LINE in $(cat "$BACKUP"); do
@@ -121,13 +125,14 @@ if isFile ReplaceNames.txt; then
   done
   LENGTH="${#IN[@]}"
   for (( i = 0; i < "$LENGTH"; i+=2 )); do
-    #echo "Replacing: ${IN[$i]} | With: ${IN[$(($i + 1))]}"
-    #replaceTextInAllFiles "${IN[$i]}" "${IN[$(($i + 1))]}"
-    echo "Replacing: ${IN[$(($i + 1))]} | With: ${IN[$i]}"
-    replaceTextInAllFiles "${IN[$(($i + 1))]}" "${IN[$i]}"
+    echo "Replacing: ${IN[$i]} | With: ${IN[$(($i + 1))]}"
+    replaceTextInAllFiles "${IN[$i]}" "${IN[$(($i + 1))]}"
   done
   mv "$BACKUP" "$CURRENT"
-  unset IN LENGTH CURRENT BACKUP
+  if isFile "../$SECOND"; then
+    mv "../$SECOND" "$SECOND"
+  fi
+  unset IN LENGTH CURRENT SECOND BACKUP
 else
   exit 1
 fi
