@@ -208,6 +208,19 @@ function installPKG {
   fi
 }
 
+function cleanTmp
+{
+  if ! cd -; then
+    log 2 "Unable to change directory to: -"
+    exit 1
+  fi
+  if isRoot; then
+    rm --recursive --force "$TMPDIR"
+  else
+    sudo rm --recursive --force "$TMPDIR"
+  fi
+}
+
 #OWNER="${OWNER:-nextcloud}"
 #REPO="${REPO:-nextcloudpi}"
 #BRANCH="${BRANCH:-master}"
@@ -220,7 +233,8 @@ BRANCH="${BRANCH:-Refactoring}"
 [[ -z "$DBG" ]] && set -e
 
 TMPDIR="$(mktemp -d /tmp/nextcloudpi.XXXXXX || (echo "Failed to create temp dir. Exiting" >&2 ; exit 1) )"
-trap 'rm -rf "$TMPDIR"' EXIT SIGHUP SIGILL SIGABRT
+
+trap 'cleanTmp' EXIT SIGHUP SIGILL SIGABRT SIGINT
 
 if ! isRoot; then
   log 2 "Must be run as root or with sudo. Try 'sudo $0'"
@@ -278,46 +292,70 @@ fi
 touch /.ncp-image
 
 mkdir --parents /usr/local/etc/ncp-config.d/
+
 cp etc/ncp-config.d/nc-nextcloud.cfg /usr/local/etc/ncp-config.d/
 cp etc/library.sh /usr/local/etc/
 cp etc/ncp.cfg /usr/local/etc/
 
 cp -r etc/ncp-templates /usr/local/etc/
+
 install_app    lamp.sh
+
 install_app    bin/ncp/CONFIG/nc-nextcloud.sh
+
 run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh
+
 rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg    # armbian overlay is ro
+
 systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
+
 install_app    ncp.sh
+
 run_app_unsafe bin/ncp/CONFIG/nc-init.sh
+
 log -1 'Moving data directory to a more sensible location'
 df -h
 mkdir -p /opt/ncdata
+
 [[ -f "/usr/local/etc/ncp-config.d/nc-datadir.cfg" ]] || {
   should_rm_datadir_cfg=true
   cp etc/ncp-config.d/nc-datadir.cfg /usr/local/etc/ncp-config.d/nc-datadir.cfg
 }
+
 DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe bin/ncp/CONFIG/nc-datadir.sh
+
 [[ -z "$should_rm_datadir_cfg" ]] || rm /usr/local/etc/ncp-config.d/nc-datadir.cfg
+
 rm /.ncp-image
 
 # skip on Armbian / Vagrant / LXD ...
 [[ "$CODE_DIR" != "" ]] || bash /usr/local/bin/ncp-provisioning.sh
 
-cd -
-rm -rf "$TMPDIR"
+if ! cd -; then
+  log 2 "Unable to change directory to: -"
+  exit 1
+fi
+
+rm --recursive --force "$TMPDIR"
+
+trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 
 IP="$(get_ip)"
 
-echo "Done.
+log 0 "Completed: $0"
 
-First: Visit https://$IP/  https://nextcloudpi.local/ (also https://nextcloudpi.lan/ or https://nextcloudpi/ on windows and mac)
-to activate your instance of NC, and save the auto generated passwords. You may review or reset them
-anytime by using nc-admin and nc-passwd.
-Second: Type 'sudo ncp-config' to further configure NCP, or access ncp-web on https://$IP:4443/
-Note: You will have to add an exception, to bypass your browser warning when you
-first load the activation and :4443 pages. You can run letsencrypt to get rid of
-the warning if you have a (sub)domain available.
+printf '%s\n' "
+Visit:
+- https://$IP/
+- https://nextcloudpi.local/
+- Windows/Mac: https://nextcloudpi.lan/ or https://nextcloudpi/
+
+Activate your instance of NC and save the auto generated passwords.
+You may review or reset them anytime by using 'nc-admin' and 'nc-passwd'."
+
+printf '%s\n' "Type 'sudo ncp-config' to further configure NCP or access ncp-web on https://$IP:4443/
+Note: You will have to add an exception to bypass the browser warning when you first access the activation page and the :4443 page.
+You can run letsencrypt to get rid of the warning if you have a (sub)domain available.
 "
 
 # License

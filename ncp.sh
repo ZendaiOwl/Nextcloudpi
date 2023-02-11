@@ -170,9 +170,9 @@ fi
 
 WEBADMIN='ncp'
 WEBPASSWD='ownyourbits'
-BRANCH="${BRANCH:-master}"
 BINDIR='/usr/local/bin/ncp'
 CONFDIR='/usr/local/etc/ncp-config.d'
+BRANCH="${BRANCH:-master}"
 
 function install
 {
