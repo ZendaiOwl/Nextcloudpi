@@ -46,7 +46,7 @@ function log {
            ;;
       esac
     else
-      log 2 "(${BASH_SOURCE[0]##*/}) (log) Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
     fi
   fi
 }
@@ -399,32 +399,32 @@ function installPKG {
     IFS=' ' read -ra PKG <<<"$@"
     if [[ ! "$EUID" -eq 0 ]]; then
       if "${SUDOUPDATE[@]}" &>/dev/null; then
-        log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Apt list updated"
+        log 0 "Apt list updated"
       else
-        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Couldn't update apt lists"
+        log 2 "Couldn't update apt lists"
         return 1
       fi
-      log -1 "(${BASH_SOURCE[0]##*/}) (installPKG) Installing ${PKG[*]}"
+      log -1 "Installing ${PKG[*]}"
       if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Installation completed"
+        log 0 "Installation completed"
         return 0
       else
-        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Something went wrong during installation"
+        log 2 "Something went wrong during installation"
         return 2
       fi
     else
       if "${ROOTUPDATE[@]}" &>/dev/null; then
-        log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Apt list updated"
+        log 0 "Apt list updated"
       else
-        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Couldn't update apt lists"
+        log 2 "Couldn't update apt lists"
         return 1
       fi
-      log -1 "(${BASH_SOURCE[0]##*/}) (installPKG) Installing ${PKG[*]}"
+      log -1 "Installing ${PKG[*]}"
       if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Installation completed"
+        log 0 "Installation completed"
         return 0
       else
-        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Something went wrong during installation"
+        log 2 "Something went wrong during installation"
         return 1
       fi
     fi
@@ -503,9 +503,9 @@ function install_app {
   unset install
   # shellcheck disable=SC1090
   source "$SCRIPT"
-  log -1 "(${BASH_SOURCE[0]##*/}) (install_app) Installing: $NCP_APP"
+  log -1 "Installing: $NCP_APP"
   ( install )
-  log 0 "(${BASH_SOURCE[0]##*/}) (install_app) Installed: $NCP_APP"
+  log 0 "Installed: $NCP_APP"
 }
 
 # Return codes
@@ -523,18 +523,18 @@ function configure_app {
         DIALOG_ERROR=254 \
         DIALOG_ESC=255 \
         RES=0
-  log -1 "(${BASH_SOURCE[0]##*/}) (configure_app) Configuring app: $NCP_APP"
+  log -1 "Configuring app: $NCP_APP"
   # Checks
   if ! hasPKG dialog; then
-    log 1 "(${BASH_SOURCE[0]##*/}) (configure_app) Missing package: dialog"
-    log -1 "(${BASH_SOURCE[0]##*/}) (conigure_app) Attempting to install: dialog"
+    log 1 "Missing package: dialog"
+    log -1 "Attempting to install: dialog"
     if ! installPKG dialog; then
-      log 2 "(${BASH_SOURCE[0]##*/}) (configure_app) Failed! Please install dialog manually for interactive configuration"
+      log 2 "Failed! Please install dialog manually for interactive configuration"
       return 3
     fi
   fi
   if ! isFile "$CFG_FILE"; then
-    log 1 "(${BASH_SOURCE[0]##*/}) (configure_app) No configuration file for: $NCP_APP"
+    log 1 "No configuration file for: $NCP_APP"
     return 0
   fi
 
@@ -581,15 +581,15 @@ function configure_app {
         break
         ;;
       "$DIALOG_ERROR")
-        log 2 "(${BASH_SOURCE[0]##*/}) (configure_app) $VALUE"
+        log 2 "$VALUE"
         break
         ;;
       "$DIALOG_ESC")
-        log -1 "(${BASH_SOURCE[0]##*/}) (configure_app) ESC pressed."
+        log -1 "ESC pressed."
         break
         ;;
       *)
-        log -1 "(${BASH_SOURCE[0]##*/}) (configure_app) Return code was: $RES"
+        log -1 "Return code was: $RES"
         break
         ;;
     esac
@@ -597,7 +597,7 @@ function configure_app {
 
   echo "$CFG" > "$CFG_FILE"
   printf '\033[2J' && tput cup 0 0             # clear screen, don't clear scroll, cursor on top
-  log 0 "(${BASH_SOURCE[0]##*/}) (configure_app) Configured app: $NCP_APP"
+  log 0 "Configured app: $NCP_APP"
   return "$RET"
 }
 
@@ -605,31 +605,31 @@ function configure_app {
 function persistent_cfg {
   local SRC="$1"
   local DST="${2:-/data/etc/$( basename "$SRC" )}"
-  log -1 "(${BASH_SOURCE[0]##*/}) (persistent_cfg) Persisting configuration"
+  log -1 "Persisting configuration"
   # Trick to disable in dev docker
   if isPath '/changelog.md'; then
     return
   fi
   mkdir --parents "$(dirname "$DST")"
   if ! isPath "$DST"; then
-    log -1 "(${BASH_SOURCE[0]##*/}) (persistent_cfg) Making $SRC persistent"
+    log -1 "Making $SRC persistent"
     mv "$SRC" "$DST"
   fi
   rm --recursive --force "$SRC"
   ln -s "$DST" "$SRC"
-  log 0 "(${BASH_SOURCE[0]##*/}) (persistent_cfg) Persist configuration is complete"
+  log 0 "Persist configuration is complete"
 }
 
 # Return codes
 function cleanup_script {
   local SCRIPT="$1"
-  log -1 "(${BASH_SOURCE[0]##*/}) (cleanup_script) Cleanup script: $SCRIPT"
+  log -1 "Cleanup script: $SCRIPT"
   unset cleanup
-  log -1 "(${BASH_SOURCE[0]##*/}) (cleanup_script) Source: $SCRIPT"
+  log -1 "Source: $SCRIPT"
   # shellcheck disable=SC1090
   source "$SCRIPT"
   if isMatch "$(type -t cleanup)" "function"; then
-    log -1 "(${BASH_SOURCE[0]##*/}) (cleanup_script) Cleanup function found: $SCRIPT"
+    log -1 "Cleanup function found: $SCRIPT"
     cleanup
     return "$?"
   fi
@@ -639,12 +639,12 @@ function cleanup_script {
 function check_distro {
   local CFG="${1:-$NCPCFG}" SUPPORTED
   SUPPORTED="$(jq -r '.release' "$CFG")"
-  log -1 "(${BASH_SOURCE[0]##*/}) (check_distro) Checking support for distro"
+  log -1 "Checking support for distro"
   if grep -q "$SUPPORTED" <(lsb_release -sc); then
-    log 0 "(${BASH_SOURCE[0]##*/}) (check_distro) Supported"
+    log 0 "Supported"
     return 0
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) (check_distro) Not supported"
+    log 2 "Not supported"
     return 1
   fi
 }
@@ -655,7 +655,7 @@ function clear_password_fields {
   local -r CFG_FILE="$1"
   local LENGTH TYPE VAL
   if ! isFile "$CFG_FILE"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (clear_password_fields) File not found: $CFG_FILE"
+    log 2 "File not found: $CFG_FILE"
     return 1
   fi
   LENGTH="$(jq '.params | length' "$CFG_FILE")"
@@ -676,7 +676,7 @@ function is_ncp_activated {
   if hasCMD a2query; then
     ! a2query -s ncp-activation -q
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) (is_ncp_activated) Missing command: a2query"
+    log 2 "Missing command: a2query"
     return 1
   fi
 }
@@ -691,7 +691,7 @@ function is_active_app {
     SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
   fi
   if ! isFile "$SCRIPT"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (is_active_app) File not found: $NCP_APP"
+    log 2 "File not found: $NCP_APP"
     return 1
   fi
 
@@ -715,7 +715,7 @@ function is_active_app {
 
   # Config
   if ! isFile "$CFG_FILE"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (is_active_app) File not found: $CFG_FILE"
+    log 2 "File not found: $CFG_FILE"
     return 1
   fi
   
@@ -787,7 +787,7 @@ function nc_version {
   if hasCMD ncc; then
     ncc status | grep "version:" | awk '{ print $3 }'
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) (nc_version) Missing command: ncc"
+    log 2 "Missing command: ncc"
     return 1
   fi
 }
@@ -801,7 +801,7 @@ function set-nc-domain {
     unset DOMAIN
   fi
   if [[ "$DOMAIN" == "" ]] || is_an_ip "$DOMAIN"; then
-    log 1 "(${BASH_SOURCE[0]##*/}) (set-nc-domain) No domain found. Defaulting to hostname: $(hostname)"
+    log 1 "No domain found. Defaulting to hostname: $(hostname)"
     DOMAIN="$(hostname)"
   fi
   
@@ -829,7 +829,7 @@ function set-nc-domain {
         done
       fi
     else
-      log 2 "(${BASH_SOURCE[0]##*/}) (set-nc-domain) Missing command: ncc"
+      log 2 "Missing command: ncc"
       return 2
     fi
   fi
@@ -850,7 +850,7 @@ function notify_admin {
   local HEADER="$1" MSG="$2" ADMINS
   ADMINS="$(mysql -u root nextcloud -Nse "select uid from oc_group_user where gid='admin';")"
   if isZero "$ADMINS"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (notify_admin) Admin user(s) not found" >&2
+    log 2 "Admin user(s) not found" >&2
     return 0
   fi
   while read -r ADMIN; do
@@ -865,7 +865,7 @@ function run_app {
   local NCP_APP="$1" SCRIPT
   SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
   if ! isFile "$SCRIPT"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (run_app) File not found: $SCRIPT"
+    log 2 "File not found: $SCRIPT"
     return 1
   fi
   run_app_unsafe "$SCRIPT"
@@ -880,7 +880,7 @@ function run_app_unsafe {
   CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
 
   if ! isFile "$SCRIPT"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) File not found: $SCRIPT"
+    log 2 "File not found: $SCRIPT"
     return 1
   fi
 
@@ -888,18 +888,18 @@ function run_app_unsafe {
   chmod 640           "$LOG"
   chown root:www-data "$LOG"
 
-  log -1 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) Running: $NCP_APP"
+  log -1 "Running: $NCP_APP"
   echo " [ $NCP_APP ] ($(date))" >> "$LOG"
-  log -1 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) Reading script: $NCP_APP"
+  log -1 "Reading script: $NCP_APP"
   # Read script
   unset configure
-  log -1 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) Sourcing script: $NCP_APP"
+  log -1 "Sourcing script: $NCP_APP"
   # shellcheck disable=SC1090
   source "$SCRIPT"
   
   # Read config parameters
   if isFile "$CFG_FILE"; then
-    log -1 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) Reading config parameters: $NCP_APP"
+    log -1 "Reading config parameters: $NCP_APP"
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0; i < "$LENGTH"; i++ )); do
       VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
@@ -909,16 +909,16 @@ function run_app_unsafe {
   fi
 
   # Run
-  log -1 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) Executing configure: $NCP_APP"
-  (configure) 2>&1 | tee -a "$LOG"
+  log -1 "Executing configure: $NCP_APP"
+  ( configure ) 2>&1 | tee -a "$LOG"
   RET="${PIPESTATUS[0]}"
 
   echo "" >> "$LOG"
   if isFile "$CFG_FILE"; then
-    log -1 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) Clearing password fields: $NCP_APP"
+    log -1 "Clearing password fields: $NCP_APP"
     clear_password_fields "$CFG_FILE"
   fi
-  log 0 "(${BASH_SOURCE[0]##*/}) (run_app_unsafe) Completed: $NCP_APP"
+  log 0 "Completed: $NCP_APP"
   return "$RET"
 }
 
@@ -939,7 +939,7 @@ function find_app_param_num {
       fi
     done
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) (find_app_param_num) File not found: $SCRIPT"
+    log 2 "File not found: $SCRIPT"
     return 1
   fi
 }
@@ -951,11 +951,11 @@ function find_app_param {
   CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
 
   if ! P_NUM="$(find_app_param_num "$SCRIPT" "$PARAM_ID")"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (find_app_param) Parameter index not found: $SCRIPT"
+    log 2 "Parameter index not found: $SCRIPT"
     return 1
   fi
   if ! isFile "$CFG_FILE"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (find_app_param) File not found: $CFG_FILE"
+    log 2 "File not found: $CFG_FILE"
     return 2
   fi
   jq -r ".params[$P_NUM].value" "$CFG_FILE"
@@ -968,11 +968,11 @@ function set_app_param {
   local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
 
   if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "$PARAM_VALUE"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (set_app_param) Invalid characters in field ${VARIABLES[$i]}"
+    log 2 "Invalid characters in field ${VARIABLES[$i]}"
     return 1
   fi
   if ! isFile "$CFG_FILE"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (set_app_param) File not found: $CFG_FILE"
+    log 2 "File not found: $CFG_FILE"
     return 2
   fi
   
@@ -988,7 +988,7 @@ function set_app_param {
   done
 
   if notMatch "$PARAM_FOUND" "true"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (set_app_param) Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"
+    log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"
     return 1
   fi
 
@@ -1002,7 +1002,7 @@ function install_template {
   local BACKUP
   BACKUP="$(mktemp)"
 
-  log -1 "(${BASH_SOURCE[0]##*/}) (install_template) Installing template: $TEMPLATE"
+  log -1 "Installing template: $TEMPLATE"
 
   mkdir --parents "$(dirname "$TARGET")"
   if isFile "$TARGET"; then
@@ -1018,7 +1018,7 @@ function install_template {
         fi
     fi
   } || {
-    log 2 "(${BASH_SOURCE[0]##*/}) (install_template) Could not generate: $TARGET From template: $TEMPLATE. Rolling back.."
+    log 2 "Could not generate: $TARGET From template: $TEMPLATE. Rolling back.."
     mv "$BACKUP" "$TARGET"
     return 1
   }
@@ -1074,7 +1074,7 @@ function get_ncpcfg {
   if isFile "$NCPCFG"; then
     jq -r ".$NAME" "$NCPCFG"
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) (get_ncpcfg) File not found: $NCPCFG" >&2
+    log 2 "File not found: $NCPCFG" >&2
     return 1
   fi
 }
@@ -1088,10 +1088,10 @@ function clear_opcache {
   # shellcheck disable=SC2155
   local DATA_DIR="$(get_nc_config_value datadirectory)"
   if isDirectory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"; then
-    log -1 "(${BASH_SOURCE[0]##*/}) (clear_opcache) Clearing opcache"
-    log -1 "(${BASH_SOURCE[0]##*/}) (clear_opcache) This can take some time, please don't interrupt by closing or refreshing your browser tab"
+    log -1 "Clearing opcache"
+    log -1 "This can take some time, please don't interrupt by closing or refreshing your browser tab"
     rm --recursive --force "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/* "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/.[!.]*
-    log 0 "(${BASH_SOURCE[0]##*/}) (clear_opcache) Cleared opcache"
+    log 0 "Cleared opcache"
   fi
   service php"$PHPVER"-fpm reload
 }
@@ -1107,13 +1107,13 @@ if isDirectory "$CFGDIR"; then
 elif isDirectory '/usr/local/etc/ncp-config.d'; then
   CFGDIR='/usr/local/etc/ncp-config.d'
 else
-  log 2 "(${BASH_SOURCE[0]##*/}) Directory not found: $CFGDIR"
+  log 2 "Directory not found: $CFGDIR"
   return 1
 fi
 
 export CFGDIR
 
-log -2 "(${BASH_SOURCE[0]##*/}) CFGDIR: $CFGDIR"
+log -2 "CFGDIR: $CFGDIR"
 
 BINDIR="${BINDIR:-/usr/local/bin/ncp}"
 
@@ -1122,23 +1122,23 @@ if isDirectory "$BINDIR"; then
 elif isDirectory 'bin/ncp'; then
   BINDIR='bin/ncp'
 else
-  log 2 "(${BASH_SOURCE[0]##*/}) Directory not found: $BINDIR"
+  log 2 "Directory not found: $BINDIR"
   return 1
 fi
 
 export BINDIR
 
-log -2 "(${BASH_SOURCE[0]##*/}) BINDIR: $BINDIR"
+log -2 "BINDIR: $BINDIR"
 
 NCDIR="${NCDIR:-/var/www/nextcloud}"
 
 export NCDIR
 
-log -2 "(${BASH_SOURCE[0]##*/}) NCDIR: $NCDIR"
+log -2 "NCDIR: $NCDIR"
 
 ncc="${ncc:-/usr/local/bin/ncc}"
 
-log -2 "(${BASH_SOURCE[0]##*/}) ncc: $ncc"
+log -2 "ncc: $ncc"
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 
@@ -1149,16 +1149,16 @@ elif isFile '/usr/local/etc/ncp.cfg'; then
 elif isFile 'ncp.cfg'; then
   NCPCFG="${NCPCFG:-ncp.cfg}"
 else
-  log 2 "(${BASH_SOURCE[0]##*/}) File not found: ncp.cfg" >&2
+  log 2 "File not found: ncp.cfg" >&2
   return 1
 fi
 
 export NCPCFG
 
-log -2 "(${BASH_SOURCE[0]##*/}) NCPCFG: $NCPCFG"
+log -2 "NCPCFG: $NCPCFG"
 
 if ! hasCMD dpkg; then
-  log 2 "(${BASH_SOURCE[0]##*/}) Missing command: dpkg" >&2
+  log 2 "Missing command: dpkg" >&2
   return 1
 else
   ARCH="$(dpkg --print-architecture)"
@@ -1212,11 +1212,11 @@ export NCLATESTVER
 export PHPVER
 export RELEASE
 
-log -2 "(${BASH_SOURCE[0]##*/}) ARCH: $ARCH"
-log -2 "(${BASH_SOURCE[0]##*/}) NCLATESTVER: $NCLATESTVER"
-log -2 "(${BASH_SOURCE[0]##*/}) PHPVER: $PHPVER"
-log -2 "(${BASH_SOURCE[0]##*/}) RELEASE: $RELEASE"
-log -2 "(${BASH_SOURCE[0]##*/}) CFGRELEASE: $CFGRELEASE"
+log -2 "ARCH: $ARCH"
+log -2 "NCLATESTVER: $NCLATESTVER"
+log -2 "PHPVER: $PHPVER"
+log -2 "RELEASE: $RELEASE"
+log -2 "CFGRELEASE: $CFGRELEASE"
 
 
 # License

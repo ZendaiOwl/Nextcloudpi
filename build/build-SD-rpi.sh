@@ -27,14 +27,14 @@ BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"
 add_build_variables BUILDLIBRARY
 
 if [[ ! -f "$BUILDLIBRARY" ]]; then
-  printf '\e[1;31mERROR\e[0m %s\n' "(${BASH_SOURCE[0]##*/}) File not found: $BUILDLIBRARY"
+  printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"
   exit 1
 fi
 
 # shellcheck disable=SC1090
 source "$BUILDLIBRARY"
 
-log -1 "(${BASH_SOURCE[0]##*/}) Build NCP Raspberry Pi"
+log -1 "Build NCP Raspberry Pi"
 
 URL="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-09-26/2022-09-22-raspios-bullseye-arm64-lite.img.xz"
 SIZE=4G                     # Raspbian image size
@@ -57,15 +57,15 @@ function clean_build_sd_rpi
 ##############################################################################
 
 if isFile "$TAR"; then
-  log 1 "(${BASH_SOURCE[0]##*/}) File exists: $TAR"
+  log 1 "File exists: $TAR"
   exit 0
 fi
 if findFullProcess qemu-arm-static; then
-  log 2 "(${BASH_SOURCE[0]##*/}) qemu-arm-static already running"
+  log 2 "qemu-arm-static already running"
   exit 1
 fi
 if findFullProcess qemu-aarch64-static; then
-  log 2 "(${BASH_SOURCE[0]##*/}) qemu-aarch64-static already running"
+  log 2 "qemu-aarch64-static already running"
   exit 1
 fi
 ## preparations
@@ -189,10 +189,10 @@ EOFCHROOT
 fi
 
 if isRoot; then
-  log -1 "(${BASH_SOURCE[0]##*/}) Image created: $(basename $IMG)"
+  log -1 "Image created: $(basename $IMG)"
   basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 else
-  log -1 "(${BASH_SOURCE[0]##*/}) Image created: $(sudo basename $IMG)"
+  log -1 "Image created: $(sudo basename $IMG)"
   sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
@@ -203,7 +203,7 @@ trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 pack_image "$IMG" "$TAR"
 
 ## Pack IMG
-[[ "$*" =~ .*"--pack".* ]] && { log -1 "(${BASH_SOURCE[0]##*/}) Packing image"; pack_image "$IMG" "$TAR"; }
+[[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; pack_image "$IMG" "$TAR"; }
 
 log 0 "Build is complete"
 

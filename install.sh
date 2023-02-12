@@ -45,7 +45,7 @@ function log {
            ;;
       esac
     else
-      log 2 "(${BASH_SOURCE[0]##*/}) (log) Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
     fi
   fi
 }
@@ -331,10 +331,10 @@ function hasCMD {
 # 4: Not running as root/sudo
 function installPKG {
   if [[ "$#" -eq 0 ]]; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Requires: [PKG(s) to install]"
+    log 2 "Requires: [PKG(s) to install]"
     return 3
   elif [[ "$EUID" -ne 0 ]]; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Requires root privileges"
+    log 2 "Requires root privileges"
     return 4 
   else
     local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
@@ -344,17 +344,17 @@ function installPKG {
     IFS=' ' read -ra PKG <<<"$@"
     
     if "${ROOTUPDATE[@]}" &>/dev/null; then
-      log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Apt list updated"
+      log 0 "Apt list updated"
     else
-      log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Couldn't update apt lists"
+      log 2 "Couldn't update apt lists"
       return 1
     fi
-    log -1 "(${BASH_SOURCE[0]##*/}) (installPKG) Installing ${PKG[*]}"
+    log -1 "Installing ${PKG[*]}"
     if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-      log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Installation completed"
+      log 0 "Installation completed"
       return 0
     else
-      log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Something went wrong during installation"
+      log 2 "Something went wrong during installation"
       return 1
     fi
   fi
@@ -371,24 +371,19 @@ function add_install_variables
 
 function clean_install_variables
 {
-  if isSet INSTALL_VARIABLES; then
-    unset "${INSTALL_VARIABLES[@]}"
-  else
-    log -2 "(${BASH_SOURCE[0]##*/}) (clean_install_variables) No variables to unset"
-    return 1
-  fi
+  unset "${INSTALL_VARIABLES[@]}"
 }
 
 function clean_install_tmp
 {
   if ! isSet TMPDIR; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (clean_install_tmp) Variable not set: TMPDIR"
+    log 2 "Variable not set: TMPDIR"
     return 1
   elif ! cd -; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (clean_install_tmp) Unable to change directory to: -"
+    log 2 "Unable to change directory to: -"
     return 1
   elif ! isDirectory "$TMPDIR"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) (clean_install_tmp) Directory not found: TMPDIR"
+    log 2 "Directory not found: TMPDIR"
     return 1
   else
     if isRoot; then
@@ -401,7 +396,7 @@ function clean_install_tmp
 
 function clean_install_script
 {
-  log -1 "(${BASH_SOURCE[0]##*/}) Cleaning up from install script"
+  log -1 "Cleaning up from install script"
   if isSet TMPDIR; then
     if isDirectory "$TMP"; then
       clean_install_tmp
@@ -413,7 +408,7 @@ function clean_install_script
   if isFile '/.ncp-image'; then
     rm /.ncp-image
   fi
-  log 0 "(${BASH_SOURCE[0]##*/}) Cleaned up from install script"
+  log 0 "Cleaned up from install script"
 }
 
 
@@ -424,7 +419,7 @@ function clean_install_script
 # (${BASH_SOURCE[0]##*/})
 
 if ! isRoot; then
-  log 2 "(${BASH_SOURCE[0]##*/}) Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"
+  log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"
   exit 1
 fi
 
@@ -446,7 +441,7 @@ NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 NCP_TEMPLATES_DIR="${NCPTEMPLATES:-etc/ncp-templates}"
 DBNAME='nextcloud'
 
-TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "(${BASH_SOURCE[0]##*/}) Failed to create temp directory"; exit 1; }))"
+TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "Failed to create temp directory"; exit 1; }))"
 
 add_install_variables OWNER REPO BRANCH URL LIBRARY NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
 
@@ -477,12 +472,12 @@ if hasCMD mysqld; then
   log 1 "Existing MySQL configuration will be changed"
   if isSet DBNAME; then
     if mysql -e 'use '"$DBNAME"'' &>/dev/null; then
-      log 2 "(${BASH_SOURCE[0]##*/}) Database exists: $DBNAME"
+      log 2 "Database exists: $DBNAME"
       exit 1
     fi
   else
     if mysql -e 'use nextcloud' &>/dev/null; then
-      log 2 "(${BASH_SOURCE[0]##*/}) Database exists: nextcloud"
+      log 2 "Database exists: nextcloud"
       exit 1
     fi
   fi
@@ -500,7 +495,7 @@ installPKG git \
 
 # get install code
 if isZero "$CODE_DIR" || ! isSet CODE_DIR; then
-  log -1 "(${BASH_SOURCE[0]##*/}) Fetching build code"
+  log -1 "Fetching build code"
   CODE_DIR="$TMPDIR"/"$REPO"
   git clone -b "$BRANCH" "$URL" "$CODE_DIR"
   add_install_variables CODE_DIR
@@ -509,45 +504,45 @@ fi
 if isSet CODE_DIR; then
   if isDirectory "$CODE_DIR"; then
     if ! cd "$CODE_DIR"; then
-      log 2 "(${BASH_SOURCE[0]##*/}) Failed to change directory to: $CODE_DIR"
+      log 2 "Failed to change directory to: $CODE_DIR"
       exit 1
     fi
   fi 
 fi
 
 # install NCP
-log -1 "(${BASH_SOURCE[0]##*/}) Installing NextcloudPi"
+log -1 "Installing NextcloudPi"
 
 if isFile "$LIBRARY"; then
   # shellcheck disable=SC1091
   source "$LIBRARY"
 else
-  log 2 "(${BASH_SOURCE[0]##*/}) File not found: $LIBRARY"
+  log 2 "File not found: $LIBRARY"
   exit 1
 fi
 
 if isFile "$NCPCFG"; then
   if ! check_distro "$NCPCFG"; then
-    log 2 "(${BASH_SOURCE[0]##*/}) Distro not supported"
+    log 2 "Distro not supported"
     if ! cat /etc/issue; then
-      log 2 "(${BASH_SOURCE[0]##*/}) Failed to read file: /etc/issue"
+      log 2 "Failed to read file: /etc/issue"
       exit 1
     fi
     exit 1
   fi
 else
-  log 2 "(${BASH_SOURCE[0]##*/}) File not found: $NCPCFG"
+  log 2 "File not found: $NCPCFG"
   exit 1
 fi
 
 # indicate that this will be an image build
 if ! touch /.ncp-image; then
-  log 2 "(${BASH_SOURCE[0]##*/}) Failed creating file: /.ncp-image"
+  log 2 "Failed creating file: /.ncp-image"
   exit 1
 fi
 
 if ! mkdir --parents /usr/local/etc/ncp-config.d; then
-  log 2 "(${BASH_SOURCE[0]##*/}) Failed creating directory: /usr/local/etc/ncp-config.d"
+  log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"
   exit 1
 fi
 
@@ -555,25 +550,25 @@ if isDirectory 'etc/ncp-config.d'; then
   if isDirectory '/usr/local/etc/ncp-config.d'; then
     if isFile 'etc/ncp-config.d/nc-nextcloud.cfg'; then
       if ! cp etc/ncp-config.d/nc-nextcloud.cfg /usr/local/etc/ncp-config.d/nc-nextcloud.cfg; then
-        log 2 "(${BASH_SOURCE[0]##*/}) Failed to copy file: nc-nextcloud.cfg"
+        log 2 "Failed to copy file: nc-nextcloud.cfg"
         exit 1
       fi
     fi
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) Directory not found: /usr/local/etc/ncp-config.d"
+    log 2 "Directory not found: /usr/local/etc/ncp-config.d"
     exit 1
   fi
 else
-  log 2 "(${BASH_SOURCE[0]##*/}) Directory not found: etc/ncp-config.d"
+  log 2 "Directory not found: etc/ncp-config.d"
   exit 1
 fi
 
 if isFile "$LIBRARY"; then
   if cp "$LIBRARY" /usr/local/etc/library.sh; then
     LIBRARY='/usr/local/etc/library.sh'
-    log -2 "(${BASH_SOURCE[0]##*/}) LIBRARY: $LIBRARY"
+    log -2 "LIBRARY: $LIBRARY"
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) Failed to copy file: library.sh $LIBRARY"
+    log 2 "Failed to copy file: library.sh $LIBRARY"
     exit 1
   fi
 fi
@@ -583,9 +578,9 @@ fi
 if isFile "$NCPCFG"; then
   if cp "$NCPCFG" /usr/local/etc/ncp.cfg; then
     NCPCFG='/usr/local/etc/ncp.cfg'
-    log -2 "(${BASH_SOURCE[0]##*/}) NCPCFG: $NCPCFG"
+    log -2 "NCPCFG: $NCPCFG"
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) Failed to copy file: ncp.cfg $NCPCFG"
+    log 2 "Failed to copy file: ncp.cfg $NCPCFG"
     exit 1
   fi
 fi
@@ -593,13 +588,13 @@ fi
 if isDirectory "$NCP_TEMPLATES_DIR"; then
   if cp -r "$NCP_TEMPLATES_DIR" /usr/local/etc/; then
     NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
-    log -2 "(${BASH_SOURCE[0]##*/}) NCP_TEMPLATES_DIR: $NCP_TEMPLATES_DIR"
+    log -2 "NCP_TEMPLATES_DIR: $NCP_TEMPLATES_DIR"
   else
-    log 2 "(${BASH_SOURCE[0]##*/}) Failed to copy templates: $NCP_TEMPLATES_DIR"
+    log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"
     exit 1
   fi
 else
-  log 2 "(${BASH_SOURCE[0]##*/}) Directory not found: $NCP_TEMPLATES_DIR"
+  log 2 "Directory not found: $NCP_TEMPLATES_DIR"
   exit 1
 fi
 
@@ -621,7 +616,7 @@ systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's ne
 
 ( run_app_unsafe bin/ncp/CONFIG/nc-init.sh )
 
-log -1 "(${BASH_SOURCE[0]##*/}) Moving data directory to a more sensible location"
+log -1 "Moving data directory to a more sensible location"
 df -h
 mkdir --parents /opt/ncdata
 
@@ -650,7 +645,7 @@ trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 
 IP="$(get_ip)"
 
-log 0 "Completed: $0"
+log 0 "Completed installation"
 
 printf '%s\n' "
 Visit:
