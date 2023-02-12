@@ -51,11 +51,7 @@ add_build_variables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
 function clean_build_sd_rpi
 {
   clean_chroot_raspbian
-  if isSet BUILDVARIABLES; then
-    unset "${BUILDVARIABLES[@]}"
-  else
-    log -1 "(${BASH_SOURCE[0]##*/}) No build variables to unset"
-  fi
+  unset "${BUILDVARIABLES[@]}"
 }
 
 ##############################################################################
