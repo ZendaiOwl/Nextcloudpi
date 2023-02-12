@@ -80,12 +80,10 @@ if notSet PHPVER; then
   exit 1
 fi
 
-if [[ "$1" == "--defaults" ]] || [[ ! -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker
-then
+if [[ "$1" == "--defaults" ]] || [[ ! -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker; then
   log -1 "Restoring template to default settings" >&2
   TMP_DIR='/tmp/.opcache'
-elif is_docker
-then
+elif is_docker; then
   DATADIR='/data-ro/ncdata/data'
   [[ "$DOCKERBUILD" == 1 ]] || DATADIR="$(get_nc_config_value datadirectory || echo '/data/ncdata/data')"
   TMP_DIR="$DATADIR/.opcache"
