@@ -278,6 +278,7 @@ function configure
       BINDIR='bin/ncp'
     fi
     export BINDIR
+    log -2 "BINDIR: $BINDIR"
   fi
 
   # create and configure opcache dir
