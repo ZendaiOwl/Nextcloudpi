@@ -1,4 +1,4 @@
-#! /bin/bash
+﻿#! /bin/bash
 
 set -e
 source /usr/local/etc/library.sh
@@ -20,3 +20,4 @@ RestartSec=20
 
 [Install]
 WantedBy = multi-user.target
+EOF

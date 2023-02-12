@@ -1,4 +1,4 @@
-#! /bin/bash
+﻿#! /bin/bash
 
 set -e
 source /usr/local/etc/library.sh
@@ -29,3 +29,4 @@ pm.min_spare_servers = 4
 pm.max_spare_servers = 8
 pm.status_path = /status
 slowlog = log/\$pool.log.slow
+EOF

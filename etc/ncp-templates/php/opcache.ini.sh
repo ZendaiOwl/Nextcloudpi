@@ -1,4 +1,4 @@
-#! /bin/bash
+﻿#! /bin/bash
 
 set -e
 
@@ -43,3 +43,4 @@ opcache.save_comments=1
 opcache.revalidate_freq=1
 opcache.file_cache=${TMP_DIR}
 opcache.jit=function
+EOF
