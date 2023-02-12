@@ -19,7 +19,7 @@ else
   TMP_DIR="$(source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir)"
 fi
 
-mkdir -p "$TMP_DIR"
+mkdir --parents "$TMP_DIR"
 
 cat <<EOF
 zend_extension=opcache.so
