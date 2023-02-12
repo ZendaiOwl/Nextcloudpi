@@ -424,6 +424,8 @@ function findFullProcess
 # 3: File not found: [IMG]
 function launch_install_qemu
 {
+  [[ "$#" -lt 2 ]] && return 1
+  local IMG="$1" IP="$2" IMGOUT
   if isZero "$IP"; then
     log 2 "Invalid argument #2: [IP]"
     return 2
@@ -431,7 +433,6 @@ function launch_install_qemu
     log 2 "File not found: $IMG"
     return 3
   fi
-  local IMG="$1" IP="$2" IMGOUT
   IMGOUT="${IMG}-$( date +%s )"
   
   if ! cp --reflink=auto -v "$IMG" "$IMGOUT"; then
@@ -465,6 +466,7 @@ function launch_install_qemu
 # 3: Missing command: sed
 function launch_qemu
 {
+  [[ "$#" -lt 1 ]] && return 1
   local IMG="$1"
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
@@ -493,6 +495,7 @@ function launch_qemu
 # TODO: NEEDS TO BE REWORKED - PI USER NO LONGER EXISTS
 function ssh_pi
 {
+  [[ "$#" -lt 1 ]] && return 1
   local IP="$1" ARGS=("${@:2}") \
         PIUSER="${PIUSER:-pi}" \
         PIPASS="${PIPASS:-raspberry}" \
@@ -521,6 +524,7 @@ function ssh_pi
 # 1: Invalid number of arguments
 function wait_SSH
 {
+  [[ "$#" -lt 1 ]] && return 1
   local IP="$1"
   log -1 "Waiting for SSH on: $IP"
   while true; do
@@ -537,6 +541,7 @@ function wait_SSH
 # 4: SSH installation to QEMU target failed
 function launch_installation
 {
+  [[ "$#" -lt 1 ]] && return 1
   local IP="$1"
   if isZero "$INSTALLATION_CODE"; then
     log 2 "Configuration is required to be run first"
@@ -562,7 +567,9 @@ set -e$DBG
 # 1: Invalid number of arguments
 function launch_installation_qemu
 {
-  local IP="$1" MATCH="1" CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
+  [[ "$#" -lt 1 ]] && return 1
+  local -r IP="$1" MATCH="1"
+  local CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
 
   if notMatch "$NO_CFG_STEP" "$MATCH"; then
     CFG_STEP=configure
@@ -588,7 +595,9 @@ $HALT_STEP
 # 1: Invalid number of arguments
 function launch_installation_online
 {
-  local IP="$1" MATCH="1" CFG_STEP INSTALLATION_STEPS
+  [[ "$#" -lt 1 ]] && return 1
+  local -r IP="$1" MATCH="1"
+  local CFG_STEP INSTALLATION_STEPS
   if notMatch "$NO_CFG_STEP" "$MATCH"; then
     CFG_STEP=configure
   fi
@@ -611,18 +620,21 @@ function prepare_dirs
 }
 
 # Return codes
-# 1: File not found: [IMG]
-# 2: Mountpoint already exists
-# 3: Failed to mount IMG at mountpoint
+# 1: Missing argument: [IMG]
+# 2: File not found: [IMG]
+# 3: Mountpoint already exists
+# 4: Failed to mount IMG at mountpoint
 function mount_raspbian
 {
-  local IMG="$1" MP='raspbian_root' SECTOR OFFSET
+  [[ "$#" -lt 1 ]] && return 1
+  local -r IMG="$1" MP='raspbian_root'
+  local SECTOR OFFSET
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
-    return 1
+    return 2
   elif isPath "$MP"; then
     log 2 "Mountpoint already exists"
-    return 2
+    return 3
   fi
   log -1 "Mounting: $MP"
   if ! hasCMD fdisk; then
@@ -643,30 +655,32 @@ function mount_raspbian
   if isRoot; then
     if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 3
+      return 4
     fi
   else
     if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 3
+      return 4
     fi
   fi
   log 0 "IMG is mounted at: $MP"
 }
 
 # Return codes
-# 1: File not found: [IMG]
-# 2: Mountpoint already exists
-# 3: Failed to mount IMG at mountpoint
+# 1: Missing argument: [IMG]
+# 2: File not found: [IMG]
+# 3: Mountpoint already exists
+# 4: Failed to mount IMG at mountpoint
 function mount_raspbian_boot
 {
+  [[ "$#" -lt 1 ]] && return 1
   local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
   if ! isFile "$IMG"; then
     log 2 "File not found: $IMG"
-    return 1
+    return 2
   elif isPath "$MP"; then
     log 2 "Mountpoint already exists"
-    return 2
+    return 3
   fi
   log -1 "Mounting: $MP"
   if isRoot; then
@@ -683,12 +697,12 @@ function mount_raspbian_boot
   if isRoot; then
     if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 3
+      return 4
     fi
   else
     if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
       log 2 "Failed to mount IMG at: $MP"
-      return 3
+      return 4
     fi
   fi
   log 0 "IMG is mounted at: $MP"
@@ -702,7 +716,8 @@ function mount_raspbian_boot
 # 4: Could not remove directory: Boot
 function umount_raspbian
 {
-  local ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
+  local -r ROOTDIR="${ROOTDIR:-raspbian_root}" \
+           BOOTDIR="${BOOTDIR:-raspbian_boot}"
   log -1 "Unmounting IMG"
   if ! isDirectory "$ROOTDIR" && ! isDirectory "$BOOTDIR"; then
     log -1 "Nothing to unmount"
@@ -760,7 +775,8 @@ function umount_raspbian
 # 3: File not found: /usr/bin/qemu-aarch64-static
 function prepare_chroot_raspbian
 {
-  local -r IMG="$1" ROOTDIR='raspbian_root'
+  local -r IMG="$1" \
+           ROOTDIR="${ROOTDIR:-raspbian_root}"
   if ! mount_raspbian "$IMG"; then
     return 2
   fi
@@ -807,7 +823,7 @@ function prepare_chroot_raspbian
 
 function clean_chroot_raspbian
 {
-  local -r ROOTDIR='raspbian_root'
+  local -r ROOTDIR="${ROOTDIR:-raspbian_root}"
   log -1 "Cleaning chroot"
   if isRoot; then
     rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
@@ -876,7 +892,10 @@ function resize_image
 # 3: Failed to mount IMG boot
 function update_boot_uuid
 {
-  local -r IMG="$1" ROOTDIR='raspbian_root' BOOTDIR='raspbian_boot'
+  [[ "$#" -lt 1 ]] && return 1
+  local -r IMG="$1" \
+           ROOTDIR="${ROOTDIR:-raspbian_root}" \
+           BOOTDIR="${BOOTDIR:-raspbian_boot}"
   local PTUUID
   if isRoot; then
     PTUUID="$(blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
@@ -923,7 +942,8 @@ EOF
 # 3: Failed to create SSH file in IMG boot
 function prepare_sshd_raspbian
 {
-  local -r IMG="$1" BOOTDIR='raspbian_boot'
+  [[ "$#" -lt 1 ]] && return 1
+  local -r IMG="$1" BOOTDIR="${BOOTDIR:-raspbian_boot}"
   if ! mount_raspbian_boot "$IMG"; then
     log 2 "Failed to mount IMG boot"
     return 2
@@ -948,7 +968,8 @@ function prepare_sshd_raspbian
 # 2: Failed to mount IMG root
 function set_static_IP
 {
-  local -r IMG="$1" IP="$2" ROOTDIR='raspbian_root'
+  [[ "$#" -lt 2 ]] && return 1
+  local -r IMG="$1" IP="$2" ROOTDIR="${ROOTDIR:-raspbian_root}"
   if ! mount_raspbian "$IMG"; then
     log 2 "Failed to mount IMG root"
     return 2
@@ -986,7 +1007,8 @@ EOF
 # 2: Copy to image failed
 function copy_to_image
 {
-  local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR='raspbian_root'
+  [[ "$#" -lt 2 ]] && return 1
+  local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR="${ROOTDIR:-raspbian_root}"
   if ! mount_raspbian "$IMG"; then
     log 2 "Failed to mount IMG root"
     return 1
@@ -1011,7 +1033,8 @@ function copy_to_image
 # 2: Failed to mount IMG root
 function deactivate_unattended_upgrades
 {
-  local -r IMG="$1" ROOTDIR='raspbian_root'
+  [[ "$#" -lt 1 ]] && return 1
+  local -r IMG="$1" ROOTDIR="${ROOTDIR:-raspbian_root}"
   if ! mount_raspbian "$IMG"; then
     log 2 "Failed to mount IMG root"
     return 2
@@ -1030,11 +1053,13 @@ function deactivate_unattended_upgrades
 
 # Return codes
 # 0: Success
-# 1: Copy failed
-# 2: Download failed from URL
-# 3: Missing command: unxz
+# 1: Invalid number of arguments
+# 2: Copy failed
+# 3: Download failed from URL
+# 4: Missing command: unxz
 function download_raspbian
 {
+  [[ "$#" -lt 2 ]] && return 1
   local -r URL="$1" IMGFILE="$2" \
            IMG_CACHE='cache/raspios_lite.img' \
            ZIP_CACHE='cache/raspios_lite.xz'
@@ -1045,7 +1070,7 @@ function download_raspbian
     log -1 "Skipping download"
     if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
       log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
-      return 1
+      return 2
     fi
     return 0
   elif isFile "$ZIP_CACHE"; then
@@ -1054,7 +1079,7 @@ function download_raspbian
   else
     if ! wget "$URL" -nv -O "$ZIP_CACHE"; then
       log 2 "Download failed from: $URL"
-      return 2
+      return 3
     fi
   fi
 
@@ -1062,11 +1087,11 @@ function download_raspbian
     unxz -k -c "$ZIP_CACHE" > "$IMG_CACHE"
     if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
       log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
-      return 1
+      return 2
     fi
   else
     log 2 "Missing command: unxz"
-    return 3
+    return 4
   fi
 }
 
@@ -1076,6 +1101,7 @@ function download_raspbian
 # 2: Failed packing image
 function pack_image
 {
+  [[ "$#" -lt 2 ]] && return 1
   local -r IMG="$1" TAR="$2"
   local DIR IMGNAME
   DIR="$( dirname  "$IMG" )"
@@ -1105,6 +1131,7 @@ function pack_image
 # 1: Invalid number of arguments
 function create_torrent
 {
+  [[ "$#" -lt 1 ]] && return 1
   local -r TAR="$1"
   local IMGNAME DIR
   log -1 "Creating torrent"
@@ -1141,6 +1168,7 @@ function generate_changelog
 # 4: Directory not found
 function upload_ftp
 {
+  [[ "$#" -lt 1 ]] && return 1
   local -r IMGNAME="$1"
   local RET
   log -1 "Upload FTP: $IMGNAME"

@@ -322,6 +322,18 @@ function isFunction
   fi
 }
 
+# Checks if a given pattern in a String
+# Return codes
+# 0: Has String pattern
+# 1: No String pattern
+# 2: Invalid number of arguments
+function hasText
+{
+  [[ "$#" -ne 2 ]] && return 2
+  local -r PATTERN="$1" STRING="$2"
+  [[ "$STRING" =~ ["$PATTERN"]$ ]]
+}
+
 # Checks if a command exists on the system
 # Return status codes
 # 0: Command exists on the system
@@ -455,7 +467,8 @@ function is_more_recent_than {
   PATCH_B="$(cut -d. -f3 <<<"$VERSION_B")"
 
   # Compare version A with version B
-  # Returns a 1 if A is more recent than B
+  # Versioning ex. 25.0.3 or 24.9.5 etc
+  # Returns a 1 if B is greater than A
   if isGreater "$MAJOR_B" "$MAJOR_A"; then
     return 1
   elif isEqual "$MAJOR_B" "$MAJOR_A" && \

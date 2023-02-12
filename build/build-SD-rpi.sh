@@ -8,19 +8,31 @@
 # Usage: ./batch.sh <DHCP QEMU image IP>
 #
 
+function addBuildVariables
+{
+  declare -x -a BUILDVARIABLES
+  BUILDVARIABLES+=("$@")
+  if ! isMatch "${BUILDVARIABLES[@]}" "BUILDVARIABLES"; then
+    add_build_variables BUILDVARIABLES
+  fi
+}
+
 if [[ -z "$DBG" ]]; then
   set -e
-elif [[ -n "$DBG" ]]; then
+elif [[ -v "$DBG" ]]; then
   set -e"$DBG"
 fi
 
-if [[ ! -f 'build/buildlib.sh' ]]; then
-  echo "File not found: build/buildlib.sh"
+BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"
+addBuildVariables BUILDLIBRARY
+
+if [[ ! -f "$BUILDLIBRARY" ]]; then
+  printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY" 1>&2
   exit 1
 fi
 
 # shellcheck disable=SC1090
-source build/buildlib.sh
+source "$BUILDLIBRARY"
 
 log -1 "Build NCP Raspberry Pi"
 
@@ -32,7 +44,20 @@ TAR=output/"$( basename "$IMG" .img ).tar.bz2"
 ROOTDIR='raspbian_root'
 BUILD_DIR='tmp/ncp-build'
 BOOTDIR='raspbian_boot'
-SHELL='/bin/bash'
+DSHELL='/bin/bash'
+addBuildVariables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
+##############################################################################
+
+function cleanupBuildSD
+{
+  clean_chroot_raspbian
+  if isSet BUILDVARIABLES; then
+    unset "${BUILDVARIABLES[@]}"
+  else
+    log -1 "No build variables to unset"
+  fi
+}
+
 ##############################################################################
 
 if isFile "$TAR"; then
@@ -84,7 +109,7 @@ fi
 
 if isRoot; then
   PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
-  chroot "$ROOTDIR" "$SHELL" <<'EOFCHROOT'
+  chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
     set -ex
 
     # allow oldstable
@@ -124,7 +149,7 @@ if isRoot; then
 EOFCHROOT
 else
   PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
-  sudo chroot "$ROOTDIR" "$SHELL" <<'EOFCHROOT'
+  sudo chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
     set -ex
 
     # allow oldstable
@@ -174,7 +199,7 @@ fi
 
 clean_chroot_raspbian
 
-trap - EXIT SIGHUP SIGILL SIGABRT
+trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 
 pack_image "$IMG" "$TAR"
 

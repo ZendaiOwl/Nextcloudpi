@@ -138,6 +138,18 @@ function notZero {
   [[ -n "$1" ]]
 }
 
+# Checks if a given pattern in a String
+# Return codes
+# 0: Has String pattern
+# 1: No String pattern
+# 2: Invalid number of arguments
+function hasText
+{
+  [[ "$#" -ne 2 ]] && return 2
+  local -r PATTERN="$1" STRING="$2"
+  [[ "$STRING" =~ ["$PATTERN"]$ ]]
+}
+
 # Checks if a command exists on the system
 # Return status codes
 # 0: Command exists on the system
@@ -162,50 +174,43 @@ function hasCMD {
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
+# 4: Not running as root/sudo
 function installPKG {
   if [[ "$#" -eq 0 ]]; then
     log 2 "Requires: [PKG(s) to install]"
     return 3
+  elif [[ "$EUID" -ne 0 ]]; then
+    log 2 "Requires root privileges"
+    return 4 
   else
     local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-    local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-             SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-             ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+    local -r ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
              ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
     local PKG=()
     IFS=' ' read -ra PKG <<<"$@"
-    if [[ ! "$EUID" -eq 0 ]]; then
-      if "${SUDOUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
-      log -1 "Installing ${PKG[*]}"
-      if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 2
-      fi
+    
+    if "${ROOTUPDATE[@]}" &>/dev/null; then
+      log 0 "Apt list updated"
     else
-      if "${ROOTUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
-      log -1 "Installing ${PKG[*]}"
-      if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 1
-      fi
+      log 2 "Couldn't update apt lists"
+      return 1
+    fi
+    log -1 "Installing ${PKG[*]}"
+    if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
+      log 0 "Installation completed"
+      return 0
+    else
+      log 2 "Something went wrong during installation"
+      return 1
     fi
   fi
+}
+
+# TODO Function to hold add variables to array for unset in cleanup
+
+function cleanVariables
+{
+  unset OWNER REPO BRANCH URL LIBRARY NCPCFG TMPDIR DBNAME
 }
 
 function cleanTmp
@@ -221,34 +226,79 @@ function cleanTmp
   fi
 }
 
+function cleanInstall
+{
+  if isDirectory "$TMP"; then
+    cleanTmp
+  fi
+  cleanVariables
+}
+
+
+########################
+##### Installation #####
+########################
+
+
+if ! isRoot; then
+  log 2 "Must be run as root or with sudo, try: 'sudo $0'"
+  exit 1
+fi
+
+if isSet DBG; then
+  set -e"$DBG"
+else
+  set -e
+fi
+
 #OWNER="${OWNER:-nextcloud}"
 #REPO="${REPO:-nextcloudpi}"
 #BRANCH="${BRANCH:-master}"
 OWNER="${OWNER:-ZendaiOwl}"
 REPO="${REPO:-nextcloudpi}"
 BRANCH="${BRANCH:-Refactoring}"
-#DBG=x
+URL="https://github.com/${OWNER}/${REPO}"
+LIBRARY="${LIBRARY:-etc/library.sh}"
+NCPCFG="${NCPCFG:-etc/ncp.cfg}"
+DBNAME='nextcloud'
 
-[[ -n "$DBG" ]] && set -e"$DBG"
-[[ -z "$DBG" ]] && set -e
+TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "Failed to create temp directory" >&2; exit 1; }))"
 
-TMPDIR="$(mktemp -d /tmp/nextcloudpi.XXXXXX || (echo "Failed to create temp dir. Exiting" >&2 ; exit 1) )"
+trap 'cleanInstall' EXIT SIGHUP SIGILL SIGABRT SIGINT
 
-trap 'cleanTmp' EXIT SIGHUP SIGILL SIGABRT SIGINT
+# if ! hasText '/usr/local/sbin:/usr/sbin:/sbin:' "$PATH"; then
+#   PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
+# fi
 
-if ! isRoot; then
-  log 2 "Must be run as root or with sudo. Try 'sudo $0'"
-  exit 1
+# Only add the part that's needed
+
+if ! hasText '/sbin:' "$PATH"; then
+  PATH="/sbin:$PATH"
 fi
 
-export PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
+if ! hasText '/usr/sbin:' "$PATH"; then
+  PATH="/usr/sbin:$PATH"
+fi
+
+if ! hasText '/usr/local/sbin:' "$PATH"; then
+  PATH="/usr/local/sbin:$PATH"
+fi
+
+export PATH
 
 # Check installed software
 if hasCMD mysqld; then
   log 1 "Existing MySQL configuration will be changed"
-  if mysql -e 'use nextcloud' &>/dev/null; then
-    log 2 "Database exists: nextcloud"
-    exit 1
+  if isSet DBNAME; then
+    if mysql -e 'use '"$DBNAME"'' &>/dev/null; then
+      log 2 "Database exists: $DBNAME"
+      exit 1
+    fi
+  else
+    if mysql -e 'use nextcloud' &>/dev/null; then
+      log 2 "Database exists: nextcloud"
+      exit 1
+    fi
   fi
 fi
 
@@ -259,7 +309,7 @@ installPKG git ca-certificates sudo lsb-release wget
 if isZero "$CODE_DIR"; then
   log -1 "Fetching build code"
   CODE_DIR="$TMPDIR"/"$REPO"
-  git clone -b "$BRANCH" https://github.com/"$OWNER"/"$REPO".git "$CODE_DIR"
+  git clone -b "$BRANCH" "$URL" "$CODE_DIR"
 fi
 
 if isDirectory "$CODE_DIR"; then
@@ -296,7 +346,6 @@ mkdir --parents /usr/local/etc/ncp-config.d/
 cp etc/ncp-config.d/nc-nextcloud.cfg /usr/local/etc/ncp-config.d/
 cp etc/library.sh /usr/local/etc/
 cp etc/ncp.cfg /usr/local/etc/
-
 cp -r etc/ncp-templates /usr/local/etc/
 
 install_app    lamp.sh
