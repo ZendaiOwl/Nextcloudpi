@@ -1,21 +1,5 @@
-﻿set -e
-
-if [[ -f /usr/local/etc/library.sh ]]; then
-  # shellcheck disable=SC1090
-  source /usr/local/etc/library.sh
-elif [[ -f etc/library.sh ]]; then
-  # shellcheck disable=SC1090
-  source etc/library.sh
-else
-  echo "File not found: library.sh" >&2
-  exit 1
-fi
-
-if notSet PHPVER; then
-  echo "PHPVER variable is not set!"
-  exit 1
-fi
-
+﻿source /usr/local/etc/library.sh0
+PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
 if [[ "$1" == "--defaults" ]] || [[ ! -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker; then
   echo "Restoring template to default settings" >&2
   TMP_DIR=/tmp/.opcache

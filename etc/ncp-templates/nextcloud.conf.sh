@@ -1,9 +1,4 @@
-﻿set -e
-set +u
-
-# shellcheck disable=SC1090
-source /usr/local/etc/library.sh
-
+﻿source /usr/local/etc/library.sh
 [[ "$1" != "--defaults" ]] || echo "Restoring template to default settings" >&2
 is_docker && echo "Docker installation detected" >&2
 
@@ -83,9 +78,7 @@ cat <<EOF
     ProxyPassReverse /push/ http://127.0.0.1:7867/
 EOF
 
-if [[ "$1" != "--defaults" ]] && [[ "$METRICS_IS_ENABLED" == yes ]]
-then
-
+if [[ "$1" != "--defaults" ]] && [[ "$METRICS_IS_ENABLED" == yes ]]; then
   cat <<EOF
     <Location /metrics/system>
       ProxyPass http://localhost:9100/metrics

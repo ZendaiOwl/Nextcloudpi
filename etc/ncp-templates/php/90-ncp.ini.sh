@@ -1,11 +1,9 @@
-﻿set -e
-source /usr/local/etc/library.sh
-
-MAXTRANSFERTIME="3600"
+﻿source /usr/local/etc/library.sh
+MAXTRANSFERTIME=3600
 if [[ "$1" == "--defaults" ]]
 then
-  MAXFILESIZE="10G"
-  MEMORYLIMIT="768M"
+  MAXFILESIZE=10G
+  MEMORYLIMIT=768M
 else
   MAXFILESIZE="$(source "${BINDIR}/CONFIG/nc-limits.sh" && tmpl_php_max_filesize)"
   MEMORYLIMIT="$(source "${BINDIR}/CONFIG/nc-limits.sh" && tmpl_php_max_memory)"
