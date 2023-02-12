@@ -225,7 +225,7 @@ function configure
   cd /var/www/
 
   local URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${NCLATESTVER}.tar.bz2"
-  echo "Downloading Nextcloud: $NCLATESTVER"
+  log -1 "Downloading Nextcloud: $NCLATESTVER"
   wget -q "$URL" -O nextcloud.tar.bz2 || {
     log 2 "Couldn't download: $URL"
     return 1
@@ -271,13 +271,21 @@ function configure
     chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
   fi
 
+  if ! isDirectory "$BINDIR" || notSet BINDIR; then
+    if isDirectory '/usr/local/bin/ncp'; then
+      BINDIR='/usr/local/bin/ncp'
+    elif isDirectory 'bin/ncp'; then
+      BINDIR='bin/ncp'
+    fi
+    export BINDIR
+  fi
+
   # create and configure opcache dir
   local OPCACHEDIR="$(
     # shellcheck disable=SC2015
     [ -f "${BINDIR}/CONFIG/nc-datadir.sh" ] && { source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir; } || true
   )"
-  if [[ -z "${OPCACHEDIR}" ]]
-  then
+  if [[ -z "${OPCACHEDIR}" ]]; then
     install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
   else
     mkdir -p "$OPCACHEDIR"

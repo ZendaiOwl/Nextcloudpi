@@ -3,12 +3,13 @@
 set -e
 source /usr/local/etc/library.sh
 
-PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
+if ! isSet PHPVER; then
+  log 2 "PHPVER variable is not set!"
+fi
 
 if [[ "$1" == "--defaults" ]] || [[ ! -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker
 then
   log -1 "Restoring template to default settings" >&2
-
   TMP_DIR='/tmp/.opcache'
 elif is_docker
 then
