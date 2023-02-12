@@ -1120,15 +1120,13 @@ log -2 "CFGDIR: $CFGDIR"
 if isSet BINDIR; then
   if isDirectory "$BINDIR"; then
     BINDIR="$BINDIR"
+  elif isDirectory '/usr/local/bin/ncp'; then
+    BINDIR='/usr/local/bin/ncp'
+  elif isDirectory 'bin/ncp'; then
+    BINDIR='bin/ncp'
   else
-    if isDirectory '/usr/local/bin/ncp'; then
-      BINDIR='/usr/local/bin/ncp'
-    elif isDirectory 'bin/ncp'; then
-      BINDIR='bin/ncp'
-    else
-      log 2 "Directory not found: $BINDIR"
-      return 1
-    fi
+    log 2 "Directory not found: $BINDIR"
+    return 1
   fi
 else
   if isDirectory '/usr/local/bin/ncp'; then
