@@ -54,22 +54,22 @@ function cleanupBuildSD
   if isSet BUILDVARIABLES; then
     unset "${BUILDVARIABLES[@]}"
   else
-    log -1 "No build variables to unset"
+    log -1 "(${BASH_SOURCE[0]##*/}) No build variables to unset"
   fi
 }
 
 ##############################################################################
 
 if isFile "$TAR"; then
-  echo "File exists: $TAR"
+  log 1 "(${BASH_SOURCE[0]##*/}) File exists: $TAR"
   exit 0
 fi
 if findFullProcess qemu-arm-static; then
-  log 2 "qemu-arm-static already running"
+  log 2 "(${BASH_SOURCE[0]##*/}) qemu-arm-static already running"
   exit 1
 fi
 if findFullProcess qemu-aarch64-static; then
-  log 2 "qemu-aarch64-static already running"
+  log 2 "(${BASH_SOURCE[0]##*/}) qemu-aarch64-static already running"
   exit 1
 fi
 ## preparations
@@ -190,10 +190,10 @@ EOFCHROOT
 fi
 
 if isRoot; then
-  log -1 "Image created: $(basename $IMG)"
+  log -1 "(${BASH_SOURCE[0]##*/}) Image created: $(basename $IMG)"
   basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 else
-  log -1 "Image created: $(sudo basename $IMG)"
+  log -1 "(${BASH_SOURCE[0]##*/}) Image created: $(sudo basename $IMG)"
   sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
@@ -204,7 +204,7 @@ trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 pack_image "$IMG" "$TAR"
 
 ## Pack IMG
-[[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; pack_image "$IMG" "$TAR"; }
+[[ "$*" =~ .*"--pack".* ]] && { log -1 "(${BASH_SOURCE[0]##*/}) Packing image"; pack_image "$IMG" "$TAR"; }
 
 log 0 "Build is complete"
 

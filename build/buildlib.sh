@@ -49,7 +49,7 @@ function log
            ;;
       esac
     else
-      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+      log 2 "(${BASH_SOURCE[0]##*/}) (log) Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
     fi
   fi
 }
@@ -322,7 +322,7 @@ function hasPKG
 function installPKG
 {
   if [[ "$#" -eq 0 ]]; then
-    log 2 "Requires: [PKG(s) to install]"
+    log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Requires: [PKG(s) to install]"
     return 3
   else
     local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
@@ -336,7 +336,7 @@ function installPKG
       if "${SUDOUPDATE[@]}" &>/dev/null; then
         log 0 "Apt list updated"
       else
-        log 2 "Couldn't update apt lists"
+        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Couldn't update apt lists"
         return 1
       fi
       log -1 "Installing ${PKG[*]}"
@@ -344,14 +344,14 @@ function installPKG
         log 0 "Installation completed"
         return 0
       else
-        log 2 "Something went wrong during installation"
+        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Something went wrong during installation"
         return 2
       fi
     else
       if "${ROOTUPDATE[@]}" &>/dev/null; then
         log 0 "Apt list updated"
       else
-        log 2 "Couldn't update apt lists"
+        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Couldn't update apt lists"
         return 1
       fi
       log -1 "Installing ${PKG[*]}"
@@ -359,7 +359,7 @@ function installPKG
         log 0 "Installation completed"
         return 0
       else
-        log 2 "Something went wrong during installation"
+        log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Something went wrong during installation"
         return 1
       fi
     fi
@@ -430,7 +430,7 @@ function launch_install_qemu
     log 2 "Invalid argument #2: [IP]"
     return 2
   elif ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
+    log 2 "(${BASH_SOURCE[0]##*/}) (launch_install_qemu) File not found: $IMG"
     return 3
   fi
   IMGOUT="${IMG}-$( date +%s )"
@@ -442,11 +442,11 @@ function launch_install_qemu
 
   if hasCMD pgrep; then
     if findProcess qemu-system-aarch64; then
-      log 2 "QEMU is already running"
+      log 2 "(${BASH_SOURCE[0]##*/}) (launch_install_qemu) QEMU is already running"
       return 1
     fi
   else
-    log 2 "Missing command: pgrep"
+    log 2 "(${BASH_SOURCE[0]##*/}) (launch_install_qemu) Missing command: pgrep"
     return 1
   fi
 
@@ -469,7 +469,7 @@ function launch_qemu
   [[ "$#" -lt 1 ]] && return 1
   local IMG="$1"
   if ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
+    log 2 "(${BASH_SOURCE[0]##*/}) (launch_qemu) File not found: $IMG"
     return 2
   fi
 
@@ -481,7 +481,7 @@ function launch_qemu
     sed -i '30s/NO_NETWORK=1/NO_NETWORK=0/' qemu-raspbian-network/qemu-pi.sh
     sed -i '35s/NO_GRAPHIC=0/NO_GRAPHIC=1/' qemu-raspbian-network/qemu-pi.sh
   else
-    log 2 "Missing command: sed"
+    log 2 "(${BASH_SOURCE[0]##*/}) (launch_qemu) Missing command: sed"
     return 3
   fi
   
@@ -544,10 +544,10 @@ function launch_installation
   [[ "$#" -lt 1 ]] && return 1
   local IP="$1"
   if isZero "$INSTALLATION_CODE"; then
-    log 2 "Configuration is required to be run first"
+    log 2 "(${BASH_SOURCE[0]##*/}) (launch_installation) Configuration is required to be run first"
     return 2
   elif isZero "$INSTALLATION_STEPS"; then
-    log 2 "No installation instructions provided"
+    log 2 "(${BASH_SOURCE[0]##*/}) (launch_installation) No installation instructions provided"
     return 3
   fi
   
@@ -558,7 +558,7 @@ set -e$DBG
 "
   log 2 "Launching installation"
   if ! ssh_pi "$IP" "$PREINST_CODE" "$INSTALLATION_CODE" "$INSTALLATION_STEPS"; then
-    log 2 "SSH installation failed to QEMU target at: $IP"
+    log 2 "(${BASH_SOURCE[0]##*/}) (launch_installation) SSH installation failed to QEMU target at: $IP"
     return 4
   fi
 }
@@ -630,10 +630,10 @@ function mount_raspbian
   local -r IMG="$1" MP='raspbian_root'
   local SECTOR OFFSET
   if ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
+    log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian) File not found: $IMG"
     return 2
   elif isPath "$MP"; then
-    log 2 "Mountpoint already exists"
+    log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian) Mountpoint already exists"
     return 3
   fi
   log -1 "Mounting: $MP"
@@ -654,12 +654,12 @@ function mount_raspbian
   
   if isRoot; then
     if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
+      log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian) Failed to mount IMG at: $MP"
       return 4
     fi
   else
     if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
+      log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian) Failed to mount IMG at: $MP"
       return 4
     fi
   fi
@@ -676,10 +676,10 @@ function mount_raspbian_boot
   [[ "$#" -lt 1 ]] && return 1
   local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
   if ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
+    log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian_boot) File not found: $IMG"
     return 2
   elif isPath "$MP"; then
-    log 2 "Mountpoint already exists"
+    log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian_boot) Mountpoint already exists"
     return 3
   fi
   log -1 "Mounting: $MP"
@@ -696,12 +696,12 @@ function mount_raspbian_boot
   
   if isRoot; then
     if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
+      log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian_boot) Failed to mount IMG at: $MP"
       return 4
     fi
   else
     if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
+      log 2 "(${BASH_SOURCE[0]##*/}) (mount_raspbian_boot) Failed to mount IMG at: $MP"
       return 4
     fi
   fi
@@ -726,20 +726,20 @@ function umount_raspbian
   if isDirectory "$ROOTDIR"; then
     if isRoot; then
       if ! umount --lazy "$ROOTDIR"; then
-        log 2 "Could not unmount: $ROOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not unmount: $ROOTDIR"
         return 1
       fi
       if ! rmdir "$ROOTDIR"; then
-        log 2 "Could not remove: $ROOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not remove: $ROOTDIR"
         return 2
       fi
     else
       if ! sudo umount --lazy "$ROOTDIR"; then
-        log 2 "Could not unmount: $ROOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not unmount: $ROOTDIR"
         return 1
       fi
       if ! sudo rmdir "$ROOTDIR"; then
-        log 2 "Could not remove: $ROOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not remove: $ROOTDIR"
         return 2
       fi
     fi
@@ -747,20 +747,20 @@ function umount_raspbian
   if isDirectory "$BOOTDIR"; then
     if isRoot; then
       if ! umount --lazy "$BOOTDIR"; then
-        log 2 "Could not unmount: $BOOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not unmount: $BOOTDIR"
         return 3
       fi
       if ! rmdir "$BOOTDIR"; then
-        log 2 "Could not remove: $BOOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not remove: $BOOTDIR"
         return 4
       fi
     else
       if ! sudo umount --lazy "$BOOTDIR"; then
-        log 2 "Could not unmount: $BOOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not unmount: $BOOTDIR"
         return 3
       fi
       if ! sudo rmdir "$BOOTDIR"; then
-        log 2 "Could not remove: $BOOTDIR"
+        log 2 "(${BASH_SOURCE[0]##*/}) (unmount_raspbian) Could not remove: $BOOTDIR"
         return 4
       fi
     fi
@@ -806,7 +806,7 @@ function prepare_chroot_raspbian
         sudo cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
       fi
     else
-      log 2 "File not found: /usr/bin/qemu-aarch64-static"
+      log 2 "(${BASH_SOURCE[0]##*/}) (prepare_chroot_raspbian) File not found: /usr/bin/qemu-aarch64-static"
       return 3
     fi
   fi
@@ -905,7 +905,7 @@ function update_boot_uuid
   log -1 "Updating IMG Boot UUID's"
 
   if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
+    log 2 "(${BASH_SOURCE[0]##*/}) (update_boot_uuid) Failed to mount IMG root"
     return 2
   fi
   if isRoot; then
@@ -923,7 +923,7 @@ EOF
   umount_raspbian
 
   if ! mount_raspbian_boot "$IMG"; then
-    log 2 "Failed to mount IMG boot"
+    log 2 "(${BASH_SOURCE[0]##*/}) (update_boot_uuid) Failed to mount IMG boot"
     return 3
   fi
 
@@ -945,18 +945,18 @@ function prepare_sshd_raspbian
   [[ "$#" -lt 1 ]] && return 1
   local -r IMG="$1" BOOTDIR="${BOOTDIR:-raspbian_boot}"
   if ! mount_raspbian_boot "$IMG"; then
-    log 2 "Failed to mount IMG boot"
+    log 2 "(${BASH_SOURCE[0]##*/}) (prepare_sshd_raspbian) Failed to mount IMG boot"
     return 2
   fi
   # Enable SSH
   if isRoot; then
     if ! touch "$BOOTDIR"/ssh; then
-      log 2 "Failed to create SSH file in IMG boot"
+      log 2 "(${BASH_SOURCE[0]##*/}) (prepare_sshd_raspbian) Failed to create SSH file in IMG boot"
       return 3
     fi
   else
     if ! sudo touch "$BOOTDIR"/ssh; then
-      log 2 "Failed to create SSH file in IMG boot"
+      log 2 "(${BASH_SOURCE[0]##*/}) (prepare_sshd_raspbian) Failed to create SSH file in IMG boot"
       return 3
     fi
   fi
@@ -971,7 +971,7 @@ function set_static_IP
   [[ "$#" -lt 2 ]] && return 1
   local -r IMG="$1" IP="$2" ROOTDIR="${ROOTDIR:-raspbian_root}"
   if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
+    log 2 "(${BASH_SOURCE[0]##*/}) (set_static_ip) Failed to mount IMG root"
     return 2
   fi
   
@@ -1010,17 +1010,17 @@ function copy_to_image
   [[ "$#" -lt 2 ]] && return 1
   local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR="${ROOTDIR:-raspbian_root}"
   if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
+    log 2 "(${BASH_SOURCE[0]##*/}) (copy_to_image) Failed to mount IMG root"
     return 1
   fi
   if isRoot; then
     if ! cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
-      log 2 "Copy to image failed"
+      log 2 "(${BASH_SOURCE[0]##*/}) (copy_to_image) Copy to image failed"
       return 2
     fi
   else
     if ! sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
-      log 2 "Copy to image failed"
+      log 2 "(${BASH_SOURCE[0]##*/}) (copy_to_image) Copy to image failed"
       return 2
     fi
   fi
@@ -1036,11 +1036,11 @@ function deactivate_unattended_upgrades
   [[ "$#" -lt 1 ]] && return 1
   local -r IMG="$1" ROOTDIR="${ROOTDIR:-raspbian_root}"
   if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
+    log 2 "(${BASH_SOURCE[0]##*/}) (deactivate_unattended_upgrades) Failed to mount IMG root"
     return 2
   fi
   if ! isFile "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades; then
-    log 1 "Directory not found: ${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
+    log 1 "(${BASH_SOURCE[0]##*/}) (deactivate_unattended_upgrades) Directory not found: ${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
   else
     if isRoot; then
       rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
@@ -1069,7 +1069,7 @@ function download_raspbian
     log -1 "File exists: $IMG_CACHE"
     log -1 "Skipping download"
     if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
-      log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
+      log 2 "(${BASH_SOURCE[0]##*/}) (download_raspbian) Copy failed, from $IMG_CACHE to $IMGFILE"
       return 2
     fi
     return 0
@@ -1078,7 +1078,7 @@ function download_raspbian
     log -1 "Skipping download"
   else
     if ! wget "$URL" -nv -O "$ZIP_CACHE"; then
-      log 2 "Download failed from: $URL"
+      log 2 "(${BASH_SOURCE[0]##*/}) (download_raspbian) Download failed from: $URL"
       return 3
     fi
   fi
@@ -1090,7 +1090,7 @@ function download_raspbian
       return 2
     fi
   else
-    log 2 "Missing command: unxz"
+    log 2 "(${BASH_SOURCE[0]##*/}) (download_raspbian) Missing command: unxz"
     return 4
   fi
 }
@@ -1112,7 +1112,7 @@ function pack_image
       log 0 "$TAR packed successfully"
       return 0
     else
-      log 2 "Failed packing IMG: $TAR"
+      log 2 "(${BASH_SOURCE[0]##*/}) (pack_image) Failed packing IMG: $TAR"
       return 2
     fi
   else
@@ -1120,7 +1120,7 @@ function pack_image
       log 0 "$TAR packed successfully"
       return 0
     else
-      log 2 "Failed packing IMG: $TAR"
+      log 2 "(${BASH_SOURCE[0]##*/}) (pack_image) Failed packing IMG: $TAR"
       return 2
     fi
   fi
@@ -1136,13 +1136,13 @@ function create_torrent
   local IMGNAME DIR
   log -1 "Creating torrent"
   if ! isFile "$TAR"; then
-    log 2 "File not found: $TAR"
+    log 2 "(${BASH_SOURCE[0]##*/}) (create_torrent) File not found: $TAR"
     return 1
   fi
   IMGNAME="$( basename "$TAR" .tar.bz2 )"
   DIR="torrent/$IMGNAME"
   if isDirectory "$DIR"; then
-    log 2 "Directory already exists: $DIR"
+    log 2 "(${BASH_SOURCE[0]##*/}) (create_torrent) Directory already exists: $DIR"
     return 1
   fi
   mkdir --parents torrent/"$IMGNAME" && cp -v --reflink=auto "$TAR" torrent/"$IMGNAME"
@@ -1173,21 +1173,21 @@ function upload_ftp
   local RET
   log -1 "Upload FTP: $IMGNAME"
   if ! isFile torrent/"$IMGNAME"/"$IMGNAME".tar.bz2; then
-    log 2 "File not found: $IMGNAME"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) File not found: $IMGNAME"
     return 2
   fi
   if isZero "$FTPPASS"; then
-    log 2 "No FTP password was found, variable not set, skipping upload"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) No FTP password was found, variable not set, skipping upload"
     return 0
   fi
 
   if isDirectory torrent; then
     if ! cd torrent; then
-      log 2 "Failed to change directory"
+      log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) Failed to change directory"
       return 3
     fi
   else
-    log 2 "Directory not found:  torrent/$IMGNAME"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) Directory not found:  torrent/$IMGNAME"
     return 4
   fi
 
@@ -1202,16 +1202,16 @@ put $IMGNAME.torrent
 bye
 EOF
   if ! cd -; then
-    log 2 "Failed to change directory to: -"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) Failed to change directory to: -"
     return 3
   fi
   if isDirectory torrent/"$IMGNAME"; then
     if ! cd torrent/"$IMGNAME"; then
-      log 2 "Failed to change directory to: torrent/$IMGNAME"
+      log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) Failed to change directory to: torrent/$IMGNAME"
       return 3
     fi
   else
-    log 2 "Directory not found:  torrent/$IMGNAME"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) Directory not found:  torrent/$IMGNAME"
     return 4
   fi
 
@@ -1227,7 +1227,7 @@ bye
 EOF
   RET="$?"
   if ! cd -; then
-    log 2 "Failed to change directory to: -"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_ftp) Failed to change directory to: -"
     return 3
   fi
   return "$RET"
@@ -1236,12 +1236,12 @@ EOF
 function upload_images
 {
   if ! isDirectory output; then
-    log 2 "Directory not found: output"
-    log -1 "No uploads available"
+    log 1 "(${BASH_SOURCE[0]##*/}) (upload_images) Directory not found: output"
+    log 1 "(${BASH_SOURCE[0]##*/}) (upload_images) No uploads available"
     return
   fi
   if isZero "$FTPPASS"; then
-    log 2 "No FTP password was found, variable not set, skipping upload"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_images) No FTP password was found, variable not set, skipping upload"
     return 0
   fi
 
@@ -1253,7 +1253,7 @@ function upload_images
 
 function upload_docker
 {
-  export DOCKER_CLI_EXPERIMENTAL=enabled
+  export DOCKER_CLI_EXPERIMENTAL='enabled'
   local -r OWNER='ownyourbits'
 
   docker push "$OWNER"/nextcloudpi-x86:latest
@@ -1312,11 +1312,11 @@ function is_docker
   (
     if isDirectory build/docker; then
       if ! cd build/docker; then
-        log 2 "Failed to change directory to: build/docker"
+        log 2 "(${BASH_SOURCE[0]##*/}) (is_docker) Failed to change directory to: build/docker"
         return 3
       fi
     else
-      log 2 "Directory not found:  build/docker"
+      log 2 "(${BASH_SOURCE[0]##*/}) (is_docker) Directory not found: build/docker"
       return 4
     fi
     docker compose down
