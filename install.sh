@@ -564,18 +564,12 @@ else
 fi
 
 if isFile "$LIBRARY"; then
-  if cp "$LIBRARY" /usr/local/etc/library.sh; then
-    if isFile '/usr/local/etc/library.sh'; then
-      LIBRARY='/usr/local/etc/library.sh'
-      log -2 "LIBRARY: $LIBRARY"
-    else
-      log 2 "Failed to copy file: library.sh $LIBRARY"
-      exit 1
-    fi
-  else
+  if ! cp "$LIBRARY" /usr/local/etc/library.sh; then
     log 2 "Failed to copy file: library.sh $LIBRARY"
     exit 1
   fi
+  LIBRARY='/usr/local/etc/library.sh'
+  log -2 "LIBRARY: $LIBRARY"
 fi
 
 # log 2 "(${BASH_SOURCE[0]##*/}) "
