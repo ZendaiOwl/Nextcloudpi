@@ -28,6 +28,149 @@ function isRoot
   [[ "$EUID" -eq 0 ]]
 }
 
+# Checks if a user exists
+# Return codes
+# 0: Is a user
+# 1: Not a user
+# 2: Invalid number of arguments
+function isUser
+{
+  [[ "$#" -ne 1 ]] && return 2
+  if id -u "$1" &>/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Checks if a given path to a file exists
+# Return codes
+# 0: Path exist
+# 1: No such path
+# 2: Invalid number of arguments
+function isPath
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -e "$1" ]]
+}
+
+# Checks if a given path is a regular file
+# 0: Is a file
+# 1: Not a file
+# 2: Invalid number of arguments
+function isFile
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -f "$1" ]]
+}
+
+# Checks if a given path is a readable file
+# 0: Is readable
+# 1: Not readable
+# 2: Invalid number of arguments
+function isReadable
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -r "$1" ]]
+}
+
+# Checks if a given path is a writable file
+# 0: Is writable
+# 1: Not writable
+# 2: Invalid number of arguments
+function isWritable
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -w "$1" ]]
+}
+
+# Checks if a given path is an executable file
+# 0: Is executable
+# 1: Not executable
+# 2: Invalid number of arguments
+function isExecutable
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -x "$1" ]]
+}
+
+# Checks if given path is a directory 
+# Return codes
+# 0: Is a directory
+# 1: Not a directory
+# 2: Invalid number of arguments
+function isDirectory
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -d "$1" ]]
+}
+
+# Checks if given path is a named pipe
+# Return codes
+# 0: Is a named pipe
+# 1: Not a named pipe
+# 2: Invalid number of arguments
+function isPipe
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -p "$1" ]]
+}
+
+# Checks if a given path is a socket
+# Return codes
+# 0: Is a socket
+# 1: Not a socket
+# 2: Invalid number of arguments
+function isSocket
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -S "$1" ]]
+}
+
+# Checks if the first given digit is greater than the second digit
+# Return codes
+# 0: Is greater
+# 1: Not greater
+# 2: Invalid number of arguments
+function isGreater
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -gt "$2" ]]
+}
+
+# Checks if the first given digit is greater than or equal to the second digit
+# Return codes
+# 0: Is greater than or equal
+# 1: Not greater than or equal
+# 2: Invalid number of arguments
+function isGreaterOrEqual
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -ge "$2" ]]
+}
+
+# Checks if the first given digit is less than the second digit
+# Return codes
+# 0: Is less
+# 1: Not less
+# 2: Invalid number of arguments
+function isLess
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -lt "$2" ]]
+}
+
+# Checks if a given variable has been set and is a name reference
+# Return codes
+# 0: Is set name reference
+# 1: Not set name reference
+# 2: Invalid number of arguments
+function isReference
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -R "$1" ]]
+}
+
 # Checks if a given variable has been set and assigned a value.
 # Return codes
 # 0: Is set
@@ -37,6 +180,72 @@ function isSet
 {
   [[ "$#" -ne 1 ]] && return 2
   [[ -v "$1" ]]
+}
+
+# Checks if a given variable has been set and assigned a value.
+# Return codes
+# 0: Not set
+# 1: Is set 
+# 2: Invalid number of arguments
+function notSet
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ ! -v "$1" ]]
+}
+
+# Checks if 2 given digits are equal
+# Return codes
+# 0: Is equal
+# 1: Not equal
+# 2: Invalid number of arguments
+function isEqual
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -eq "$2" ]]
+}
+
+# Checks if 2 given digits are not equal
+# Return codes
+# 0: Not equal
+# 1: Is equal
+# 2: Invalid number of arguments
+function notEqual
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" -ne "$2" ]]
+}
+
+# Checks if 2 given String variables match
+# Return codes
+# 0: Is a match
+# 1: Not a match
+# 2: Invalid number of arguments
+function isMatch
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" == "$2" ]]
+}
+
+# Checks if 2 given String variables do not match
+# Return codes
+# 0: Not a match
+# 1: Is a match
+# 2: Invalid number of arguments
+function notMatch
+{
+  [[ "$#" -ne 2 ]] && return 2
+  [[ "$1" != "$2" ]]
+}
+
+# Checks if a given String is zero
+# Return codes
+# 0: Is zero
+# 1: Not zero
+# 2: Invalid number of arguments
+function isZero
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -z "$1" ]]
 }
 
 # Checks if a given String is not zero
@@ -50,22 +259,49 @@ function notZero
   [[ -n "$1" ]]
 }
 
-if isSet DBG && notZero "$DBG"; then
-  set -eE"$DBG"
-else
-  set -eE
-fi
+# Checks if a given pattern exists in a String
+# Return codes
+# 0: Has String pattern
+# 1: No String pattern
+# 2: Invalid number of arguments
+function hasText
+{
+  [[ "$#" -ne 2 ]] && return 2
+  local -r PATTERN="$1" STRING="$2"
+  [[ "$STRING" == *"$PATTERN"* ]]
+}
 
 VER="$1"
 BIN="${0##*/}"
 
-source /usr/local/etc/library.sh
+if isFile '/usr/local/etc/library.sh'; then
+  # shellcheck disable=SC1090
+  source '/usr/local/etc/library.sh'
+elif isFile 'etc/library.sh'; then
+  # shellcheck disable=SC1090
+  source '/usr/local/etc/library.sh'
+fi
 
 # pre-checks
 ####################
-[[ "$VER" == "" ]] && { echo "Usage: ${BIN} <version>"; exit 1; }
-[[ -f /.docker-image ]] && BASEDIR=/data || BASEDIR=/var/www
-cd "$BASEDIR"
+if isZero "$VER"; then
+  log 2 "Usage: $BIN <version>"
+  exit 1
+fi
+
+if isFile '/.docker-image'; then
+  BASEDIR='/data'
+else
+  BASEDIR='/var/www'
+fi
+
+log -2 "BASEDIR: $BASEDIR"
+
+if ! cd "$BASEDIR"; then
+  log 2 "Failed to change directory to: $BASEDIR"
+  exit 1
+fi
+
 DATADIR="$( get_nc_config_value datadirectory )"
 ncc status &>/dev/null          || { [[ "$DBG" == x ]] && ncc status; echo "Nextcloud is currently down"; exit 1; }
 [[ -d /var/www/nextcloud-old ]] && { echo "Nextcloud backup directory found. Interrupted or already running installation?"; exit 1; }
@@ -75,31 +311,34 @@ ncc status &>/dev/null          || { [[ "$DBG" == x ]] && ncc status; echo "Next
 # check version
 ####################
 
-[[ ${EUID} -eq 0 ]] && SUDO="sudo -u www-data"
-CURRENT="$( $SUDO php /var/www/nextcloud/occ status | grep "version:" | awk '{ print $3 }' )"
+if isRoot; then
+  SUDO=(sudo -u www-data)
+fi
 
-MAJOR_CUR=$( cut -d. -f1 <<<"${CURRENT}" )
-MAJOR_NEW=$( cut -d. -f1 <<<"${VER}" )
-if [[ $((MAJOR_NEW - MAJOR_CUR)) -gt 1 ]]; then
-  echo "Upgrade cannot skip major versions. Please upgrade one major version at a time" >&2
+CURRENT="$( "${SUDO[@]}" php /var/www/nextcloud/occ status | grep "version:" | awk '{ print $3 }' )"
+
+MAJOR_CUR="$( cut -d. -f1 <<<"$CURRENT" )"
+MAJOR_NEW="$( cut -d. -f1 <<<"$VER" )"
+if [[ "$((MAJOR_NEW - MAJOR_CUR))" -gt 1 ]]; then
+  log 2 "Upgrade cannot skip major versions. Please upgrade one major version at a time" >&2
   exit 1
 fi
 
 if [[ "$MAJOR_NEW" -ge 24 ]] && [[ "$(lsb_release -r)" =~ .*10 ]]
 then
-  echo -e "NCP doesn't support Nextcloud versions greater than 23 with Debian 10 (Buster). Please run ncp-dist-upgrade."
+  log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 10 (Buster). Please run ncp-dist-upgrade."
   exit 1
 fi
 
 grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT" || { echo "Malformed version $CURRENT"; exit 1; }
 grep -qP "\d+\.\d+\.\d+" <<<"$VER"     || { echo "Malformed version $VER"    ; exit 1; }
 
-echo "Current   Nextcloud version $CURRENT"
-echo "Available Nextcloud version $VER"
-is_more_recent_than "${VER}" "${CURRENT}" || { echo "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
+log -1 "Current Nextcloud version: $CURRENT"
+log -1 "Available Nextcloud version: $VER"
+is_more_recent_than "$VER" "$CURRENT" || { log -1 "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
 
 
-if ! is_more_recent_than '25.0.0' "${VER}" && is_more_recent_than "8.1.0" "${PHPVER}.0" && is_docker
+if ! is_more_recent_than '25.0.0' "$VER" && is_more_recent_than "8.1.0" "${PHPVER}.0" && is_docker
 then
   echo 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'
   exit 1

@@ -40,7 +40,7 @@ function log {
            ;;
          2)
            local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2;
+           printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
     else
