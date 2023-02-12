@@ -17,7 +17,44 @@
 # - failure at each test point
 # -> must pass basic NC in tests.py ( meaning it's not in a broken state )
 
-set -eE${DBG}
+# Check if user ID executing script is 0 or not
+# Return codes
+# 0: Is root
+# 1: Not root
+# 2: Invalid number of arguments
+function isRoot
+{
+  [[ "$#" -ne 0 ]] && return 2
+  [[ "$EUID" -eq 0 ]]
+}
+
+# Checks if a given variable has been set and assigned a value.
+# Return codes
+# 0: Is set
+# 1: Not set 
+# 2: Invalid number of arguments
+function isSet
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -v "$1" ]]
+}
+
+# Checks if a given String is not zero
+# Return codes
+# 0: Not zero
+# 1: Is zero
+# 2: Invalid number of arguments
+function notZero
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -n "$1" ]]
+}
+
+if isSet DBG && notZero "$DBG"; then
+  set -eE"$DBG"
+else
+  set -eE
+fi
 
 VER="$1"
 BIN="${0##*/}"
@@ -26,7 +63,7 @@ source /usr/local/etc/library.sh
 
 # pre-checks
 ####################
-[[ "$VER" == "" ]] && { echo "Usage ${BIN} <version>"; exit 1; }
+[[ "$VER" == "" ]] && { echo "Usage: ${BIN} <version>"; exit 1; }
 [[ -f /.docker-image ]] && BASEDIR=/data || BASEDIR=/var/www
 cd "$BASEDIR"
 DATADIR="$( get_nc_config_value datadirectory )"
