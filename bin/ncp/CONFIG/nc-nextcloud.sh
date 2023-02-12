@@ -16,11 +16,9 @@
 #  1: Warning
 #  2: Error
 function log {
-  if [[ "$#" -gt 0 ]]
-  then
+  if [[ "$#" -gt 0 ]]; then
     local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
-    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
-    then
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
@@ -148,9 +146,12 @@ function install
            REDIS_SOCKET='/var/run/redis/redis.sock' \
            SOCKET_PERMISSION='770' \
            PORT_NR='0' \
-           HTTP_USER='www-data'
+           HTTP_USER='www-data' \
+           PROVISIONING_SERVICE='/usr/lib/systemd/system/nc-provisioning.service'
   # During build, this step is run before ncp.sh. Avoid executing twice
-  [[ -f /usr/lib/systemd/system/nc-provisioning.service ]] && return 0
+  if isFile "$PROVISIONING_SERVICE"; then
+    return 0
+  fi
 
   # Optional packets for Nextcloud and Apps
   # NOTE: php-smbclient in sury but not in Debian sources, we'll use the binary version
@@ -196,7 +197,7 @@ function install
 
   if is_lxc; then
     # Otherwise it fails to start in Buster LXC container
-    mkdir -p /etc/systemd/system/redis-server.service.d
+    mkdir --parents /etc/systemd/system/redis-server.service.d
     cat > /etc/systemd/system/redis-server.service.d/lxc_fix.conf <<'EOF'
 [Service]
 ReadOnlyDirectories=
@@ -213,7 +214,7 @@ EOF
 
   # service to randomize passwords on first boot
   mkdir --parents /usr/lib/systemd/system
-  cat > /usr/lib/systemd/system/nc-provisioning.service <<'EOF'
+  cat > "$PROVISIONING_SERVICE" <<'EOF'
 [Unit]
 Description=Randomize passwords on first boot
 Requires=network.target
