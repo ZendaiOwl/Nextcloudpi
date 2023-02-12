@@ -308,7 +308,7 @@ function configure
   fi
   
   ## RE-CREATE DATABASE TABLE
-  # launch mariadb if not already running (for docker build)
+  # Launch MariaDB if not already running (for docker build)
   if [[ ! -f "$MYSQL_PID" ]]; then
     log -1 "Starting: MariaDB"
     mysqld &
