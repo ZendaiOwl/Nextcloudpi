@@ -1,4 +1,4 @@
-﻿source /usr/local/etc/library.sh
+﻿. /usr/local/etc/library.sh
 [[ "$1" != "--defaults" ]] || echo "Restoring template to default settings" >&2
 is_docker && echo "Docker installation detected" >&2
 

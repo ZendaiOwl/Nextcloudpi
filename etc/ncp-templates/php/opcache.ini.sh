@@ -1,4 +1,4 @@
-﻿source /usr/local/etc/library.sh0
+﻿. /usr/local/etc/library.sh0
 PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
 if [[ "$1" == "--defaults" ]] || [[ ! -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker; then
   echo "Restoring template to default settings" >&2

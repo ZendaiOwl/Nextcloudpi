@@ -1,4 +1,4 @@
-﻿source /usr/local/etc/library.sh
+﻿. /usr/local/etc/library.sh
 MAXTRANSFERTIME=3600
 if [[ "$1" == "--defaults" ]]
 then

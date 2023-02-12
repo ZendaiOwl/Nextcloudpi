@@ -1,4 +1,4 @@
-﻿source /usr/local/etc/library.sh
+﻿. /usr/local/etc/library.sh
 PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
 if [[ "$1" == "--defaults" ]] || ! [[ -f "${BINDIR}/CONFIG/nc-limits.sh" ]]
 then

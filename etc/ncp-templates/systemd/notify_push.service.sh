@@ -1,4 +1,4 @@
-﻿source /usr/local/etc/library.sh
+﻿. /usr/local/etc/library.sh
 cat <<EOF
 [Unit]
 Description = Push daemon for Nextcloud clients
