@@ -1,18 +1,18 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 set -e
 source /usr/local/etc/library.sh
 
 PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
 
-if [[ "$1" == "--defaults" ]] || ! [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker
+if [[ "$1" == "--defaults" ]] || [[ ! -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker
 then
-  echo "INFO: Restoring template to default settings" >&2
+  log -1 "Restoring template to default settings" >&2
 
-  TMP_DIR="/tmp/.opcache"
+  TMP_DIR='/tmp/.opcache'
 elif is_docker
 then
-  DATADIR="/data-ro/ncdata/data"
+  DATADIR='/data-ro/ncdata/data'
   [[ "$DOCKERBUILD" == 1 ]] || DATADIR="$(get_nc_config_value datadirectory || echo '/data/ncdata/data')"
   TMP_DIR="$DATADIR/.opcache"
 else

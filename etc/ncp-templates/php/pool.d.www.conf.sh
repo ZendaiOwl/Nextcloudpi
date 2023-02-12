@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 set -e
 source /usr/local/etc/library.sh
@@ -7,7 +7,7 @@ PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
 
 if [[ "$1" == "--defaults" ]] || ! [[ -f "${BINDIR}/CONFIG/nc-limits.sh" ]]
 then
-  echo "INFO: Restoring template to default settings" >&2
+  log -1 "Restoring template to default settings" >&2
 
   PHPTHREADS=6
 else
