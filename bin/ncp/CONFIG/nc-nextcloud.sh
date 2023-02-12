@@ -221,10 +221,26 @@ EOF
 
 function configure
 {
+  local -r OCPATH='/var/www/nextcloud' \
+           HTPATH='/var/www' \
+           HTUSER='www-data' \
+           HTGROUP='www-data' \
+           ROOTUSER='root' \
+           MYSQL_PID='/run/mysqld/mysqld.pid' \
+           MYSQL_SOCKET='/var/run/mysqld/mysqld.sock' \
+           NEXTCLOUD_TEMPLATE='nextcloud.conf.sh' \
+           NEXTCLOUD_CONF='/etc/apache2/sites-available/nextcloud.conf' \
+           OPCACHE_TEMPLATE='php/opcache.ini.sh' \
+           OPCACHE_CONF="/etc/php/${PHPVER}/mods-available/opcache.ini" \
+           NOTIFYPUSH_TEMPLATE='systemd/notify_push.service.sh' \
+           NOTIFYPUSH_SERVICE='/etc/systemd/system/notify_push.service' \
+           URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${NCLATESTVER}.tar.bz2"
   ## DOWNLOAD AND (OVER)WRITE NEXTCLOUD
-  cd /var/www/
+  if ! cd "$HTPATH"; then
+    log 2 "Unable to change directory to: $HTPATH"
+    exit 1
+  fi
 
-  local URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${NCLATESTVER}.tar.bz2"
   log -1 "Downloading Nextcloud: $NCLATESTVER"
   wget -q "$URL" -O nextcloud.tar.bz2 || {
     log 2 "Couldn't download: $URL"
@@ -237,20 +253,16 @@ function configure
   rm nextcloud.tar.bz2
 
   ## CONFIGURE FILE PERMISSIONS
-  local OCPATH='/var/www/nextcloud' \
-        HTUSER='www-data' \
-        HTGROUP='www-data' \
-        ROOTUSER='root'
 
   log -1 "Creating possible missing directories"
   mkdir -p "$OCPATH"/data
   mkdir -p "$OCPATH"/updater
 
-  log -1 "chmod Files and Directories"
+  log -1 "chmod: files (0640) & directories (0750)"
   find "$OCPATH"/ -type f -print0 | xargs -0 chmod 0640
   find "$OCPATH"/ -type d -print0 | xargs -0 chmod 0750
 
-  log -1 "chown Directories"
+  log -1 "chown: directories ($HTUSER)"
 
   chown -R "$HTUSER":"$HTGROUP" "$OCPATH"/
   chown -R "$HTUSER":"$HTGROUP" "$OCPATH"/apps/
@@ -261,7 +273,7 @@ function configure
 
   chmod +x "$OCPATH"/occ
 
-  log -1 "chmod & chown: .htaccess"
+  log -1 "chmod ($HTUSER) & chown (0644): .htaccess"
   if [ -f "$OCPATH"/.htaccess ]; then
     chmod 0644 "$OCPATH"/.htaccess
     chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
@@ -271,39 +283,32 @@ function configure
     chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
   fi
 
-  if ! isDirectory "$BINDIR" || notSet BINDIR; then
-    if isDirectory '/usr/local/bin/ncp'; then
-      BINDIR='/usr/local/bin/ncp'
-    elif isDirectory 'bin/ncp'; then
-      BINDIR='bin/ncp'
-    fi
-    export BINDIR
-    log -2 "BINDIR: $BINDIR"
-  fi
-
   # create and configure opcache dir
   local OPCACHEDIR="$(
     # shellcheck disable=SC2015
-    [ -f "${BINDIR}/CONFIG/nc-datadir.sh" ] && { source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir; } || true
+    [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && { source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir; } || true
   )"
   if [[ -z "${OPCACHEDIR}" ]]; then
     install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
   else
-    mkdir -p "$OPCACHEDIR"
+    mkdir --parents "$OPCACHEDIR"
     chown -R "$HTUSER":"$HTUSER" "$OPCACHEDIR"
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+    install_template "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
   fi
-
+  
   ## RE-CREATE DATABASE TABLE
   # launch mariadb if not already running (for docker build)
-  if ! [[ -f /run/mysqld/mysqld.pid ]]; then
-    echo "Starting mariaDB"
-    mysqld &
+  if [[ ! -f "$MYSQL_PID" ]]; then
+    log -1 "Starting MariaDB"
+    if ! mysqld &; then
+      log 2 "Failed to start MariaDB"
+      exit 1
+    fi
     local DB_PID="$!"
   fi
 
   while :; do
-    [[ -S /var/run/mysqld/mysqld.sock ]] && break
+    [[ -S "$MYSQL_SOCKET" ]] && break
     sleep 1
   done
 
@@ -324,9 +329,10 @@ EXIT
 EOF
 
 ## SET APACHE VHOST
-  log -1 "Setting up Apache"
-  install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback || {
-      log 2 "Parsing template failed. Nextcloud will not work."
+  log -1 "Setting up Apache2 VirtualHost"
+  
+  install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" --allow-fallback || {
+      log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"
       exit 1
   }
   a2ensite nextcloud
@@ -356,7 +362,7 @@ EOF
 
   arch="$(uname -m)"
   [[ "${arch}" =~ "armv7" ]] && arch="armv7"
-  install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
+  install_template "$NOTIFYPUSH_TEMPLATE" "$NOTIFYPUSH_SERVICE"
   [[ -f /.docker-image ]] || systemctl enable notify_push
 
   # some added security
@@ -391,10 +397,11 @@ EOF
 
   # dettach mysql during the build
   if [[ "$DB_PID" != "" ]]; then
-    log -1 "Shutting down MariaDB ($DB_PID)"
+    log -1 "Shutting down MariaDB [$DB_PID]"
     mysqladmin -u root shutdown
     wait "$DB_PID"
   fi
+  log 0 "Completed: ${BASH_SOURCE[0]##*/}"
   log -1 "Don't forget to run nc-init"
 }
 
