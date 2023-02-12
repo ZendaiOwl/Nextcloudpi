@@ -342,7 +342,7 @@ function installPKG {
              ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
     local PKG=()
     IFS=' ' read -ra PKG <<<"$@"
-    
+    log -1 "Updating apt lists"
     if "${ROOTUPDATE[@]}" &>/dev/null; then
       log 0 "Apt list updated"
     else
