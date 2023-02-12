@@ -34,7 +34,7 @@ fi
 # shellcheck disable=SC1090
 source "$BUILDLIBRARY"
 
-log -1 "Build NCP Raspberry Pi"
+log -1 "(${BASH_SOURCE[0]##*/}) Build NCP Raspberry Pi"
 
 URL="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2022-09-26/2022-09-22-raspios-bullseye-arm64-lite.img.xz"
 SIZE=4G                     # Raspbian image size
