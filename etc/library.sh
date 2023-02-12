@@ -161,27 +161,6 @@ function isSocket
   [[ -S "$1" ]]
 }
 
-# Checks if a given String is zero
-# Return codes
-# 0: Is zero
-# 1: Not zero
-# 2: Invalid number of arguments
-function isZero
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -z "$1" ]]
-}
-
-# Checks if a given String is not zero
-# Return codes
-# 0: Not zero
-# 1: Is zero
-# 2: Invalid number of arguments
-function notZero
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -n "$1" ]]
-}
 # Checks if the first given digit is greater than the second digit
 # Return codes
 # 0: Is greater
@@ -237,6 +216,17 @@ function isSet
   [[ -v "$1" ]]
 }
 
+# Checks if a given variable has been set and assigned a value.
+# Return codes
+# 0: Not set
+# 1: Is set 
+# 2: Invalid number of arguments
+function notSet
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ ! -v "$1" ]]
+}
+
 # Checks if 2 given digits are equal
 # Return codes
 # 0: Is equal
@@ -281,6 +271,28 @@ function notMatch
   [[ "$1" != "$2" ]]
 }
 
+# Checks if a given String is zero
+# Return codes
+# 0: Is zero
+# 1: Not zero
+# 2: Invalid number of arguments
+function isZero
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -z "$1" ]]
+}
+
+# Checks if a given String is not zero
+# Return codes
+# 0: Not zero
+# 1: Is zero
+# 2: Invalid number of arguments
+function notZero
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -n "$1" ]]
+}
+
 # Checks if a given variable is an array or not
 # Return codes
 # 0: Variable is an array
@@ -316,7 +328,7 @@ function isFunction
   fi
 }
 
-# Checks if a given pattern in a String
+# Checks if a given pattern exists in a String
 # Return codes
 # 0: Has String pattern
 # 1: No String pattern
@@ -325,7 +337,7 @@ function hasText
 {
   [[ "$#" -ne 2 ]] && return 2
   local -r PATTERN="$1" STRING="$2"
-  [[ "$STRING" =~ ["$PATTERN"]$ ]]
+  [[ "$STRING" == *"$PATTERN"* ]]
 }
 
 # Checks if a command exists on the system

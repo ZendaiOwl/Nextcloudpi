@@ -77,9 +77,12 @@ fi
 IMG=tmp/"$IMG"
 
 trap 'clean_chroot_raspbian' EXIT SIGHUP SIGILL SIGABRT
-# tmp cache output
+
+# Directories: tmp cache output
 prepare_dirs
+# Raspberry Pi OS 64Bit-lite
 download_raspbian "$URL" "$IMG"
+# Change size of ISO image
 resize_image      "$IMG" "$SIZE"
 # PARTUUID has changed after resize
 update_boot_uuid  "$IMG"
