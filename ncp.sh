@@ -127,6 +127,7 @@ function installPKG {
     local PKG=()
     IFS=' ' read -ra PKG <<<"$@"
     if [[ ! "$EUID" -eq 0 ]]; then
+      log -1 "Updating apt lists"
       if "${SUDOUPDATE[@]}" &>/dev/null; then
         log 0 "Apt list updated"
       else
@@ -142,6 +143,7 @@ function installPKG {
         return 2
       fi
     else
+      log -1 "Updating apt lists"
       if "${ROOTUPDATE[@]}" &>/dev/null; then
         log 0 "Apt list updated"
       else

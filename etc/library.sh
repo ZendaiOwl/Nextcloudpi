@@ -1117,15 +1117,19 @@ export CFGDIR
 
 log -2 "CFGDIR: $CFGDIR"
 
-BINDIR="${BINDIR:-/usr/local/bin/ncp}"
-
-if isDirectory "$BINDIR"; then
-  BINDIR="$BINDIR"
-elif isDirectory 'bin/ncp'; then
-  BINDIR='bin/ncp'
+if isSet BINDIR; then
+  if isDirectory "$BINDIR"; then
+    BINDIR="$BINDIR"
+  fi
 else
-  log 2 "Directory not found: $BINDIR"
-  return 1
+  if isDirectory '/usr/local/bin/ncp'; then
+    BINDIR='/usr/local/bin/ncp'
+  elif isDirectory 'bin/ncp'; then
+    BINDIR='bin/ncp'
+  else
+    log 2 "Directory not found: $BINDIR"
+    return 1
+  fi
 fi
 
 export BINDIR
