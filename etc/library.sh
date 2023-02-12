@@ -1100,7 +1100,6 @@ function clear_opcache {
 ###### VARIABLES #######
 ########################
 
-CFGDIR="${CFGDIR:-/usr/local/etc/ncp-config.d}"
 CFGDIR="${CFGDIR:-etc/ncp-config.d}"
 
 if isDirectory "$CFGDIR"; then

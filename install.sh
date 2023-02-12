@@ -344,14 +344,14 @@ function installPKG {
     IFS=' ' read -ra PKG <<<"$@"
     
     if "${ROOTUPDATE[@]}" &>/dev/null; then
-      log 0 "Apt list updated"
+      log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Apt list updated"
     else
       log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Couldn't update apt lists"
       return 1
     fi
-    log -1 "Installing ${PKG[*]}"
+    log -1 "(${BASH_SOURCE[0]##*/}) (installPKG) Installing ${PKG[*]}"
     if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-      log 0 "Installation completed"
+      log 0 "(${BASH_SOURCE[0]##*/}) (installPKG) Installation completed"
       return 0
     else
       log 2 "(${BASH_SOURCE[0]##*/}) (installPKG) Something went wrong during installation"
@@ -401,7 +401,7 @@ function clean_install_tmp
 
 function clean_install_script
 {
-  log -1 "Cleaning up from install script"
+  log -1 "(${BASH_SOURCE[0]##*/}) Cleaning up from install script"
   if isSet TMPDIR; then
     if isDirectory "$TMP"; then
       clean_install_tmp
@@ -413,7 +413,7 @@ function clean_install_script
   if isFile '/.ncp-image'; then
     rm /.ncp-image
   fi
-  log 0 "Cleaned up from install script"
+  log 0 "(${BASH_SOURCE[0]##*/}) Cleaned up from install script"
 }
 
 
@@ -500,7 +500,7 @@ installPKG git \
 
 # get install code
 if isZero "$CODE_DIR" || ! isSet CODE_DIR; then
-  log -1 "Fetching build code"
+  log -1 "(${BASH_SOURCE[0]##*/}) Fetching build code"
   CODE_DIR="$TMPDIR"/"$REPO"
   git clone -b "$BRANCH" "$URL" "$CODE_DIR"
   add_install_variables CODE_DIR
@@ -516,7 +516,7 @@ if isSet CODE_DIR; then
 fi
 
 # install NCP
-log -1 "Installing NextcloudPi"
+log -1 "(${BASH_SOURCE[0]##*/}) Installing NextcloudPi"
 
 if isFile "$LIBRARY"; then
   # shellcheck disable=SC1091
