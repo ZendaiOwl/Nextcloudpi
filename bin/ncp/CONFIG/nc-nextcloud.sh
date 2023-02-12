@@ -40,7 +40,7 @@ function log {
            ;;
          2)
            local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2;
            ;;
       esac
     else
@@ -142,11 +142,17 @@ function tmpl_max_transfer_time
 
 function install
 {
+  local -r REDIS_CONF='/etc/redis/redis.conf' \
+           REDIS_USER='redis' \
+           REDISPASS='default' \
+           REDIS_SOCKET='/var/run/redis/redis.sock' \
+           SOCKET_PERMISSION='770' \
+           PORT_NR='0' \
+           HTTP_USER='www-data'
   # During build, this step is run before ncp.sh. Avoid executing twice
   [[ -f /usr/lib/systemd/system/nc-provisioning.service ]] && return 0
 
   # Optional packets for Nextcloud and Apps
-  installPKG lbzip2 iputils-ping jq wget
   # NOTE: php-smbclient in sury but not in Debian sources, we'll use the binary version
   # https://docs.nextcloud.com/server/latest/admin_manual/configuration_files/external_storage/smb.html
   # smbclient, exfat-fuse, exfat-utils: for external storage
@@ -154,33 +160,37 @@ function install
   # bcmath: for LDAP
   # gmp: for bookmarks
   # imagick, ghostscript: for gallery
-  installPKG smbclient exfat-fuse exfat-utils
-  installPKG php"$PHPVER"-{exif,bcmath,gmp}
+  installPKG jq \
+             wget \
+             lbzip2 \
+             procps \
+             psmisc \
+             binutils \
+             smbclient \
+             exfat-fuse \
+             exfat-utils \
+             iputils-ping \
+             redis-server \
+             php"$PHPVER"-{exif,bcmath,gmp,redis} 
   #installPKG imagemagick php"$PHPVER"-imagick ghostscript
-
 
   # POSTFIX
   installPKG postfix || {
     # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
-    echo "[NCP] Please, ignore the previous postfix installation error ..."
+    log -1 "[NCP]: Please ignore the previous postfix installation error"
     mv /usr/bin/newaliases /
     ln -s /bin/true /usr/bin/newaliases
     installPKG postfix
     rm /usr/bin/newaliases
     mv /newaliases /usr/bin/newaliases
   }
-
-  installPKG redis-server
-  installPKG php"$PHPVER"-redis
-
-  local REDIS_CONF='/etc/redis/redis.conf'
-  local REDISPASS='default'
-  sed -i "s|# unixsocket .*|unixsocket /var/run/redis/redis.sock|" "$REDIS_CONF"
-  sed -i "s|# unixsocketperm .*|unixsocketperm 770|"               "$REDIS_CONF"
-  sed -i "s|# requirepass .*|requirepass $REDISPASS|"              "$REDIS_CONF"
-  sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'   "$REDIS_CONF"
-  sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'  "$REDIS_CONF"
-  sed -i "s|^port.*|port 0|"                                       "$REDIS_CONF"
+  
+  sed -i "s|# unixsocket .*|unixsocket $REDIS_SOCKET|"              "$REDIS_CONF"
+  sed -i "s|# unixsocketperm .*|unixsocketperm $SOCKET_PERMISSION|" "$REDIS_CONF"
+  sed -i "s|# requirepass .*|requirepass $REDISPASS|"               "$REDIS_CONF"
+  sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'    "$REDIS_CONF"
+  sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'   "$REDIS_CONF"
+  sed -i "s|^port.*|port $PORT_NR|"                                 "$REDIS_CONF"
   echo "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
   echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
 
@@ -194,15 +204,15 @@ EOF
     systemctl daemon-reload
   fi
 
-  chown redis: "$REDIS_CONF"
-  usermod --append --groups redis www-data
+  chown "$REDIS_USER": "$REDIS_CONF"
+  usermod --append --groups "$REDIS_USER" "$HTTP_USER"
 
   service redis-server restart
   update-rc.d redis-server enable
   clear_opcache
 
   # service to randomize passwords on first boot
-  mkdir -p /usr/lib/systemd/system
+  mkdir --parents /usr/lib/systemd/system
   cat > /usr/lib/systemd/system/nc-provisioning.service <<'EOF'
 [Unit]
 Description=Randomize passwords on first boot
@@ -299,11 +309,8 @@ function configure
   ## RE-CREATE DATABASE TABLE
   # launch mariadb if not already running (for docker build)
   if [[ ! -f "$MYSQL_PID" ]]; then
-    log -1 "Starting MariaDB"
-    if ! mysqld &; then
-      log 2 "Failed to start MariaDB"
-      exit 1
-    fi
+    log -1 "Starting: MariaDB"
+    mysqld &
     local DB_PID="$!"
   fi
 
@@ -312,7 +319,7 @@ function configure
     sleep 1
   done
 
-  log -1 "Setting up database"
+  log -1 "Setting up: Database"
 
   # workaround to emulate DROP USER IF EXISTS ..;)
   local DBPASSWD="$( grep password /root/.my.cnf | sed 's|password=||' )"
@@ -329,7 +336,7 @@ EXIT
 EOF
 
 ## SET APACHE VHOST
-  log -1 "Setting up Apache2 VirtualHost"
+  log -1 "Setting up: Apache2 VirtualHost"
   
   install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" --allow-fallback || {
       log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"
@@ -369,7 +376,7 @@ EOF
   sed -i 's|^ServerSignature .*|ServerSignature Off|' /etc/apache2/conf-enabled/security.conf
   sed -i 's|^ServerTokens .*|ServerTokens Prod|'      /etc/apache2/conf-enabled/security.conf
 
-  log -1 "Setting up system"
+  log -1 "Setting up: System"
 
   ## SET LIMITS
   cat > /etc/php/"$PHPVER"/fpm/conf.d/90-ncp.ini <<EOF

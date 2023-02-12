@@ -41,7 +41,7 @@ function log {
            ;;
          2)
            local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT" 1>&2
+           printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
     else
@@ -524,7 +524,7 @@ fi
 if isFile "$NCPCFG"; then
   if ! check_distro "$NCPCFG"; then
     log 2 "Distro not supported"
-    if ! cat /etc/issue; then
+    if ! cat '/etc/issue'; then
       log 2 "Failed to read file: /etc/issue"
       exit 1
     fi
@@ -536,12 +536,12 @@ else
 fi
 
 # indicate that this will be an image build
-if ! touch /.ncp-image; then
+if ! touch '/.ncp-image'; then
   log 2 "Failed creating file: /.ncp-image"
   exit 1
 fi
 
-if ! mkdir --parents /usr/local/etc/ncp-config.d; then
+if ! mkdir --parents '/usr/local/etc/ncp-config.d'; then
   log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"
   exit 1
 fi
@@ -549,10 +549,13 @@ fi
 if isDirectory 'etc/ncp-config.d'; then
   if isDirectory '/usr/local/etc/ncp-config.d'; then
     if isFile 'etc/ncp-config.d/nc-nextcloud.cfg'; then
-      if ! cp etc/ncp-config.d/nc-nextcloud.cfg /usr/local/etc/ncp-config.d/nc-nextcloud.cfg; then
+      if ! cp 'etc/ncp-config.d/nc-nextcloud.cfg' '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'; then
         log 2 "Failed to copy file: nc-nextcloud.cfg"
         exit 1
       fi
+    else
+      log 2 "File not found: etc/ncp-config.d/nc-nextcloud.cfg"
+      exit 1
     fi
   else
     log 2 "Directory not found: /usr/local/etc/ncp-config.d"
@@ -564,34 +567,35 @@ else
 fi
 
 if isFile "$LIBRARY"; then
-  if ! cp "$LIBRARY" /usr/local/etc/library.sh; then
-    log 2 "Failed to copy file: library.sh $LIBRARY"
+  if ! cp "$LIBRARY" '/usr/local/etc/library.sh'; then
+    log 2 "Failed to copy file: $LIBRARY"
     exit 1
   fi
   LIBRARY='/usr/local/etc/library.sh'
+  declare -x -g LIBRARY
   log -2 "LIBRARY: $LIBRARY"
 fi
 
 # log 2 "(${BASH_SOURCE[0]##*/}) "
 
 if isFile "$NCPCFG"; then
-  if cp "$NCPCFG" /usr/local/etc/ncp.cfg; then
-    NCPCFG='/usr/local/etc/ncp.cfg'
-    log -2 "NCPCFG: $NCPCFG"
-  else
+  if ! cp "$NCPCFG" '/usr/local/etc/ncp.cfg'; then
     log 2 "Failed to copy file: ncp.cfg $NCPCFG"
     exit 1
   fi
+  NCPCFG='/usr/local/etc/ncp.cfg'
+  declare -x -g NCPCFG
+  log -2 "NCPCFG: $NCPCFG"
 fi
 
 if isDirectory "$NCP_TEMPLATES_DIR"; then
-  if cp -r "$NCP_TEMPLATES_DIR" /usr/local/etc/; then
-    NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
-    log -2 "NCP_TEMPLATES_DIR: $NCP_TEMPLATES_DIR"
-  else
+  if ! cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/'; then
     log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"
     exit 1
   fi
+  NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
+  declare -x -g NCP_TEMPLATES_DIR
+  log -2 "NCP_TEMPLATES_DIR: $NCP_TEMPLATES_DIR"
 else
   log 2 "Directory not found: $NCP_TEMPLATES_DIR"
   exit 1

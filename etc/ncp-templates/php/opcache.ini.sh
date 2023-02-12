@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
 
 set -e
-source /usr/local/etc/library.sh
 
-if ! isSet PHPVER; then
+if isFile '/usr/local/etc/library.sh'; then
+  # shellcheck disable=SC1090
+  source '/usr/local/etc/library.sh'
+elif isFile 'etc/library.sh'; then
+  # shellcheck disable=SC1090
+  source 'etc/library.sh'
+else
+  log 2 "File not found: library.sh"
+fi
+
+if notSet PHPVER; then
   log 2 "PHPVER variable is not set!"
 fi
 
