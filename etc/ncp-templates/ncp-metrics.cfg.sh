@@ -1,6 +1,4 @@
-﻿#! /bin/bash
-
-set -e
+﻿set -e
 set +u
 source /usr/local/etc/library.sh
 

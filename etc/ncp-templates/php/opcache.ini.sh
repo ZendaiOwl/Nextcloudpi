@@ -1,6 +1,4 @@
-﻿#! /bin/bash
-
-set -e
+﻿set -e
 
 if [[ -f '/usr/local/etc/library.sh' ]]; then
   # shellcheck disable=SC1090

@@ -83,21 +83,6 @@ function isUser
   fi
 }
 
-# Checks if a user does not exist
-# Return codes
-# 0: Not a user
-# 1: Is a user
-# 2: Invalid number of arguments
-function notUser
-{
-  [[ "$#" -ne 1 ]] && return 2
-  if ! id -u "$1" &>/dev/null; then
-    return 0
-  else
-    return 1
-  fi
-}
-
 # Checks if a given path to a file exists
 # Return codes
 # 0: Path exist
@@ -282,7 +267,7 @@ function install
     apache2ctl -V || true
 
     # Create systemd users to keep uids persistent between containers
-    if notUser systemd-resolve; then
+    if ! isUser systemd-resolve; then
       addgroup --quiet --system systemd-journal
       adduser --quiet -u 180 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Network Management" systemd-network

@@ -1,6 +1,4 @@
-﻿#! /bin/bash
-
-set -e
+﻿set -e
 set +u
 
 # shellcheck disable=SC1090
