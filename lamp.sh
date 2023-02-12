@@ -27,11 +27,9 @@
 #  1: Warning
 #  2: Error
 function log {
-  if [[ "$#" -gt 0 ]]
-  then
+  if [[ "$#" -gt 0 ]]; then
     local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
-    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
-    then
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
@@ -117,6 +115,17 @@ function isPath {
 function isFile {
   [[ "$#" -ne 1 ]] && return 2
   [[ -f "$1" ]]
+}
+
+# Checks if a given path is a socket
+# Return codes
+# 0: Is a socket
+# 1: Not a socket
+# 2: Invalid number of arguments
+function isSocket
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -S "$1" ]]
 }
 
 # Checks if a given String is zero
@@ -273,13 +282,14 @@ function install
     apache2ctl -V || true
 
     # Create systemd users to keep uids persistent between containers
-    if ! id -u systemd-resolve &>/dev/null; then
+    if notUser systemd-resolve; then
       addgroup --quiet --system systemd-journal
       adduser --quiet -u 180 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Network Management" systemd-network
       adduser --quiet -u 181 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Resolver" systemd-resolve
     fi
+    
     install_with_shadow_workaround --no-install-recommends systemd
     installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql}
 
@@ -324,15 +334,15 @@ function install
 
     install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
 
-  # launch mariadb if not already running
-  if ! [[ -f "$DBPID_FILE" ]]; then
+  # Launch MariaDB if not already running
+  if ! isFile "$DBPID_FILE"; then
     log -1 "Starting MariaDB"
     mysqld &
   fi
 
-  # wait for mariadb
+  # Wait for MariaDB
   while :; do
-    [[ -S "$DBSOCKET" ]] && break
+    isSocket "$DBSOCKET" && break
     sleep 1
   done
 
@@ -349,7 +359,7 @@ y
 EOF
 }
 
-configure() { :; }
+function configure { :; }
 
 
 # License
