@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # A log that uses log levels for logging different outputs
 # Log levels
 # -2: Debug
@@ -64,10 +62,10 @@ set -e
 
 if isFile '/usr/local/etc/library.sh'; then
   # shellcheck disable=SC1090
-  source '/usr/local/etc/library.sh'
+  source /usr/local/etc/library.sh
 elif isFile 'etc/library.sh'; then
   # shellcheck disable=SC1090
-  source 'etc/library.sh'
+  source etc/library.sh
 else
   log 2 "File not found: library.sh"
   exit 1

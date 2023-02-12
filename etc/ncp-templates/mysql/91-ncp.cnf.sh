@@ -1,10 +1,7 @@
-#!/usr/bin/env bash
-
 set -e
 source /usr/local/etc/library.sh
 
-if [[ "$1" == "--defaults" ]]
-then
+if [[ "$1" == "--defaults" ]]; then
   log -1 "Restoring template to default settings" >&2
   INNODB_BUFFER_POOL_SIZE=256M
 else

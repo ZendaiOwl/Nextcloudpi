@@ -359,7 +359,7 @@ y
 EOF
 }
 
-function configure { :; }
+function configure () { :; }
 
 
 # License

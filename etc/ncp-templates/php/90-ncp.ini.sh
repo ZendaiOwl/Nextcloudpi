@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-set -e
+sset -e
 source /usr/local/etc/library.sh
 
 MAXTRANSFERTIME="3600"

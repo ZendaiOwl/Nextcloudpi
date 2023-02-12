@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 set -e
 set +u
 source /usr/local/etc/library.sh

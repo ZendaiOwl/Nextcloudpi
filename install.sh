@@ -603,19 +603,19 @@ fi
 # cp etc/ncp.cfg /usr/local/etc/
 # cp -r etc/ncp-templates /usr/local/etc/
 
-( install_app lamp.sh )
+install_app lamp.sh
 
-( install_app bin/ncp/CONFIG/nc-nextcloud.sh )
+install_app bin/ncp/CONFIG/nc-nextcloud.sh
 
-( run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh )
+run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh
 
 rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg    # armbian overlay is ro
 
 systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
 
-( install_app ncp.sh )
+install_app ncp.sh
 
-( run_app_unsafe bin/ncp/CONFIG/nc-init.sh )
+run_app_unsafe bin/ncp/CONFIG/nc-init.sh
 
 log -1 "Moving data directory to a more sensible location"
 df -h
