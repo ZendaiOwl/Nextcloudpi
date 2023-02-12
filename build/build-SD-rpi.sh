@@ -8,7 +8,7 @@
 # Usage: ./batch.sh <DHCP QEMU image IP>
 #
 
-function addBuildVariables
+function add_build_variables
 {
   declare -x -a BUILDVARIABLES
   BUILDVARIABLES+=("$@")
@@ -24,10 +24,10 @@ elif [[ -v "$DBG" ]]; then
 fi
 
 BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"
-addBuildVariables BUILDLIBRARY
+add_build_variables BUILDLIBRARY
 
 if [[ ! -f "$BUILDLIBRARY" ]]; then
-  printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY" 1>&2
+  printf '\e[1;31mERROR\e[0m %s\n' "(${BASH_SOURCE[0]##*/}) File not found: $BUILDLIBRARY"
   exit 1
 fi
 
@@ -45,10 +45,10 @@ ROOTDIR='raspbian_root'
 BUILD_DIR='tmp/ncp-build'
 BOOTDIR='raspbian_boot'
 DSHELL='/bin/bash'
-addBuildVariables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
+add_build_variables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
 ##############################################################################
 
-function cleanupBuildSD
+function clean_build_sd_rpi
 {
   clean_chroot_raspbian
   if isSet BUILDVARIABLES; then
@@ -76,7 +76,7 @@ fi
 
 IMG=tmp/"$IMG"
 
-trap 'clean_chroot_raspbian' EXIT SIGHUP SIGILL SIGABRT
+trap 'clean_build_sd_rpi' EXIT SIGHUP SIGILL SIGABRT
 
 # Directories: tmp cache output
 prepare_dirs
@@ -200,7 +200,7 @@ else
   sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
-clean_chroot_raspbian
+clean_build_sd_rpi
 
 trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 

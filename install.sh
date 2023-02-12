@@ -41,7 +41,7 @@ function log {
            ;;
          2)
            local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           printf "${RED}ERROR${Z} %s\n" "$TEXT" 1>&2
            ;;
       esac
     else
@@ -446,7 +446,7 @@ NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 NCP_TEMPLATES_DIR="${NCPTEMPLATES:-etc/ncp-templates}"
 DBNAME='nextcloud'
 
-TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "(${BASH_SOURCE[0]##*/}) Failed to create temp directory" >&2; exit 1; }))"
+TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "(${BASH_SOURCE[0]##*/}) Failed to create temp directory"; exit 1; }))"
 
 add_install_variables OWNER REPO BRANCH URL LIBRARY NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
 

@@ -45,7 +45,7 @@ function log
            ;;
          2)
            local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT"
+           printf "${RED}ERROR${Z} %s\n" "$TEXT" 1>&2
            ;;
       esac
     else
@@ -1236,7 +1236,7 @@ EOF
 function upload_images
 {
   if ! isDirectory output; then
-    log 1 "(${BASH_SOURCE[0]##*/}) (upload_images) Directory not found: output"
+    log 2 "(${BASH_SOURCE[0]##*/}) (upload_images) Directory not found: output"
     log 1 "(${BASH_SOURCE[0]##*/}) (upload_images) No uploads available"
     return
   fi
@@ -1312,7 +1312,7 @@ function is_docker
   (
     if isDirectory build/docker; then
       if ! cd build/docker; then
-        log 2 "(${BASH_SOURCE[0]##*/}) (is_docker) Failed to change directory to: build/docker"
+        log 2 "(${BASH_SOURCE[0]##*/}) (is_docker) Failed to change directory to: build/docker" 
         return 3
       fi
     else
