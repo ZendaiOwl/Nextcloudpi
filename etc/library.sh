@@ -1151,16 +1151,22 @@ log -2 "NCDIR: $NCDIR"
 
 ncc="${ncc:-/usr/local/bin/ncc}"
 
+export ncc
+
+# if isFile "$ncc"; then
+#   ncc="$ncc"
+# fi
+
 log -2 "ncc: $ncc"
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 
 if isFile "$NCPCFG"; then
-  NCPCFG="${NCPCFG:-etc/ncp.cfg}"
+  NCPCFG="$NCPCFG"
 elif isFile '/usr/local/etc/ncp.cfg'; then
-  NCPCFG="${NCPCFG:-/usr/local/etc/ncp.cfg}"
+  NCPCFG='/usr/local/etc/ncp.cfg'
 elif isFile 'ncp.cfg'; then
-  NCPCFG="${NCPCFG:-ncp.cfg}"
+  NCPCFG='ncp.cfg'
 else
   log 2 "File not found: ncp.cfg" >&2
   return 1
