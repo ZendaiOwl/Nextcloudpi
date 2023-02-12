@@ -17,11 +17,9 @@
 #  1: Warning
 #  2: Error
 function log {
-  if [[ "$#" -gt 0 ]]
-  then
+  if [[ "$#" -gt 0 ]]; then
     local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
-    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
-    then
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
