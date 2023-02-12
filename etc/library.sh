@@ -571,7 +571,7 @@ function configure_app {
         for (( i = 0 ; i < "$LENGTH" ; i++ )); do
           # Check for invalid characters
           if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "${RETURN_VALUES[$i]}"; then
-            log 2 "(${BASH_SOURCE[0]##*/}) (configure_app) Invalid characters in field: ${VARIABLES[$i]}"
+            log 2 "Invalid characters in field: ${VARIABLES[$i]}"
             return 1
           fi
 
@@ -1200,7 +1200,7 @@ fi
 
 if hasCMD ncc; then
   NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-  log -2 "(${BASH_SOURCE[0]##*/}) NCVER: $NCVER"
+  log -2 "NCVER: $NCVER"
 fi
 
 # Prevent systemd pager from blocking script execution
