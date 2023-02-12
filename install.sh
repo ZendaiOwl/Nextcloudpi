@@ -565,8 +565,13 @@ fi
 
 if isFile "$LIBRARY"; then
   if cp "$LIBRARY" /usr/local/etc/library.sh; then
-    LIBRARY='/usr/local/etc/library.sh'
-    log -2 "LIBRARY: $LIBRARY"
+    if isFile '/usr/local/etc/library.sh'; then
+      LIBRARY='/usr/local/etc/library.sh'
+      log -2 "LIBRARY: $LIBRARY"
+    else
+      log 2 "Failed to copy file: library.sh $LIBRARY"
+      exit 1
+    fi
   else
     log 2 "Failed to copy file: library.sh $LIBRARY"
     exit 1
