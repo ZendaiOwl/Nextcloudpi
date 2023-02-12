@@ -12,7 +12,7 @@ function add_build_variables
 {
   declare -x -a BUILDVARIABLES
   BUILDVARIABLES+=("$@")
-  if ! isMatch "${BUILDVARIABLES[@]}" "BUILDVARIABLES"; then
+  if [[ "${BUILDVARIABLES[@]}" != *"BUILDVARIABLES"* ]]; then
     add_build_variables BUILDVARIABLES
   fi
 }
