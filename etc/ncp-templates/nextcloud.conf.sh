@@ -4,8 +4,8 @@ set +u
 # shellcheck disable=SC1090
 source /usr/local/etc/library.sh
 
-[[ "$1" != "--defaults" ]] || log -1 "Restoring template to default settings" >&2
-is_docker && echo "INFO: Docker installation detected" >&2
+[[ "$1" != "--defaults" ]] || echo "Restoring template to default settings" >&2
+is_docker && echo "Docker installation detected" >&2
 
 if [[ "$1" != "--defaults" ]]; then
   LETSENCRYPT_DOMAIN="$(
@@ -17,7 +17,7 @@ if [[ "$1" != "--defaults" ]]; then
   )"
 fi
 
-[[ -z "$LETSENCRYPT_DOMAIN" ]] || log -1 "Letsencrypt domain: $LETSENCRYPT_DOMAIN" >&2
+[[ -z "$LETSENCRYPT_DOMAIN" ]] || echo "Letsencrypt domain: $LETSENCRYPT_DOMAIN" >&2
 
 # skip during build
 if ! [[ -f /.ncp-image ]] && [[ "$1" != "--defaults" ]] && [[ -f "${BINDIR}/SYSTEM/metrics.sh" ]]; then
@@ -29,7 +29,7 @@ else
   METRICS_IS_ENABLED=no
 fi
 
-log -1 "Metrics enabled: $METRICS_IS_ENABLED" >&2
+echo "Metrics enabled: $METRICS_IS_ENABLED" >&2
 
 echo "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
 echo ""
@@ -140,6 +140,6 @@ cat <<EOF
 EOF
 
 if ! [[ -f /.ncp-image ]]; then
-  log -1 "Apache self check:" >&2
+  echo "Apache self check:" >&2
   apache2ctl -t 1>&2
 fi

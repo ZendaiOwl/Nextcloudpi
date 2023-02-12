@@ -5,7 +5,7 @@ PHPVER="${PHPVER?ERROR: PHPVER variable unset!}"
 
 if [[ "$1" == "--defaults" ]] || ! [[ -f "${BINDIR}/CONFIG/nc-limits.sh" ]]
 then
-  log -1 "Restoring template to default settings" >&2
+  echo "Restoring template to default settings" >&2
 
   PHPTHREADS=6
 else

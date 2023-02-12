@@ -4,7 +4,7 @@ source /usr/local/etc/library.sh
 
 if [[ "$1" == "--defaults" ]]
 then
-  log -1 "Restoring template to default settings" >&2
+  echo "Restoring template to default settings" >&2
   cat <<EOF
 {
   "backups": []
@@ -52,7 +52,7 @@ EOF
 is_docker || {
 
   DATADIR="$( get_nc_config_value datadirectory )" || {
-    log 2 "Could not get data directory. Is Nextcloud running?" >&2
+    echo "Could not get data directory. Is Nextcloud running?" >&2
     return 1;
   }
   NC_SNAPSHOTS_DIR="$(dirname "$DATADIR")/ncp-snapshots"

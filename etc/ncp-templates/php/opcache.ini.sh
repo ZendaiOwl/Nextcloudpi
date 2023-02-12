@@ -1,26 +1,26 @@
 ﻿set -e
 
-if [[ -f '/usr/local/etc/library.sh' ]]; then
+if [[ -f /usr/local/etc/library.sh ]]; then
   # shellcheck disable=SC1090
   source /usr/local/etc/library.sh
-elif [[ -f 'etc/library.sh' ]]; then
+elif [[ -f etc/library.sh ]]; then
   # shellcheck disable=SC1090
   source etc/library.sh
 else
-  printf '\e[1;31mERROR\e[0m %s\n' "File not found: library.sh" >&2
+  echo "File not found: library.sh" >&2
   exit 1
 fi
 
 if notSet PHPVER; then
-  log 2 "PHPVER variable is not set!"
+  echo "PHPVER variable is not set!"
   exit 1
 fi
 
 if [[ "$1" == "--defaults" ]] || [[ ! -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && ! is_docker; then
-  log -1 "Restoring template to default settings" >&2
-  TMP_DIR='/tmp/.opcache'
+  echo "Restoring template to default settings" >&2
+  TMP_DIR=/tmp/.opcache
 elif is_docker; then
-  DATADIR='/data-ro/ncdata/data'
+  DATADIR=/data-ro/ncdata/data
   [[ "$DOCKERBUILD" == 1 ]] || DATADIR="$(get_nc_config_value datadirectory || echo '/data/ncdata/data')"
   TMP_DIR="$DATADIR/.opcache"
 else
