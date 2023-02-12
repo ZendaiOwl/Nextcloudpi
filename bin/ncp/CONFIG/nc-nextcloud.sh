@@ -227,7 +227,7 @@ function configure
   local URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${NCLATESTVER}.tar.bz2"
   echo "Downloading Nextcloud: $NCLATESTVER"
   wget -q "$URL" -O nextcloud.tar.bz2 || {
-    log 2 "Couldn't download $URL"
+    log 2 "Couldn't download: $URL"
     return 1
   }
   rm --recursive --force nextcloud
@@ -317,7 +317,7 @@ EOF
 ## SET APACHE VHOST
   log -1 "Setting up Apache"
   install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback || {
-      echo "ERROR: Parsing template failed. Nextcloud will not work."
+      log 2 "Parsing template failed. Nextcloud will not work."
       exit 1
   }
   a2ensite nextcloud
