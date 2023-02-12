@@ -1,3 +1,5 @@
+#! /bin/bash
+
 set -e
 source /usr/local/etc/library.sh
 
@@ -20,4 +22,3 @@ fi
 cat <<EOF
 [mysqld]
 datadir = ${DB_DIR?}
-EOF

@@ -1,3 +1,5 @@
+#! /bin/bash
+
 set -e
 set +u
 source /usr/local/etc/library.sh
@@ -81,4 +83,3 @@ EOF
 cat <<EOF
   ]
 }
-EOF

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#! /bin/bash
 
 set -e
 set +u
@@ -144,4 +144,3 @@ EOF
 if ! [[ -f /.ncp-image ]]; then
   log -1 "Apache self check:" >&2
   apache2ctl -t 1>&2
-fi

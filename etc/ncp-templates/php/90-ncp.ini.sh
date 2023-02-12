@@ -1,4 +1,6 @@
-sset -e
+#! /bin/bash
+
+set -e
 source /usr/local/etc/library.sh
 
 MAXTRANSFERTIME="3600"
@@ -28,4 +30,3 @@ output_buffering=0
 ; slow transfers will be killed after this time
 max_execution_time=$MAXTRANSFERTIME
 max_input_time=$MAXTRANSFERTIME
-EOF

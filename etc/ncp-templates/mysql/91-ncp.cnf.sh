@@ -1,3 +1,5 @@
+#! /bin/bash
+
 set -e
 source /usr/local/etc/library.sh
 
@@ -32,4 +34,3 @@ query_cache_size = 0
 # other
 tmp_table_size= 64M
 max_heap_table_size= 64M
-EOF

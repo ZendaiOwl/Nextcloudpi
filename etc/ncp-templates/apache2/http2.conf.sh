@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#! /bin/bash
 
 set -e
 source /usr/local/etc/library.sh
@@ -26,4 +26,3 @@ SSLUseStapling          on
 SSLStaplingResponderTimeout 5
 SSLStaplingReturnResponderErrors off
 SSLStaplingCache        shmcb:/var/run/ocsp(128000)
-EOF
