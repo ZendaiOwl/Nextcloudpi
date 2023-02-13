@@ -514,7 +514,7 @@ fi
 # Change directory to the code directory in the temporary directory
 if isSet CODE_DIR; then
   if isDirectory "$CODE_DIR"; then
-    if ! cd "$CODE_DIR"; then; { log 2 "Failed changing directory to: $CODE_DIR"; exit 1; }; fi
+    if ! cd "$CODE_DIR"; then; { log 2 "Failed changing directory to: $CODE_DIR"; exit 1; } fi
   fi
 fi
 

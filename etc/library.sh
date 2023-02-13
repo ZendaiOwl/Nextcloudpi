@@ -1165,7 +1165,7 @@ CFGDIR="${CFGDIR:-etc/ncp-config.d}"
 
 if isDirectory "$CFGDIR"; then CFGDIR="$CFGDIR"
 elif isDirectory '/usr/local/etc/ncp-config.d'; then CFGDIR='/usr/local/etc/ncp-config.d'
-else { log 2 "Directory not found: ncp-config.d"; return 1; }; fi
+else log 2 "Directory not found: ncp-config.d"; return 1; fi
 
 log -2 "CFGDIR: $CFGDIR"; export CFGDIR
 
@@ -1187,12 +1187,11 @@ NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 if isFile "$NCPCFG"; then                  NCPCFG="$NCPCFG"
 elif isFile '/usr/local/etc/ncp.cfg'; then NCPCFG='/usr/local/etc/ncp.cfg'
 elif isFile 'ncp.cfg'; then                NCPCFG='ncp.cfg'
-else { log 2 "File not found: ncp.cfg"; return 1; }
-fi
+else log 2 "File not found: ncp.cfg"; return 1; fi
 
 log -2 "NCPCFG: $NCPCFG"; export NCPCFG
 
-if ! hasCMD dpkg; then { log 2 "Missing command: dpkg"; return 1; }
+if ! hasCMD dpkg; then log 2 "Missing command: dpkg"; return 1
 else ARCH="$(dpkg --print-architecture)"; fi
 
 if [[ "$ARCH" =~ ^(armhf|arm)$ ]]; then ARCH='armv7'
