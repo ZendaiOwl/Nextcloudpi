@@ -29,8 +29,7 @@ NC_BACKUP_AUTO_DIR="$(
  source "${BINDIR}/BACKUPS/nc-backup-auto.sh"
  tmpl_get_destination
 )"
-if [[ "$NC_BACKUP_DIR" == "$NC_BACKUP_AUTO_DIR" ]]
-then
+if [[ "$NC_BACKUP_DIR" == "$NC_BACKUP_AUTO_DIR" ]]; then
   NC_BACKUP_AUTO_DIR=""
 fi
 
@@ -52,13 +51,11 @@ EOF
 }
 
 is_docker || {
-
-  DATADIR=$( get_nc_config_value datadirectory ) || {
+  DATADIR="$( get_nc_config_value datadirectory )" || {
     echo "ERROR: Could not get data directory. Is NextCloud running?" >&2
     return 1;
   }
   NC_SNAPSHOTS_DIR="$(dirname "$DATADIR")/ncp-snapshots"
-
   NC_SNAPSHOTS_SYNC_DIR="$(
     source "${BINDIR}/BACKUPS/nc-snapshot-sync.sh"
     if tmpl_is_destination_local
@@ -66,7 +63,6 @@ is_docker || {
       tmpl_get_destination
     fi
   )"
-
   for snap_dir in "$NC_SNAPSHOTS_DIR" "$NC_SNAPSHOTS_SYNC_DIR"
   do
     [[ -n "$snap_dir" ]] || continue
@@ -77,9 +73,7 @@ is_docker || {
     }
 EOF
   done
-
 }
-
 cat <<EOF
   ]
 }
