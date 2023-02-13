@@ -892,8 +892,7 @@ function save_maintenance_mode
     ncc maintenance:mode --on
   else if grep -q enabled <("$ncc" maintenance:mode); then
           export NCP_MAINTENANCE_MODE="on" || true; fi
-         "$ncc" maintenance:mode --on
-       fi
+         "$ncc" maintenance:mode --on; fi
 }
 
 function restore_maintenance_mode
@@ -901,8 +900,7 @@ function restore_maintenance_mode
   if hasCMD ncc; then if notZero "${NCP_MAINTENANCE_MODE:-}"; then ncc maintenance:mode --on
                       else ncc maintenance:mode --off; fi
   else if notZero "${NCP_MAINTENANCE_MODE:-}"; then ${ncc} maintenance:mode --on
-       else ${ncc} maintenance:mode --off; fi
-  fi
+       else ${ncc} maintenance:mode --off; fi; fi
 }
 
 function needs_decrypt
@@ -949,30 +947,19 @@ function clear_opcache
 
 LIBRARY="$(Print "${BASH_SOURCE[0]}")"
 if isSet LIBRARY; then log -2 "LIBRARY: $LIBRARY"; fi
-
 CFGDIR="${CFGDIR:-etc/ncp-config.d}"
-
 if isDirectory "$CFGDIR"; then CFGDIR="$CFGDIR"
 elif isDirectory '/usr/local/etc/ncp-config.d'; then CFGDIR='/usr/local/etc/ncp-config.d'
-else log 2 "Directory not found: ncp-config.d"; return 1; fi
-
-log -2 "CFGDIR: $CFGDIR"; export CFGDIR
-
-BINDIR="${BINDIR:-/usr/local/bin/ncp}"
-log -2 "BINDIR: $BINDIR"; export BINDIR
-
-NCDIR="${NCDIR:-/var/www/nextcloud}"
-log -2 "NCDIR: $NCDIR"; export NCDIR
-
-ncc="${ncc:-/usr/local/bin/ncc}"
-log -2 "ncc: $ncc"; export ncc
+else log 2 "Directory not found: ncp-config.d"; return 1; fi; log -2 "CFGDIR: $CFGDIR"; export CFGDIR
+BINDIR="${BINDIR:-/usr/local/bin/ncp}"; log -2 "BINDIR: $BINDIR"; export BINDIR
+NCDIR="${NCDIR:-/var/www/nextcloud}"; log -2 "NCDIR: $NCDIR"; export NCDIR
+ncc="${ncc:-/usr/local/bin/ncc}"; log -2 "ncc: $ncc"; export ncc
 
 # if isFile "$ncc"; then
 #   ncc="$ncc"
 # fi
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
-
 if isFile "$NCPCFG"; then                  NCPCFG="$NCPCFG"
 elif isFile '/usr/local/etc/ncp.cfg'; then NCPCFG='/usr/local/etc/ncp.cfg'
 elif isFile 'ncp.cfg'; then                NCPCFG='ncp.cfg'
@@ -1005,24 +992,19 @@ RELEASE="$(    jq -r '.release'           "$NCPCFG")"
 CFGRELEASE="$RELEASE"
 
 # The default security repository in bullseye is bullseye-security
-if grep -Eh '^deb ' /etc/apt/sources.list | grep "${RELEASE}-security" > /dev/null; then
-  RELEASE="${RELEASE}-security"
-fi
+if grep -Eh '^deb ' /etc/apt/sources.list | grep "${RELEASE}-security" > /dev/null; then RELEASE="${RELEASE}-security"; fi
 
-if hasCMD ncc; then
-  NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-  log -2 "Found command: ncc"; log -2 "NCVER: $NCVER"
-fi
+if hasCMD ncc; then NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
+                    log -2 "Found command: ncc"; log -2 "NCVER: $NCVER"; export NCVER
+elif isSet NCVER; then log -2 "NCVER: $NCVER"; fi
 
 # Prevent systemd pager from blocking script execution
 export SYSTEMD_PAGER=
 log -2 "ARCH: $ARCH";               export ARCH
 log -2 "INIT_SYSTEM: $INIT_SYSTEM"; export INIT_SYSTEM
-log -2 "NCVER: $NCVER";             export NCVER
 log -2 "NCLATESTVER: $NCLATESTVER"; export NCLATESTVER
 log -2 "PHPVER: $PHPVER";           export PHPVER
 log -2 "RELEASE: $RELEASE";         export RELEASE
-
 
 
 # License
