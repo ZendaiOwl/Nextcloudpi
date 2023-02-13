@@ -34,8 +34,7 @@ function log
          2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-    fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
   fi
 }
 
@@ -72,7 +71,7 @@ If you are sure that you know what you are doing, you can still execute the upda
 Ex: ALLOW_UPDATE_SCRIPT=1 ncp-update"; [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1; fi
 
 
-# don't make sense in a docker container
+# These options doesn't make much sense to have in a docker container
 EXCL_DOCKER="
 nc-autoupdate-ncp
 nc-update
@@ -112,7 +111,7 @@ samba
 # Check if apt or apt-get is running
 if pgrep -x "apt|apt-get" &>/dev/null; then log 2 "Apt is currently running. Try again later"; exit 1; fi
 
-cp "$ETC_LIBRARY" "$LOCAL_LIBRARY"
+if ! cp "$ETC_LIBRARY" "$LOCAL_LIBRARY"; then log 2 "Failed to copy file: $ETC_LIBRARY"; exit 1; fi
 
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
@@ -123,10 +122,10 @@ mkdir --parents "$CONFDIR"
 if is_docker || is_lxc; then for OPT in $EXCL_DOCKER; do touch "$CONFDIR"/"$OPT".cfg; done; fi
 
 # copy all files in bin and etc
-cp -r bin/* /usr/local/bin/
+cp --recursive bin/* /usr/local/bin/
 find etc -maxdepth 1 -type f ! -path etc/ncp.cfg -exec cp '{}' /usr/local/etc \;
-cp -n etc/ncp.cfg /usr/local/etc/ncp.cfg
-cp -r etc/ncp-templates /usr/local/etc/
+cp --no-clobber etc/ncp.cfg /usr/local/etc/ncp.cfg
+cp --recursive  etc/ncp-templates /usr/local/etc/
 
 # install new entries of ncp-config and update others
 for FILE in etc/ncp-config.d/*; do
@@ -173,7 +172,7 @@ Print "$CFG" > "$LOCAL_NCP_CONFIG"
 NEXTCLOUD_CONFIG='etc/ncp-config.d/nc-nextcloud.cfg'
 LOCAL_NEXTCLOUD_CONFIG='/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
 CFG="$(jq ".params[0].value = \"$NC_VERSION\"" "$NEXTCLOUD_CONFIG")"
-echo "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
+Print "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
 cp -rT etc/ncp-config.d/l10n "$CONFDIR"/l10n
@@ -184,23 +183,23 @@ chmod 660 "$CONFDIR"/*
 chmod 750 "$CONFDIR"/l10n
 
 # install web interface
-cp -r ncp-web /var/www/
+cp --recursive ncp-web     /var/www/
 chown -R www-data:www-data /var/www/ncp-web
 chmod 770                  /var/www/ncp-web
 
 # install NC app
-rm -rf /var/www/ncp-app
-cp -r ncp-app /var/www/
+rm --recursive --force /var/www/ncp-app
+cp --recursive ncp-app /var/www/
 
 # install ncp-previewgenerator
-rm -rf /var/www/ncp-previewgenerator
+rm --recursive --froce     /var/www/ncp-previewgenerator
 cp -r ncp-previewgenerator /var/www/
 chown -R www-data:         /var/www/ncp-previewgenerator
 
 # copy NC app to nextcloud directory and enable it
-rm -rf /var/www/nextcloud/apps/nextcloudpi
-cp -r /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
-chown -R www-data:     /var/www/nextcloud/apps/nextcloudpi
+rm --recursive --force          /var/www/nextcloud/apps/nextcloudpi
+cp --recursive /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
+chown -R www-data:              /var/www/nextcloud/apps/nextcloudpi
 
 # remove unwanted ncp-apps for containerized versions
 if is_docker || is_lxc; then
@@ -230,14 +229,14 @@ check_distro "$NCPCFG" && check_distro "$NCP_CONFIG" || {
   NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
   NEW_RELEASE="$(jq -r '.release'         "$NCP_CONFIG")"
 
-  CFG="$(jq '.php_version   = "'$NEW_PHP_VERSION'"' "$NCPCFG")"
-  CFG="$(jq '.release       = "'$NEW_RELEASE'"'     "$NCPCFG")"
-  echo "$CFG" > /usr/local/etc/ncp-recommended.cfg
+  CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
+  CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
+  Print "$CFG" > /usr/local/etc/ncp-recommended.cfg
 
   [[ -f /.dockerenv ]] && \
     MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
     MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
-  echo "$MSG"
+  Print "$MSG"
   notify_admin "New distribution available" "$MSG"
   wall "$MSG"
   cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
