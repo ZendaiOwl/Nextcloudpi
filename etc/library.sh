@@ -1130,7 +1130,7 @@ function get_ncpcfg
   if isFile "$NCPCFG"; then
     jq -r ".$NAME" "$NCPCFG"
   else
-    log 2 "File not found: $NCPCFG" >&2
+    log 2 "File not found: $NCPCFG"
     return 1
   fi
 }

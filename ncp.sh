@@ -24,10 +24,7 @@ function isFile {
 # 2: Invalid number of arguments
 function isUser {
   [[ "$#" -ne 1 ]] && return 2
-  if id -u "$1" &>/dev/null; then
-    return 0
-  else
-    return 1
+  if id -u "$1" &>/dev/null; then return 0; else return 1
   fi
 }
 
@@ -56,16 +53,14 @@ function is_lxc {
 #  0: Success
 #  1: Warning
 #  2: Error
-function log {
-  if [[ "$#" -gt 0 ]]
-  then
-    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
-    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
-    then
+function log
+{
+  if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
         -1)
            local -r BLUE='\e[1;34m'
@@ -84,9 +79,7 @@ function log {
            printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else
-      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-    fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
   fi
 }
 
@@ -95,17 +88,11 @@ function log {
 # 0: Command exists on the system
 # 1: Command is unavailable on the system
 # 2: Missing command argument to check
-function hasCMD {
-  if [[ "$#" -eq 1 ]]; then
-    local -r CHECK="$1"
-    if command -v "$CHECK" &>/dev/null; then
-      return 0
-    else
-      return 1
-    fi
-  else
-    return 2
-  fi
+function hasCMD
+{
+  if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null; then return 0; else return 1; fi
+  else return 2; fi
 }
 
 # Installs package(s) using the package manager and pre-configured options
@@ -114,7 +101,8 @@ function hasCMD {
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-function installPKG {
+function installPKG
+{
   if [[ "$#" -eq 0 ]]; then
     log 2 "Requires: [PKG(s) to install]"
     return 3
@@ -128,48 +116,29 @@ function installPKG {
     IFS=' ' read -ra PKG <<<"$@"
     if [[ ! "$EUID" -eq 0 ]]; then
       log -1 "Updating apt lists"
-      if "${SUDOUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
+      if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+      else log 2 "Couldn't update apt lists"; return 1; fi
       log -1 "Installing ${PKG[*]}"
       if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 2
-      fi
-    else
-      log -1 "Updating apt lists"
-      if "${ROOTUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
+        log 0 "Installation completed"; return 0
+      else log 2 "Something went wrong during installation"; return 2; fi
+    else log -1 "Updating apt lists"
+      if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+      else log 2 "Couldn't update apt lists"; return 1; fi
       log -1 "Installing ${PKG[*]}"
       if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 1
-      fi
+        log 0 "Installation completed"; return 0
+      else log 2 "Something went wrong during installation"; return 1; fi
     fi
   fi
 }
 
-if isFile 'etc/library.sh'; then
+if isFile 'etc/library.sh'; then LIBRARY='etc/library.sh'
   # shellcheck disable=SC1090
-  source etc/library.sh
-  LIBRARY='etc/library.sh'
-  declare -x LIBRARY
-elif isFile '/usr/local/etc/library.sh'; then
+  source etc/library.sh; log -2 "LIBRARY: $LIBRARY"
+elif isFile '/usr/local/etc/library.sh'; then LIBRARY='/usr/local/etc/library.sh'
   # shellcheck disable=SC1090
-  source /usr/local/etc/library.sh
+  source /usr/local/etc/library.sh; log -2 "LIBRARY: $LIBRARY"
 fi
 
 WEBADMIN='ncp'
