@@ -447,22 +447,8 @@ add_install_variables OWNER REPO BRANCH URL LIBRARY NCPCFG DBNAME NCP_TEMPLATES_
 
 trap 'clean_install_script' EXIT SIGHUP SIGILL SIGABRT SIGINT
 
-# if ! hasText '/usr/local/sbin:/usr/sbin:/sbin:' "$PATH"; then
-#   PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
-# fi
-
-# Only add the part that's needed
-
-if ! hasText '/sbin:' "$PATH"; then
-  PATH="/sbin:$PATH"
-fi
-
-if ! hasText '/usr/sbin:' "$PATH"; then
-  PATH="/usr/sbin:$PATH"
-fi
-
-if ! hasText '/usr/local/sbin:' "$PATH"; then
-  PATH="/usr/local/sbin:$PATH"
+if ! hasText '/usr/local/sbin:/usr/sbin:/sbin:' "$PATH"; then
+  PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
 fi
 
 export PATH
