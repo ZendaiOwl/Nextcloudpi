@@ -156,7 +156,7 @@ for FILE in etc/ncp-config.d/*; do
   if ! isFile /usr/local/"$FILE"; then
     if isMatch "$(jq -r ".params[0].id" "$FILE")" "ACTIVE" && \
        isMatch "$(jq -r ".params[0].value" "$FILE")" "yes"; then
-         if ! cp "$FILE" /usr/local/"$FILE"; then; log 2 "Failed to copy file: $FILE"; exit 1; fi
+         if ! cp "$FILE" /usr/local/"$FILE"; then log 2 "Failed to copy file: $FILE"; exit 1; fi
          run_app "$(basename "$FILE" .cfg)"
     fi
   fi
