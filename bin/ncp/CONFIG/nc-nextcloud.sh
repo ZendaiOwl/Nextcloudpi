@@ -22,7 +22,7 @@ function log {
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
         -1)
            local -r BLUE='\e[1;34m'

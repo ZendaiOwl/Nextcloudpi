@@ -16,14 +16,15 @@
 #  0: Success
 #  1: Warning
 #  2: Error
-function log {
+function log
+{
   if [[ "$#" -gt 0 ]]; then
     local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
     if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
         -1)
            local -r BLUE='\e[1;34m'
@@ -327,7 +328,8 @@ function hasCMD {
 # 2: Error during installation
 # 3: Missing package argument
 # 4: Not running as root/sudo
-function installPKG {
+function installPKG
+{
   if [[ "$#" -eq 0 ]]; then
     log 2 "Requires: [PKG(s) to install]"
     return 3
@@ -573,8 +575,6 @@ if isFile "$LIBRARY"; then
   declare -x -g LIBRARY
   log -2 "LIBRARY: $LIBRARY"
 fi
-
-# log 2 "(${BASH_SOURCE[0]##*/}) "
 
 if isFile "$NCPCFG"; then
   if ! cp "$NCPCFG" '/usr/local/etc/ncp.cfg'; then

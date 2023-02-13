@@ -26,14 +26,15 @@
 #  0: Success
 #  1: Warning
 #  2: Error
-function log {
+function log
+{
   if [[ "$#" -gt 0 ]]; then
     local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
     if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
         -1)
            local -r BLUE='\e[1;34m'
@@ -63,7 +64,8 @@ function log {
 # 0: Is root
 # 1: Not root
 # 2: Invalid number of arguments
-function isRoot {
+function isRoot
+{
   [[ "$#" -ne 0 ]] && return 2
   [[ "$EUID" -eq 0 ]]
 }
@@ -88,7 +90,8 @@ function isUser
 # 0: Path exist
 # 1: No such path
 # 2: Invalid number of arguments
-function isPath {
+function isPath
+{
   [[ "$#" -ne 1 ]] && return 2
   [[ -e "$1" ]]
 }
@@ -97,7 +100,8 @@ function isPath {
 # 0: Is a file
 # 1: Not a file
 # 2: Invalid number of arguments
-function isFile {
+function isFile
+{
   [[ "$#" -ne 1 ]] && return 2
   [[ -f "$1" ]]
 }
@@ -118,7 +122,8 @@ function isSocket
 # 0: Is zero
 # 1: Not zero
 # 2: Invalid number of arguments
-function isZero {
+function isZero
+{
   [[ "$#" -ne 1 ]] && return 2
   [[ -z "$1" ]]
 }
@@ -127,7 +132,8 @@ function isZero {
 # 0: Is equal
 # 1: Not equal
 # 2: Invalid number of arguments
-function isEqual {
+function isEqual
+{
   [[ "$#" -ne 2 ]] && return 2
   [[ "$1" -eq "$2" ]]
 }
@@ -137,7 +143,8 @@ function isEqual {
 # 0: Not equal
 # 1: Is equal
 # 2: Invalid number of arguments
-function notEqual {
+function notEqual
+{
   [[ "$#" -ne 2 ]] && return 2
   [[ "$1" -ne "$2" ]]
 }
@@ -147,7 +154,8 @@ function notEqual {
 # 0: Is a match
 # 1: Not a match
 # 2: Invalid number of arguments
-function isMatch {
+function isMatch
+{
   [[ "$#" -ne 2 ]] && return 2
   [[ "$1" == "$2" ]]
 }
@@ -157,7 +165,8 @@ function isMatch {
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function notMatch {
+function notMatch
+{
   [[ "$#" -ne 2 ]] && return 2
   [[ "$1" != "$2" ]]
 }
@@ -167,7 +176,8 @@ function notMatch {
 # 0: Not zero
 # 1: Is zero
 # 2: Invalid number of arguments
-function notZero {
+function notZero
+{
   [[ "$#" -ne 1 ]] && return 2
   [[ -n "$1" ]]
 }
@@ -177,7 +187,8 @@ function notZero {
 # 0: Command exists on the system
 # 1: Command is unavailable on the system
 # 2: Missing command argument to check
-function hasCMD {
+function hasCMD
+{
   if [[ "$#" -eq 1 ]]; then
     local -r CHECK="$1"
     if command -v "$CHECK" &>/dev/null; then
@@ -196,7 +207,8 @@ function hasCMD {
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-function installPKG {
+function installPKG
+{
   if [[ "$#" -eq 0 ]]; then
     log 2 "Requires: [PKG(s) to install]"
     return 3
@@ -293,12 +305,12 @@ function install
     # CONFIGURE APACHE
     ##########################################
     
-    install_template apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
+    install_template "apache2/http2.conf.sh" "/etc/apache2/conf-available/http2.conf" "--defaults"
 
     # CONFIGURE PHP7
     ##########################################
 
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" "--defaults"
 
     a2enmod http2
     a2enconf http2
