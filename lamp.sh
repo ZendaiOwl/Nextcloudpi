@@ -199,10 +199,10 @@ function updatePKG
                 ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
   if isRoot; then log -1 "Updating apt lists"
     if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-    else log 2 "Couldn't update apt lists"; return 1; fi;
+    else log 2 "Couldn't update apt lists"; return 1; fi
   else log -1 "Updating apt lists"
        if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-       else log 2 "Couldn't update apt lists"; return 1; fi;
+       else log 2 "Couldn't update apt lists"; return 1; fi
 }
 
 # Installs package(s) using the package manager and pre-configured options
