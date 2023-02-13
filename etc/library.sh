@@ -1012,11 +1012,11 @@ function install_template {
   fi
   {
     if [[ "${3:-}" == "--defaults" ]]; then
-      { bash -c "/usr/local/etc/ncp-templates/$TEMPLATE --defaults" > "$TARGET"; } 2>&1
+      { sudo bash -c "/usr/local/etc/ncp-templates/$TEMPLATE --defaults" > "$TARGET"; } 2>&1
     else
-      { bash -c "/usr/local/etc/ncp-templates/$TEMPLATE" > "$TARGET"; } 2>&1 || \
+      { sudo bash -c "/usr/local/etc/ncp-templates/$TEMPLATE" > "$TARGET"; } 2>&1 || \
         if [[ "${3:-}" == "--allow-fallback" ]]; then
-          { bash -c "/usr/local/etc/ncp-templates/$TEMPLATE --defaults" > "$TARGET"; } 2>&1
+          { sudo bash -c "/usr/local/etc/ncp-templates/$TEMPLATE --defaults" > "$TARGET"; } 2>&1
         fi
     fi
   } || {
