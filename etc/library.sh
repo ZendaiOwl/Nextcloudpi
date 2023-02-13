@@ -364,6 +364,21 @@ function hasCMD
   fi
 }
 
+# Checks for the ncc command
+# Return status codes
+# 0: ncc command found
+# 1: File exists
+# 2: Too many arguments
+function hasCMD_NCC
+{
+  local -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
+  if notEqual "$#" 0; then return 2; fi
+  else
+    if hasCMD ncc; then return 0; fi
+    elif isFile "$NCC_SCRIPTFILE"; then return 1; fi
+  fi
+}
+
 # Checks if a package exists on the system
 # Return status codes
 # 0: Package is installed
@@ -1143,6 +1158,9 @@ function clear_opcache
 ###### VARIABLES #######
 ########################
 
+LIBRARY="$(Print "${BASH_SOURCE[0]}")"
+if isSet LIBRARY; then log -2 "LIBRARY: $LIBRARY"; fi
+
 CFGDIR="${CFGDIR:-etc/ncp-config.d}"
 
 if isDirectory "$CFGDIR"; then
@@ -1150,23 +1168,23 @@ if isDirectory "$CFGDIR"; then
 elif isDirectory '/usr/local/etc/ncp-config.d'; then
   CFGDIR='/usr/local/etc/ncp-config.d'
 else
-  log 2 "Directory not found: $CFGDIR"
+  log 2 "Directory not found: ncp-config.d"
   return 1
 fi
 
-export CFGDIR
+log -2 "CFGDIR: $CFGDIR"; export CFGDIR
 
 BINDIR="${BINDIR:-/usr/local/bin/ncp}"
 
-export BINDIR
+log -2 "BINDIR: $BINDIR"; export BINDIR
 
 NCDIR="${NCDIR:-/var/www/nextcloud}"
 
-export NCDIR
+log -2 "NCDIR: $NCDIR"; export NCDIR
 
 ncc="${ncc:-/usr/local/bin/ncc}"
 
-export ncc
+log -2 "ncc: $ncc"; export ncc
 
 # if isFile "$ncc"; then
 #   ncc="$ncc"
@@ -1174,48 +1192,35 @@ export ncc
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 
-if isFile "$NCPCFG"; then
-  NCPCFG="$NCPCFG"
-elif isFile '/usr/local/etc/ncp.cfg'; then
-  NCPCFG='/usr/local/etc/ncp.cfg'
-elif isFile 'ncp.cfg'; then
-  NCPCFG='ncp.cfg'
-else
-  log 2 "File not found: ncp.cfg"
-  return 1
+if isFile "$NCPCFG"; then                  NCPCFG="$NCPCFG"
+elif isFile '/usr/local/etc/ncp.cfg'; then NCPCFG='/usr/local/etc/ncp.cfg'
+elif isFile 'ncp.cfg'; then                NCPCFG='ncp.cfg'
+else { log 2 "File not found: ncp.cfg"; return 1; }
 fi
 
+log -2 "NCPCFG: $NCPCFG"
 export NCPCFG
 
-if ! hasCMD dpkg; then
-  log 2 "Missing command: dpkg"
-  return 1
-else
-  ARCH="$(dpkg --print-architecture)"
+if ! hasCMD dpkg; then { log 2 "Missing command: dpkg"; return 1; }
+else ARCH="$(dpkg --print-architecture)"; fi
+
+if [[ "$ARCH" =~ ^(armhf|arm)$ ]]; then ARCH='armv7'
+elif isMatch "$ARCH" "arm64"; then      ARCH='aarch64'
+elif isMatch "$ARCH" "amd64"; then      ARCH='x86_64'
 fi
 
-if [[ "$ARCH" =~ ^(armhf|arm)$ ]]; then
-  ARCH='armv7'
-elif isMatch "$ARCH" "arm64"; then
-  ARCH='aarch64'
-elif isMatch "$ARCH" "amd64"; then
-  ARCH='x86_64'
-fi
+DETECT_DOCKER="$(ps -p 1 --no-headers -o "%c")"
 
-if isMatch "$(ps -p 1 --no-headers -o "%c")" "systemd" && ! isDirectory "/run/systemd/system"; then
-  INIT_SYSTEM="chroot"
-elif isDirectory "/run/systemd/system"; then
-  INIT_SYSTEM="systemd"
-elif isMatch "$(ps -p 1 --no-headers -o "%c")" "run-parts.sh"; then
-  INIT_SYSTEM="docker"
-else
-  INIT_SYSTEM="unknown"
-fi
+if isMatch "$(ps -p 1 --no-headers -o "%c")" "systemd" \
+&& ! isDirectory "/run/systemd/system"; then       INIT_SYSTEM="chroot"
+elif isDirectory "/run/systemd/system"; then       INIT_SYSTEM="systemd"
+elif isMatch "$DETECT_DOCKER" "run-parts.sh"; then INIT_SYSTEM="docker"
+else INIT_SYSTEM="unknown"; fi
+
+unset DETECT_DOCKER
 
 if ! hasCMD jq; then
-  if ! installPKG jq; then
-    return 1
-  fi
+  if ! installPKG jq; then return 1; fi
 fi
 
 NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
@@ -1230,16 +1235,23 @@ fi
 
 if hasCMD ncc; then
   NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
+  log -2 "Found command: ncc"
   log -2 "NCVER: $NCVER"
 fi
 
 # Prevent systemd pager from blocking script execution
 export SYSTEMD_PAGER=
+log -2 "ARCH: $ARCH"
 export ARCH
+log -2 "INIT_SYSTEM: $INIT_SYSTEM"
 export INIT_SYSTEM
+log -2 "NCVER: $NCVER"
 export NCVER
+log -2 "NCLATESTVER: $NCLATESTVER"
 export NCLATESTVER
+log -2 "PHPVER: $PHPVER"
 export PHPVER
+log -2 "RELEASE: $RELEASE"
 export RELEASE
 
 

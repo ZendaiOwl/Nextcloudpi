@@ -479,18 +479,16 @@ fi
 
 export PATH
 
-# Check is MariaDB/MySQL is installed
+# Check for existing MariaDB/MySQL install
 if hasCMD mysqld; then
   log 1 "Existing MySQL configuration will be changed"
   if isSet DBNAME; then
     if mysql -e 'use '"$DBNAME"'' &>/dev/null; then
-      log 2 "Database exists: $DBNAME"
-      exit 1
+      { log 2 "Database exists: $DBNAME"; exit 1; }
     fi
   else
     if mysql -e 'use nextcloud' &>/dev/null; then
-      log 2 "Database exists: nextcloud"
-      exit 1
+      { log 2 "Database exists: nextcloud"; exit 1; }
     fi
   fi
 fi
@@ -516,11 +514,8 @@ fi
 # Change directory to the code directory in the temporary directory
 if isSet CODE_DIR; then
   if isDirectory "$CODE_DIR"; then
-    if ! cd "$CODE_DIR"; then
-      log 2 "Failed to change directory to: $CODE_DIR"
-      exit 1
-    fi
-  fi 
+    if ! cd "$CODE_DIR"; then; { log 2 "Failed changing directory to: $CODE_DIR"; exit 1; }; fi
+  fi
 fi
 
 # Install NextcloudPi
@@ -530,19 +525,14 @@ if isFile "$LIBRARY"; then
   # shellcheck disable=SC1091
   source "$LIBRARY"
 else
-  log 2 "File not found: $LIBRARY"
-  exit 1
+  { log 2 "File not found: $LIBRARY"; exit 1; }
 fi
 
 # Check so NextcloudPi configuration file exists
 if isFile "$NCPCFG"; then
   # Check so the distribution is supported by the script
-  if ! check_distro "$NCPCFG"; then
-    log 2 "Distro not supported"
-    if ! cat '/etc/issue'; then
-      log 2 "Failed to read file: /etc/issue"
-      exit 1
-    fi
+  if ! check_distro "$NCPCFG"; then log 2 "Distro not supported"
+    if ! cat '/etc/issue'; then log 2 "Failed to read file: /etc/issue"; fi
     exit 1
   fi
 else
@@ -552,8 +542,7 @@ fi
 
 # Mark the build as an image build for other scripts in the installation/build flow
 if ! touch '/.ncp-image'; then
-  log 2 "Failed creating file: /.ncp-image"
-  exit 1
+  { log 2 "Failed to create file: /.ncp-image"; exit 1; }
 fi
 
 # Create the local NextcloudPi configuration directory

@@ -266,13 +266,18 @@ function install
              PHPDAEMON='/run/php' \
              PHPREPO='https://packages.sury.org/php' \
              PHPREPO_GPGKEY='https://packages.sury.org/php/apt.gpg' \
-             PHPAPTLIST='/etc/apt/sources.list.d/php.list'
+             PHPAPTLIST='/etc/apt/sources.list.d/php.list' \
+             MYCNF_FILE='/root/.my.cnf'
+
     # MariaDB password
     local DBPASSWD="default"
+    
     # Setup apt repository for php 8
     wget -O /etc/apt/trusted.gpg.d/php.gpg "$PHPREPO_GPGKEY"
     echo "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
-    installPKG apt-utils cron curl ssl-cert apache2
+
+    installPKG apt-utils cron curl apache2
+
     ls -l /var/lock || true
     # Fix missing lock directory
     mkdir --parents /run/lock
@@ -292,23 +297,27 @@ function install
 
     mkdir --parents "$PHPDAEMON"
 
-    #printf '%s\n' "[mysqld]" "[client]" "password=$DBPASSWD" > /root/.my.cnf
-    printf '%s\n' "[client]" "password=$DBPASSWD" > /root/.my.cnf
-    chmod 600 /root/.my.cnf
+    printf '%s\n' "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
+    #printf '%s\n' "[client]" "password=$DBPASSWD" > /root/.my.cnf
+    chmod 600 "$MYCNF_FILE"
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
+    
     installPKG mariadb-server
+    
     mkdir --parents "$DBDAEMON"
     chown "$DBUSER" "$DBDAEMON"
 
-    # CONFIGURE APACHE
-    ##########################################
+    ####################
+    # CONFIGURE APACHE #
+    ####################
     
     install_template "apache2/http2.conf.sh" "/etc/apache2/conf-available/http2.conf" "--defaults"
 
-    # CONFIGURE PHP7
-    ##########################################
+    ##################
+    # CONFIGURE PHP7 #
+    ##################
 
     install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" "--defaults"
 
@@ -325,26 +334,33 @@ function install
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 
-    # CONFIGURE LAMP FOR NEXTCLOUD
-    ##########################################
+    ################################
+    # CONFIGURE LAMP FOR NEXTCLOUD #
+    ################################
+    
+    # Self-signed certificates
+    installPKG ssl-cert
 
-    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" --defaults
+    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" "--defaults"
+    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" "--defaults"
 
-    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" --defaults
-
-  # Launch MariaDB if not already running
+  # Start MariaDB if it's not already running
   if ! isFile "$DBPID_FILE"; then
     log -1 "Starting MariaDB"
     mysqld &
   fi
 
-  # Wait for MariaDB
+  # Wait for MariaDB to start
   while :; do
     isSocket "$DBSOCKET" && break
     sleep 1
   done
 
-  cd /tmp
+  if ! cd /tmp; then
+    log 2 "Failed to change directory to: /tmp"
+    exit 1
+  fi
+  
   mysql_secure_installation <<EOF
 $DBPASSWD
 y

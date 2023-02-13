@@ -165,6 +165,8 @@ function installPKG {
 if isFile 'etc/library.sh'; then
   # shellcheck disable=SC1090
   source etc/library.sh
+  LIBRARY='etc/library.sh'
+  declare -x LIBRARY
 elif isFile '/usr/local/etc/library.sh'; then
   # shellcheck disable=SC1090
   source /usr/local/etc/library.sh
@@ -178,6 +180,16 @@ BRANCH="${BRANCH:-master}"
 
 function install
 {
+  local -r NCC_SCRIPTFILE='/usr/local/bin/ncc' \
+           ACTIVATION_CONFIG='/etc/apache2/sites-available/ncp-activation.conf' \
+           NCP_CONFIG='/etc/apache2/sites-available/ncp.conf' \
+           RASPI_CONFIG='/usr/bin/raspi-config' \
+           NOLOGIN_SHELL='/usr/sbin/nologin' \
+           HTTP_USER='www-data' \
+           HOME_HTTP_USER='/home/www'
+
+  local NCP_LAUNCHER="${HOME_HTTP_USER}/ncp-launcher.sh" \
+        BACKUP_LAUNCHER="${HOME_HTTP_USER}/ncp-backup-launcher.sh"
   # NCP-CONFIG
   installPKG git dialog whiptail jq file lsb-release
   mkdir --parents "$CONFDIR" "$BINDIR"
@@ -185,24 +197,24 @@ function install
   # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
   # The raspi-config layout and options have also changed
   # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-  if isFile '/usr/bin/raspi-config' ]]; then
+  if isFile "$RASPI_CONFIG"; then
     # shellcheck disable=SC1003
-    sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' /usr/bin/raspi-config
-    sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             /usr/bin/raspi-config
+    sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' "$RASPI_CONFIG"
+    sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             "$RASPI_CONFIG"
   fi
 
-  # add the ncc shortcut
-  cat > /usr/local/bin/ncc <<'EOF'
+  # Add 'ncc' script shortcut
+  cat > "$NCC_SCRIPTFILE" <<'EOF'
 #!/usr/bin/env bash
 [[ "$EUID" -eq 0 ]] && SUDO=(sudo -E -u www-data)
 "${SUDO[@]}" php /var/www/nextcloud/occ "$@"
 EOF
-  chmod +x /usr/local/bin/ncc
+
+  chmod +x "$NCC_SCRIPTFILE"
 
   # NCP-WEB
-
-  ## VIRTUAL HOST
-  cat > /etc/apache2/sites-available/ncp-activation.conf <<EOF
+  ## Apache2 VirtualHost
+  cat > "$ACTIVATION_CONFIG" <<EOF
 <VirtualHost _default_:443>
   DocumentRoot /var/www/ncp-web/
   SSLEngine on
@@ -227,7 +239,7 @@ EOF
 </Directory>
 EOF
 
-  cat > /etc/apache2/sites-available/ncp.conf <<EOF
+  cat > "$NCP_CONFIG" <<EOF
 Listen 4443
 <VirtualHost _default_:4443>
   DocumentRoot /var/www/ncp-web
@@ -282,7 +294,9 @@ Listen 4443
 EOF
 
   installPKG libapache2-mod-authnz-external pwauth
-  a2enmod authnz_external authn_core auth_basic
+  a2enmod authnz_external \
+          authn_core \
+          auth_basic
   a2dissite nextcloud
   a2ensite ncp-activation
 
@@ -291,13 +305,13 @@ EOF
     useradd --home-dir /nonexistent "$WEBADMIN"
   fi
   echo -e "$WEBPASSWD\n$WEBPASSWD" | passwd "$WEBADMIN"
-  chsh -s /usr/sbin/nologin "$WEBADMIN"
-  chsh -s /usr/sbin/nologin root
+  chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
+  chsh -s "$NOLOGIN_SHELL" root
 
   ## NCP LAUNCHER
-  mkdir --parents /home/www
-  chown www-data:www-data /home/www
-  chmod 700 /home/www
+  mkdir --parents "$HOME_HTTP_USER"
+  chown "$HTTP_USER":"$HTTP_USER" "$HOME_HTTP_USER"
+  chmod 700 "$HOME_HTTP_USER"
 
   cat > /home/www/ncp-launcher.sh <<'EOF'
 #!/usr/bin/env bash
@@ -305,9 +319,9 @@ grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
 run_app $1
 EOF
-  chmod 700 /home/www/ncp-launcher.sh
+  chmod 700 "$NCP_LAUNCHER"
 
-  cat > /home/www/ncp-backup-launcher.sh <<'EOF'
+  cat > "$BACKUP_LAUNCHER" <<'EOF'
 #!/usr/bin/env bash
 action="${1}"
 file="${2}"
@@ -332,7 +346,7 @@ grep -q '[\\&#;`|*?~<>^()[{}$&]' <<< "$*" && exit 1
 [[ "$compressed" != "" ]] && pigz="-I pigz"
 tar $pigz -tf "$file" data &>/dev/null
 EOF
-  chmod 700 /home/www/ncp-backup-launcher.sh
+  chmod 700 "$BACKUP_LAUNCHER"
   echo "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" >> /etc/sudoers
 
   # NCP AUTO TRUSTED DOMAIN

@@ -8,22 +8,79 @@
 # More at https://ownyourbits.com/
 #
 
+# This is placed here so the script doesn't fail should someone update from
+# an old NextcloudPi version and source a library.sh without the log function
+
+# A log that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log
+{
+  if [[ "$#" -gt 0 ]]; then
+    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
+      case "$LOGLEVEL" in
+        -2)
+           local -r CYAN='\e[1;36m'
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
+           ;;
+        -1)
+           local -r BLUE='\e[1;34m'
+           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+           ;;
+         0)
+           local -r GREEN='\e[1;32m'
+           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+           ;;
+         1)
+           local -r YELLOW='\e[1;33m'
+           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+           ;;
+         2)
+           local -r RED='\e[1;31m'
+           printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
+           ;;
+      esac
+    else
+      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
+
+# Checks if a given variable has been set and assigned a value.
+# Return codes
+# 0: Is set
+# 1: Not set 
+# 2: Invalid number of arguments
+function isSet
+{
+  [[ "$#" -ne 1 ]] && return 2
+  [[ -v "$1" ]]
+}
+
 CONFDIR='/usr/local/etc/ncp-config.d'
 UPDATESDIR='updates'
-LIBRARY='/usr/local/etc/library.sh'
+ETC_LIBRARY='etc/library.sh'
+LOCAL_LIBRARY='/usr/local/etc/library.sh'
 
 # shellcheck disable=SC1090
-source "$LIBRARY"
+source "$LOCAL_LIBRARY"
 
-set -e"$DBG"
+if isSet DBG; then
+  set -e"$DBG"
+else
+  set -e
+fi
 
-
-if is_docker
-then
-  echo "WARNING: Docker images should be updated by replacing the container from the latest docker image" \
-    "(refer to the documentation for instructions: https://docs.nextcloudpi.com)." \
-    "If you are sure that you know what you are doing, you can still execute the update script by running it like this:"
-  echo "> ALLOW_UPDATE_SCRIPT=1 ncp-update"
+if is_docker; then
+  log 1 "Docker images should be updated by replacing the container with the latest docker image.
+Refer to the documentation for instructions at: https://docs.nextcloudpi.com or on the forum: https://help.nextcloud.com
+If you are sure that you know what you are doing, you can still execute the update script by running it like the example below.
+Ex: ALLOW_UPDATE_SCRIPT=1 ncp-update"
   [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
 fi
 
@@ -67,20 +124,23 @@ samba
 "
 fi
 
-# check running apt or apt-get
-pgrep -x "apt|apt-get" &>/dev/null && { echo "apt is currently running. Try again later";  exit 1; }
+# Check if apt or apt-get is running
+if pgrep -x "apt|apt-get" &>/dev/null; then
+  log 2 "Apt is currently running. Try again later"
+  exit 1
+fi
 
-cp etc/library.sh "$LIBRARY"
+cp "$ETC_LIBRARY" "$LOCAL_LIBRARY"
 
 # shellcheck disable=SC1090
-source "$LIBRARY"
+source "$LOCAL_LIBRARY"
 
-mkdir -p "$CONFDIR"
+mkdir --parents "$CONFDIR"
 
 # prevent installing some ncp-apps in the containerized versions
 if is_docker || is_lxc; then
-  for opt in $EXCL_DOCKER; do
-    touch "$CONFDIR"/"$opt".cfg
+  for OPT in $EXCL_DOCKER; do
+    touch "$CONFDIR"/"$OPT".cfg
   done
 fi
 
@@ -91,57 +151,66 @@ cp -n etc/ncp.cfg /usr/local/etc/ncp.cfg
 cp -r etc/ncp-templates /usr/local/etc/
 
 # install new entries of ncp-config and update others
-for file in etc/ncp-config.d/*; do
-  [ -f "$file" ] || continue;    # skip dirs
+for FILE in etc/ncp-config.d/*; do
+  # Skip directories
+  if isDirectory "$FILE"; then
+    continue
+  elif ! isFile "$FILE"; then
+    continue
+  fi
 
-  # install new ncp_apps
-  [ -f /usr/local/"$file" ] || {
-    install_app "$(basename "$file" .cfg)"
-  }
+  # Install new NextcloudPi apps
+  if ! isFile /usr/local/"$FILE"; then
+    install_app "$(basename "$FILE" .cfg)"
+  fi
 
   # keep saved cfg values
-  [ -f /usr/local/"$file" ] && {
-    len="$(jq '.params | length' /usr/local/"$file")"
-    for (( i = 0 ; i < len ; i++ )); do
-      id="$(jq -r ".params[$i].id" /usr/local/"$file")"
-      val="$(jq -r ".params[$i].value" /usr/local/"$file")"
-
-      for (( j = 0 ; j < len ; j++ )); do
-        idnew="$(jq -r ".params[$j].id" "$file")"
-        [ "$idnew" == "$id" ] && {
-          cfg="$(jq ".params[$j].value = \"$val\"" "$file")"
+  if isFile /usr/local/"$FILE"; then
+    LENGTH="$(jq '.params | length' /usr/local/"$FILE")"
+    for (( i = 0; i < "$LENGTH"; i++ )); do
+      ID="$(jq -r ".params[$i].id" /usr/local/"$FILE")"
+      VAL="$(jq -r ".params[$i].value" /usr/local/"$FILE")"
+      for (( j = 0; j < "$LENGTH"; j++ )); do
+        NEW_ID="$(jq -r ".params[$j].id" "$FILE")"
+        if isMatch "$NEW_ID" "$ID"; then
+          CFG="$(jq ".params[$j].value = \"$VAL\"" "$FILE")"
           break
-        }
+        fi
       done
-
-      echo "$cfg" > "$file"
+      echo "$CFG" > "$FILE"
     done
-  }
+  fi
 
-  # configure if active by default
-  [ -f /usr/local/"$file" ] || {
-    [[ "$(jq -r ".params[0].id"    "$file")" == "ACTIVE" ]] && \
-    [[ "$(jq -r ".params[0].value" "$file")" == "yes"    ]] && {
-      cp "$file" /usr/local/"$file"
-      run_app "$(basename "$file" .cfg)"
-    }
-  }
+  # Configure if active by default
+  if ! isFile /usr/local/"$FILE"; then
+    if isMatch "$(jq -r ".params[0].id" "$FILE")" "ACTIVE" && \
+       isMatch "$(jq -r ".params[0].value" "$FILE")" "yes"; then
+         if ! cp "$FILE" /usr/local/"$FILE"; then
+           log 2 "Failed to copy file: $FILE"
+           exit 1
+         fi
+         run_app "$(basename "$FILE" .cfg)"
+    fi
+  fi
 
-  cp "$file" /usr/local/"$file"
-
+  if ! cp "$FILE" /usr/local/"$FILE"; then
+    log 2 "Failed to copy file: $FILE"
+    exit 1
+  fi
+  
 done
 
 # update NCVER in ncp.cfg and nc-nextcloud.cfg (for nc-autoupdate-nc and nc-update-nextcloud)
 LOCAL_NCP_CONFIG='/usr/local/etc/ncp.cfg'
 NCP_CONFIG='etc/ncp.cfg'
-nc_version="$(jq -r '.nextcloud_version' "$NCP_CONFIG")"
-cfg="$(jq ".nextcloud_version = \"$nc_version\"" "$LOCAL_NCP_CONFIG")"
-echo "$cfg" > "$LOCAL_NCP_CONFIG"
+NC_VERSION="$(jq -r '.nextcloud_version' "$NCP_CONFIG")"
+CFG="$(jq ".nextcloud_version = \"$NC_VERSION\"" "$LOCAL_NCP_CONFIG")"
+echo "$CFG" > "$LOCAL_NCP_CONFIG"
 
 NEXTCLOUD_CONFIG='etc/ncp-config.d/nc-nextcloud.cfg'
 LOCAL_NEXTCLOUD_CONFIG='/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
-cfg="$(jq ".params[0].value = \"$nc_version\"" "$NEXTCLOUD_CONFIG")"
-echo "$cfg" > "$LOCAL_NEXTCLOUD_CONFIG"
+CFG="$(jq ".params[0].value = \"$NC_VERSION\"" "$NEXTCLOUD_CONFIG")"
+echo "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
 cp -rT etc/ncp-config.d/l10n "$CONFDIR"/l10n
@@ -172,9 +241,9 @@ chown -R www-data:     /var/www/nextcloud/apps/nextcloudpi
 
 # remove unwanted ncp-apps for containerized versions
 if is_docker || is_lxc; then
-  for opt in $EXCL_DOCKER; do
-    rm "$CONFDIR"/"$opt".cfg
-    find /usr/local/bin/ncp -name "$opt.sh" -exec rm '{}' \;
+  for OPT in $EXCL_DOCKER; do
+    rm "$CONFDIR"/"$OPT".cfg
+    find /usr/local/bin/ncp -name "${OPT}.sh" -exec rm '{}' \;
   done
 fi
 
@@ -200,24 +269,24 @@ source "$LIBRARY"
 
 # check dist-upgrade
 check_distro "$NCPCFG" && check_distro "$NCP_CONFIG" || {
-  php_ver_new="$(jq -r '.php_version'   "$NCP_CONFIG")"
-  release_new="$(jq -r '.release'       "$NCP_CONFIG")"
+  NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
+  NEW_RELEASE="$(jq -r '.release'         "$NCP_CONFIG")"
 
-  cfg="$(jq '.php_version   = "'$php_ver_new'"' "$NCPCFG")"
-  cfg="$(jq '.release       = "'$release_new'"' "$NCPCFG")"
-  echo "$cfg" > /usr/local/etc/ncp-recommended.cfg
+  CFG="$(jq '.php_version   = "'$NEW_PHP_VERSION'"' "$NCPCFG")"
+  CFG="$(jq '.release       = "'$NEW_RELEASE'"'     "$NCPCFG")"
+  echo "$CFG" > /usr/local/etc/ncp-recommended.cfg
 
   [[ -f /.dockerenv ]] && \
-    msg="Update to $release_new available. Get the latest container to upgrade" || \
-    msg="Update to $release_new available. Type 'sudo ncp-dist-upgrade' to upgrade"
-  echo "$msg"
-  notify_admin "New distribution available" "$msg"
-  wall "$msg"
+    MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
+    MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
+  echo "$MSG"
+  notify_admin "New distribution available" "$MSG"
+  wall "$MSG"
   cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
 #!/usr/bin/env bash
-new_cfg=/usr/local/etc/ncp-recommended.cfg
-[[ -f "\${new_cfg}" ]] || exit 0
-echo -e "${msg}"
+NEW_CFG=/usr/local/etc/ncp-recommended.cfg
+[[ -f "\$NEW_CFG" ]] || exit 0
+echo -e "$MSG"
 EOF
 chmod +x /etc/update-motd.d/30ncp-dist-upgrade
 }
