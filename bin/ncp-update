@@ -44,12 +44,8 @@ function log
 
 function remove_tmp_directory
 {
-  if ! rm --recursive --force "$TMPDIR"; then
-    log 2 "Failed to remove directory: $TMPDIR"
-    return 1
-  else
-    log 0 "Removed tmp directory: $TMPDIR"
-    return 0
+  if ! rm --recursive --force "$TMPDIR"; then log 2 "Failed to remove directory: $TMPDIR"; return 1
+  else log 0 "Removed tmp directory: $TMPDIR"; return 0
   fi
 }
 
@@ -58,20 +54,17 @@ function clean_ncp_update
   if ! cd /; then
     log 2 "Failed to change directory to: /"
     log -1 "Attempting to remove tmp directory nonetheless"
-    if ! remove_tmp_directory; then
-      exit 1
+    if ! remove_tmp_directory; then exit 1
     fi
   else
-    if ! remove_tmp_directory; then
-      exit 1
+    if ! remove_tmp_directory; then exit 1
     fi
   fi
 }
 
 [[ -z "$DBG" ]] || set -"$DBG"
 
-if [[ -f /.dockerenv ]] || [[ -f /.docker-image ]] || [[ "$DOCKERBUILD" == 1 ]]
-then
+if [[ -f /.dockerenv ]] || [[ -f /.docker-image ]] || [[ "$DOCKERBUILD" == 1 ]]; then
   log 1 "Docker images should be updated by replacing the container from the latest docker image.
 Refer to the documentation for instructions: https://docs.nextcloudpi.com
 If you are sure that you know what you are doing, you can still execute the update script by running it like this:
@@ -80,9 +73,7 @@ If you are sure that you know what you are doing, you can still execute the upda
 fi
 
 {
-  if [[ "$(id -u)" -ne 0 ]]; then
-    log 2 "Must be run as root or with sudo. Try 'sudo ${BASH_SOURCE[0]}'"
-    exit 1
+  if [[ "$(id -u)" -ne 0 ]]; then log 2 "Must be run as root or with sudo. Try 'sudo ${BASH_SOURCE[0]}'"; exit 1
   fi
 
   #OWNER="${OWNER:-nextcloud}"
@@ -96,22 +87,18 @@ fi
 
   log -1 "Downloading updates"
   git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR" || {
-    log 2 "No internet connectivity"
-    exit 1
+    log 2 "No internet connectivity"; exit 1
   }
 
   # shellcheck disable=SC2164
   [[ -f /.ncp-image ]] || {
     # Update locally during build
-    if ! cd "$TMPDIR"; then
-      log 2 "Failed to change directory to: $TMPDIR"
-      exit 1
+    if ! cd "$TMPDIR"; then log 2 "Failed to change directory to: $TMPDIR"; exit 1
     fi
 
     [[ -z "$2" ]] || {
       git fetch origin "$2" || {
-        log 2 "Could not fetch: $2"
-        exit 1
+        log 2 "Could not fetch: $2"; exit 1
       }
       git checkout FETCH_HEAD
     }
@@ -149,7 +136,6 @@ fi
     sed '/HEAD ->\|origin/s|\[.*\(tag: v[0-9]\+\.[0-9]\+\.[0-9]\+\).*\]|[\1]|' | \
     sed 's|* \[tag: |[|' > /usr/local/etc/ncp-changelog
 
-  log 0 "NextcloudPi updated to: $VER"
-  exit 0
+  log 0 "NextcloudPi updated to: $VER"; exit 0
 
 } # force to read the whole thing into memory, as its contents might change in update.sh

@@ -274,25 +274,18 @@ function hasText
 VER="$1"
 BIN="${0##*/}"
 
-if isFile '/usr/local/etc/library.sh'; then
-  # shellcheck disable=SC1090
-  source '/usr/local/etc/library.sh'
-elif isFile 'etc/library.sh'; then
-  # shellcheck disable=SC1090
-  source '/usr/local/etc/library.sh'
+# shellcheck disable=SC1090
+if isFile '/usr/local/etc/library.sh'; then source '/usr/local/etc/library.sh'
+elif isFile 'etc/library.sh'; then source '/usr/local/etc/library.sh'
 fi
 
 # pre-checks
 ####################
-if isZero "$VER"; then
-  log 2 "Usage: $BIN <version>"
-  exit 1
+if isZero "$VER"; then log 2 "Usage: $BIN <version>"; exit 1
 fi
 
-if isFile '/.docker-image'; then
-  BASEDIR='/data'
-else
-  BASEDIR='/var/www'
+if isFile '/.docker-image'; then BASEDIR='/data'
+else BASEDIR='/var/www'
 fi
 
 log -2 "BASEDIR: $BASEDIR"
@@ -311,23 +304,19 @@ ncc status &>/dev/null          || { [[ "$DBG" == x ]] && ncc status; echo "Next
 # check version
 ####################
 
-if isRoot; then
-  SUDO=(sudo -u www-data)
+if isRoot; then SUDO=(sudo -u www-data)
 fi
 
 CURRENT="$( "${SUDO[@]}" php /var/www/nextcloud/occ status | grep "version:" | awk '{ print $3 }' )"
-
 MAJOR_CUR="$( cut -d. -f1 <<<"$CURRENT" )"
 MAJOR_NEW="$( cut -d. -f1 <<<"$VER" )"
+
 if [[ "$((MAJOR_NEW - MAJOR_CUR))" -gt 1 ]]; then
-  log 2 "Upgrade cannot skip major versions. Please upgrade one major version at a time" >&2
-  exit 1
+  log 2 "Upgrade cannot skip major versions. Please upgrade one major version at a time" >&2; exit 1
 fi
 
-if [[ "$MAJOR_NEW" -ge 24 ]] && [[ "$(lsb_release -r)" =~ .*10 ]]
-then
-  log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 10 (Buster). Please run ncp-dist-upgrade."
-  exit 1
+if [[ "$MAJOR_NEW" -ge 24 ]] && [[ "$(lsb_release -r)" =~ .*10 ]]; then
+  log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 10 (Buster). Please run ncp-dist-upgrade."; exit 1
 fi
 
 grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT" || { echo "Malformed version $CURRENT"; exit 1; }
@@ -338,10 +327,8 @@ log -1 "Available Nextcloud version: $VER"
 is_more_recent_than "$VER" "$CURRENT" || { log -1 "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
 
 
-if ! is_more_recent_than '25.0.0' "$VER" && is_more_recent_than "8.1.0" "${PHPVER}.0" && is_docker
-then
-  echo 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'
-  exit 1
+if ! is_more_recent_than '25.0.0' "$VER" && is_more_recent_than "8.1.0" "${PHPVER}.0" && is_docker; then
+  echo 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'; exit 1
 fi
 
 # make sure that cron.php is not running and there are no pending jobs
@@ -352,15 +339,16 @@ mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 
 # cleanup
 ####################
-cleanup() {
-  local RET=$?
+function cleanup
+{
+  local RET="$?"
   set +eE
   echo "Clean up..."
   rm -rf "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
   trap "" EXIT
-  exit $RET
+  exit "$RET"
 }
-trap cleanup EXIT
+trap 'cleanup' EXIT SIGHUP SIGILL SIGABRT SIGINT
 
 # get new code
 ####################
@@ -378,7 +366,7 @@ LIMIT=0
 echo "Back up current instance..."
 set +eE
 ncp-backup "$BKPDIR" "$WITH_DATA" "$COMPRESSED" "$LIMIT" # && false # test point
-RET=$?
+RET="$?"
 sync
 set -eE
 
