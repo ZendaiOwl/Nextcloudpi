@@ -482,14 +482,8 @@ export PATH
 # Check for existing MariaDB/MySQL install
 if hasCMD mysqld; then
   log 1 "Existing MySQL configuration will be changed"
-  if isSet DBNAME; then
-    if mysql -e 'use '"$DBNAME"'' &>/dev/null; then
-      { log 2 "Database exists: $DBNAME"; exit 1; }
-    fi
-  else
-    if mysql -e 'use nextcloud' &>/dev/null; then
-      { log 2 "Database exists: nextcloud"; exit 1; }
-    fi
+  if isSet DBNAME; then if mysql -e 'use '"$DBNAME"'' &>/dev/null; then { log 2 "Database exists: $DBNAME"; exit 1; }; fi
+  else if mysql -e 'use nextcloud' &>/dev/null; then log 2 "Database exists: nextcloud"; exit 1; fi
   fi
 fi
 
@@ -504,9 +498,8 @@ installPKG git \
            apt-transport-https
 
 # Get installation/build code from repository
-if isZero "$CODE_DIR" || ! isSet CODE_DIR; then
-  log -1 "Fetching build code"
-  CODE_DIR="$TMPDIR"/"$REPO"
+if isZero "$CODE_DIR" || ! isSet CODE_DIR; then CODE_DIR="$TMPDIR"/"$REPO"
+  log -1 "Fetching build code to: $CODE_DIR"
   git clone -b "$BRANCH" "$URL" "$CODE_DIR"
   add_install_variable CODE_DIR
 fi
@@ -514,18 +507,16 @@ fi
 # Change directory to the code directory in the temporary directory
 if isSet CODE_DIR; then
   if isDirectory "$CODE_DIR"; then
-    if ! cd "$CODE_DIR"; then; { log 2 "Failed changing directory to: $CODE_DIR"; exit 1; } fi
+    if ! cd "$CODE_DIR"; then log 2 "Failed changing directory to: $CODE_DIR"; exit 1; fi
   fi
 fi
 
 # Install NextcloudPi
 log -1 "Installing NextcloudPi"
 
-if isFile "$LIBRARY"; then
-  # shellcheck disable=SC1091
-  source "$LIBRARY"
-else
-  { log 2 "File not found: $LIBRARY"; exit 1; }
+# shellcheck disable=SC1091
+if isFile "$LIBRARY"; then source "$LIBRARY"
+else log 2 "File not found: $LIBRARY"; exit 1
 fi
 
 # Check so NextcloudPi configuration file exists
@@ -535,15 +526,11 @@ if isFile "$NCPCFG"; then
     if ! cat '/etc/issue'; then log 2 "Failed to read file: /etc/issue"; fi
     exit 1
   fi
-else
-  log 2 "File not found: $NCPCFG"
-  exit 1
+else log 2 "File not found: $NCPCFG"; exit 1
 fi
 
 # Mark the build as an image build for other scripts in the installation/build flow
-if ! touch '/.ncp-image'; then
-  { log 2 "Failed to create file: /.ncp-image"; exit 1; }
-fi
+if ! touch '/.ncp-image'; then log 2 "Failed to create file: /.ncp-image"; exit 1; fi
 
 # Create the local NextcloudPi configuration directory
 if ! mkdir --parents '/usr/local/etc/ncp-config.d'; then
