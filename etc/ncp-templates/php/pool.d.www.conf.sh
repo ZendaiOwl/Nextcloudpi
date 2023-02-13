@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 set -e
 source /usr/local/etc/library.sh
@@ -23,7 +23,7 @@ listen = /run/php/php${PHPVER}-fpm.sock
 listen.owner = www-data
 listen.group = www-data
 pm = static
-pm.max_children = ${PHPTHREADS}
+pm.max_children = $PHPTHREADS
 pm.start_servers = 4
 pm.min_spare_servers = 4
 pm.max_spare_servers = 8
