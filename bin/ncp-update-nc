@@ -17,6 +17,40 @@
 # - failure at each test point
 # -> must pass basic NC in tests.py ( meaning it's not in a broken state )
 
+# A log that uses log levels for logging different outputs
+# Log levels
+# -2: Debug
+# -1: Info
+#  0: Success
+#  1: Warning
+#  2: Error
+function log
+{
+  if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
+      case "$LOGLEVEL" in
+        -2) local -r CYAN='\e[1;36m'; printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
+           ;;
+        -1) local -r BLUE='\e[1;34m'; printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+           ;;
+         0) local -r GREEN='\e[1;32m'; printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+           ;;
+         1) local -r YELLOW='\e[1;33m'; printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+           ;;
+         2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
+           ;;
+      esac
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
+  fi
+}
+
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print
+{
+  printf '%s\n' "$@"
+}
+
 # Check if user ID executing script is 0 or not
 # Return codes
 # 0: Is root
@@ -36,8 +70,7 @@ function isRoot
 function isUser
 {
   [[ "$#" -ne 1 ]] && return 2
-  if id -u "$1" &>/dev/null; then return 0
-  else return 1; fi
+  if id -u "$1" &>/dev/null; then return 0; else return 1; fi
 }
 
 # Checks if a given path to a file exists
@@ -287,10 +320,10 @@ log -2 "BASEDIR: $BASEDIR"
 if ! cd "$BASEDIR"; then log 2 "Failed to change directory to: $BASEDIR"; exit 1; fi
 
 DATADIR="$( get_nc_config_value datadirectory )"
-ncc status &>/dev/null          || { [[ "$DBG" == x ]] && ncc status; echo "Nextcloud is currently down"; exit 1; }
-[[ -d /var/www/nextcloud-old ]] && { echo "Nextcloud backup directory found. Interrupted or already running installation?"; exit 1; }
-[[ -d /var/www/nextcloud     ]] || { echo "Nextcloud directory not found"      ; exit 1; }
-[[ -d "$DATADIR"             ]] || { echo "Nextcloud data directory not found" ; exit 1; }
+ncc status &>/dev/null          || { [[ "$DBG" == "x" ]] && ncc status; log 2 "Nextcloud is currently down"; exit 1; }
+[[ -d /var/www/nextcloud-old ]] && { log 2 "Nextcloud backup directory found. Interrupted or already running installation?"; exit 1; }
+[[ -d /var/www/nextcloud     ]] || { log 2 "Nextcloud directory not found"; exit 1; }
+[[ -d "$DATADIR"             ]] || { log 2 "Nextcloud data directory not found"; exit 1; }
 
 # check version
 ####################
@@ -317,7 +350,7 @@ is_more_recent_than "$VER" "$CURRENT" || { log -1 "Nothing to update"; exit 1; }
 
 
 if ! is_more_recent_than '25.0.0' "$VER" && is_more_recent_than "8.1.0" "${PHPVER}.0" && is_docker; then
-  echo 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'; exit 1
+  log 2 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'; exit 1
 fi
 
 # make sure that cron.php is not running and there are no pending jobs
@@ -343,8 +376,8 @@ trap 'cleanup' EXIT SIGHUP SIGILL SIGABRT SIGINT
 # get new code
 ####################
 URL="https://download.nextcloud.com/server/releases/nextcloud-$VER.tar.bz2"
-echo "Download Nextcloud $VER..."
-wget -q "$URL" -O nextcloud.tar.bz2 || { echo "Error downloading"; exit 1; }
+log -1 "Download Nextcloud: $VER..."
+wget -q "$URL" -O nextcloud.tar.bz2 || { log -1 "Error downloading"; exit 1; }
 
 # backup
 ####################
@@ -429,29 +462,29 @@ trap rollback INT TERM HUP ERR
 
 # fix permissions
 ####################
-echo "Fix permissions..."
+log -1 "Fix permissions..."
 chown -R www-data:www-data nextcloud
 find nextcloud/ -type d -exec chmod 750 {} \;
 find nextcloud/ -type f -exec chmod 640 {} \;
 
 # upgrade
 ####################
-echo "Upgrade..."
-ncc='sudo -u www-data php nextcloud/occ'
-$ncc upgrade      # && false # test point
-$ncc | grep -q db:add-missing-indices && $ncc db:add-missing-indices -n
-$ncc | grep -q db:add-missing-columns && $ncc db:add-missing-columns -n
-$ncc | grep -q db:add-missing-primary-keys && $ncc db:add-missing-primary-keys -n
-$ncc | grep -q db:convert-filecache-bigint && $ncc db:convert-filecache-bigint -n
+log -1 "Upgrade..."
+ncc=(sudo -u www-data php nextcloud/occ)
+"${ncc[@]}" upgrade      # && false # test point
+"${ncc[@]}" | grep -q db:add-missing-indices && "${ncc[@]}" db:add-missing-indices -n
+"${ncc[@]}" | grep -q db:add-missing-columns && "${ncc[@]}" db:add-missing-columns -n
+"${ncc[@]}" | grep -q db:add-missing-primary-keys && "${ncc[@]}" db:add-missing-primary-keys -n
+"${ncc[@]}" | grep -q db:convert-filecache-bigint && "${ncc[@]}" db:convert-filecache-bigint -n
 
 # use the correct version for custom apps
 NCVER="$(ncc status | grep "version:" | awk '{ print $3 }')"
-if is_more_recent_than "21.0.0" "${NCVER}"; then NCPREV=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20
+if is_more_recent_than "21.0.0" "${NCVER}"; then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
 else
   # Install notify_push if not installed
   if ! is_app_enabled notify_push; then
-    ncc app:install notify_push
-    ncc app:enable  notify_push
+    "${ncc[@]}" app:install notify_push
+    "${ncc[@]}" app:enable  notify_push
     install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf
     a2enmod proxy proxy_http proxy_wstunnel
     apachectl -k graceful
@@ -460,33 +493,33 @@ else
     install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
     start_notify_push
     nc_domain="$(ncc config:system:get overwrite.cli.url)"
-    set-nc-domain "${nc_domain}" || {
-      echo "notify_push setup failed. You are probably behind a proxy"
-      echo "Run 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
-      echo "Check https://help.nextcloud.com/tags/ncp for support"
+    set-nc-domain "$nc_domain" || {
+      log 2 "notify_push setup failed. You are probably behind a proxy"
+      log -1 "Run 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
+      log -1 "Check https://help.nextcloud.com/tags/ncp for support"
     }
 
   fi
   NCPREV=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21
 fi
 rm -rf /var/www/nextcloud/apps/previewgenerator
-ln -snf "${NCPREV}" /var/www/nextcloud/apps/previewgenerator
+ln -snf "$NCPREV" /var/www/nextcloud/apps/previewgenerator
 
 if ! is_docker && ! is_more_recent_than "24.0.0" "${NCVER}" && is_more_recent_than "8.1.0" "${PHPVER}.0"; then
   (
-    echo "Upgrading PHP..."
+    log -1 "Upgrading PHP"
     export DEBIAN_FRONTEND=noninteractive
     PHPVER_OLD="$PHPVER"
     PHPVER_NEW="8.1"
     PHP_PACKAGES_OLD=(php-{common,igbinary,redis,json} "php${PHPVER_OLD}" \
       "php${PHPVER_OLD}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,json,common,readline,mysql,bcmath,gmp})
-    PHP_PACKAGES_NEW=("php${PHPVER_NEW}" \
-      "php${PHPVER_NEW}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql,bcmath,gmp,redis,common})
+    PHP_PACKAGES_NEW=(php"$PHPVER_NEW" \
+      php"$PHPVER_NEW"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql,bcmath,gmp,redis,common})
     
     function php_restore
     {
       trap "" INT TERM HUP ERR
-      echo "Something went wrong while upgrading PHP. Rolling back to version ${PHPVER_OLD}..."
+      log 2 "Something went wrong while upgrading PHP. Rolling back to PHP: $PHPVER_OLD"
       set +e
       service "php${PHPVER_NEW}-fpm" stop
       a2disconf php"$PHPVER_NEW"-fpm
@@ -497,10 +530,10 @@ if ! is_docker && ! is_more_recent_than "24.0.0" "${NCVER}" && is_more_recent_th
       set_ncpcfg "php_version" "$PHPVER_OLD"
       install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
       run_app nc-limits
-      a2enconf "php${PHPVER_OLD}-fpm"
-      service "php${PHPVER_OLD}-fpm" start
+      a2enconf php"$PHPVER_OLD"-fpm
+      service php"$PHPVER_OLD"-fpm start
       service apache2 restart
-      echo "PHP upgrade has been successfully reverted"
+      log 0 "PHP upgrade has successfully been reverted"
       set -e
     }
     
@@ -508,34 +541,34 @@ if ! is_docker && ! is_more_recent_than "24.0.0" "${NCVER}" && is_more_recent_th
     
     # Setup apt repository for php 8
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-    echo "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
+    Print "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
     apt-get update
     
     clear_opcache
     
-    echo "Stopping apache and php-fpm..."
-    service "php${PHPVER_OLD}-fpm" stop
+    log -1 "Stopping apache and php-fpm..."
+    service php"$PHPVER_OLD"-fpm stop
     service apache2 stop
     
-    echo "Remove old PHP ($PHPVER_OLD)..."
-    a2disconf "php${PHPVER_OLD}-fpm"
+    log -1 "Remove old PHP ($PHPVER_OLD)..."
+    a2disconf php"$PHPVER_OLD"-fpm
     
     apt-get remove --purge -y "${PHP_PACKAGES_OLD[@]}"
     
-    echo "Install PHP: $PHPVER_NEW"
+    log -1 "Installing PHP: $PHPVER_NEW"
     install_with_shadow_workaround --no-install-recommends systemd
     apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_NEW[@]}"
     
-    set_ncpcfg "php_version" "${PHPVER_NEW}"
+    set_ncpcfg "php_version" "$PHPVER_NEW"
     install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
-    ( set -e; export PHPVER="${PHPVER_NEW}"; run_app nc-limits )
+    ( set -e; export PHPVER="$PHPVER_NEW"; run_app nc-limits )
     
-    a2enconf "php${PHPVER_NEW}-fpm"
+    a2enconf php"$PHPVER_NEW"-fpm
     
     echo "Starting apache and php-fpm..."
-    service "php${PHPVER_NEW}-fpm" start
+    service php"$PHPVER_NEW"-fpm start
     service apache2 start
-    ncc status
+    "${ncc[@]}" status
   )
   # Reload library.sh to reset PHPVER
   source /usr/local/etc/library.sh
@@ -544,7 +577,7 @@ fi
 # refresh completions
 ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
 
-echo "Update completed successfully."
+log 0 "Update completed successfully."
 # done
 
 ####################
@@ -552,6 +585,6 @@ mkdir -p  "$DATADIR"/ncp-update-backups
 mv "$BKP" "$DATADIR"/ncp-update-backups
 chown -R www-data:www-data "$DATADIR"/ncp-update-backups
 BKP="$DATADIR"/ncp-update-backups/"$( basename "$BKP" )"
-echo "Backup stored at $BKP"
+log -1 "Backup stored at: $BKP"
 
 bash -c "sleep 5; source /usr/local/etc/library.sh; clear_opcache;" &>/dev/null &

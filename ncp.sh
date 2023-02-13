@@ -74,6 +74,12 @@ function log
   fi
 }
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print
+{
+  printf '%s\n' "$@"
+}
+
 # Checks if a command exists on the system
 # Return status codes
 # 0: Command exists on the system
@@ -264,7 +270,7 @@ EOF
   if ! isUser "$WEBADMIN"; then
     useradd --home-dir /nonexistent "$WEBADMIN"
   fi
-  echo -e "$WEBPASSWD\n$WEBPASSWD" | passwd "$WEBADMIN"
+  Print "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
   chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
   chsh -s "$NOLOGIN_SHELL" root
 
@@ -307,7 +313,8 @@ grep -q '[\\&#;`|*?~<>^()[{}$&]' <<< "$*" && exit 1
 tar $pigz -tf "$file" data &>/dev/null
 EOF
   chmod 700 "$BACKUP_LAUNCHER"
-  echo "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" >> /etc/sudoers
+  #Print "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" >> /etc/sudoers
+  Print "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > /etc/sudoers.d/www-data
 
   # NCP AUTO TRUSTED DOMAIN
   mkdir --parents /usr/lib/systemd/system
@@ -381,15 +388,15 @@ EOF
     ## HOSTNAME AND mDNS
     if ! isFile '/.docker-image'; then
       installPKG avahi-daemon
-      sed -i '/^127.0.1.1/d'           /etc/hosts
+      sed -i '/^127.0.1.1/d'                        /etc/hosts
       sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" /etc/hosts
     fi
-    echo nextcloudpi > /etc/hostname
+    Print 'nextcloudpi' > /etc/hostname
 
     ## tag image
     is_docker && local DOCKER_TAG="_docker"
     is_lxc && local DOCKER_TAG="_lxc"
-    echo "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
+    Print "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
 
     ## SSH hardening
     if [[ -f /etc/ssh/sshd_config ]]; then

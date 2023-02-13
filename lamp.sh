@@ -47,6 +47,12 @@ function log
   fi
 }
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print
+{
+  printf '%s\n' "$@"
+}
+
 # Check if user ID executing script is 0 or not
 # Return codes
 # 0: Is root
@@ -250,8 +256,8 @@ function install
 
     mkdir --parents "$PHPDAEMON"
 
-    printf '%s\n' "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
-    #printf '%s\n' "[client]" "password=$DBPASSWD" > /root/.my.cnf
+    Print "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
+    #Print "[client]" "password=$DBPASSWD" > /root/.my.cnf
     chmod 600 "$MYCNF_FILE"
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
@@ -284,7 +290,7 @@ function install
     a2enmod mime
     a2enmod ssl
 
-    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    Print "ServerName localhost" >> /etc/apache2/apache2.conf
 
 
     ################################
