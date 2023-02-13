@@ -372,10 +372,10 @@ function hasCMD
 function hasCMD_NCC
 {
   local -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
-  if notEqual "$#" 0; then return 2; fi
-  else
-    if hasCMD ncc; then return 0; fi
-    elif isFile "$NCC_SCRIPTFILE"; then return 1; fi
+  if notEqual "$#" 0; then return 2
+  else if hasCMD ncc; then return 0
+       elif isFile "$NCC_SCRIPTFILE"; then return 1
+       fi
   fi
 }
 
@@ -387,17 +387,12 @@ function hasCMD_NCC
 # 3: Missing package argument to check
 function hasPKG
 {
-  if [[ "$#" -eq 1 ]]; then
-    local -r CHECK="$1"
-    if dpkg-query --status "$CHECK" &>/dev/null; then
-      return 0
-    elif apt-cache show "$CHECK" &>/dev/null; then
-      return 1
-    else
-      return 2
+  if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
+    if dpkg-query --status "$CHECK" &>/dev/null; then return 0
+    elif apt-cache show "$CHECK" &>/dev/null; then return 1
+    else return 2
     fi
-  else
-    return 3
+  else return 3
   fi
 }
 
