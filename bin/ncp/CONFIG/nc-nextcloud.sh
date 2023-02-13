@@ -31,7 +31,8 @@ function log
          2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
   fi
 }
 
@@ -46,8 +47,7 @@ function Print
 # 0: Is root
 # 1: Not root
 # 2: Invalid number of arguments
-function isRoot
-{
+function isRoot {
   [[ "$#" -ne 0 ]] && return 2
   [[ "$EUID" -eq 0 ]]
 }
@@ -60,7 +60,8 @@ function isRoot
 function hasCMD
 {
   if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
-    if command -v "$CHECK" &>/dev/null; then return 0; else return 1; fi; else return 2; fi
+    if command -v "$CHECK" &>/dev/null; then return 0; else return 1; fi
+  else return 2; fi
 }
 
 # Installs package(s) using the package manager and pre-configured options
@@ -69,23 +70,26 @@ function hasCMD
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-# 4: Not running as root/sudo
 function installPKG
 {
   if [[ "$#" -eq 0 ]]; then log 2 "Requires: [PKG(s) to install]"; return 3
-  elif [[ "$EUID" -ne 0 ]]; then log 2 "Requires root privileges"; return 4 
   else local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-       local -r ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+       local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+                SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+                ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
                 ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-       local PKG=()
-       IFS=' ' read -ra PKG <<<"$@"
-       log -1 "Updating apt lists"
-       if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-       else log 2 "Couldn't update apt lists"; return 1
-       fi; log -1 "Installing ${PKG[*]}"
-       if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-         log 0 "Installation completed"; return 0
-       else log 2 "Something went wrong during installation"; return 1; fi
+       local PKG=(); IFS=' ' read -ra PKG <<<"$@"
+       if [[ ! "$EUID" -eq 0 ]]; then log -1 "Updating apt lists"
+         if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+         else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
+         if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+         else log 2 "Something went wrong during installation"; return 2; fi
+       else log -1 "Updating apt lists"
+            if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+            else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
+            if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+            else log 2 "Something went wrong during installation"; return 1; fi
+       fi
   fi
 }
 
@@ -149,8 +153,8 @@ function install
   sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'    "$REDIS_CONF"
   sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'   "$REDIS_CONF"
   sed -i "s|^port.*|port $PORT_NR|"                                 "$REDIS_CONF"
-  Print "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
-  Print 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
+  echo "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
+  echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
 
   if is_lxc; then
     # Otherwise it fails to start in Buster LXC container
@@ -183,7 +187,8 @@ ExecStart=/bin/bash /usr/local/bin/ncp-provisioning.sh
 [Install]
 WantedBy=multi-user.target
 EOF
-  [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nc-provisioning; return 0
+  [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nc-provisioning
+  return 0
 }
 
 function configure
@@ -203,14 +208,21 @@ function configure
            NOTIFYPUSH_SERVICE='/etc/systemd/system/notify_push.service' \
            URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${NCLATESTVER}.tar.bz2"
   ## DOWNLOAD AND (OVER)WRITE NEXTCLOUD
-  if ! cd "$HTPATH"; then log 2 "Unable to change directory to: $HTPATH"; exit 1; fi
+  if ! cd "$HTPATH"; then
+    log 2 "Unable to change directory to: $HTPATH"
+    exit 1
+  fi
 
   log -1 "Downloading Nextcloud: $NCLATESTVER"
-  wget -q "$URL" -O nextcloud.tar.bz2 || { log 2 "Couldn't download: $URL"; return 1 }
+  wget -q "$URL" -O nextcloud.tar.bz2 || {
+    log 2 "Couldn't download: $URL"
+    return 1
+  }
   rm --recursive --force nextcloud
 
   log -1 "Installing  Nextcloud: $NCLATESTVER"
-  tar -xf nextcloud.tar.bz2; rm nextcloud.tar.bz2
+  tar -xf nextcloud.tar.bz2
+  rm nextcloud.tar.bz2
 
   ## CONFIGURE FILE PERMISSIONS
 
@@ -234,11 +246,11 @@ function configure
   chmod +x "$OCPATH"/occ
 
   log -1 "chmod ($HTUSER) & chown (0644): .htaccess"
-  if [[ -f "$OCPATH"/.htaccess ]]; then
+  if [ -f "$OCPATH"/.htaccess ]; then
     chmod 0644 "$OCPATH"/.htaccess
     chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
   fi
-  if [[ -f "$OCPATH"/data/.htaccess ]]; then
+  if [ -f "$OCPATH"/data/.htaccess ]; then
     chmod 0644 "$OCPATH"/data/.htaccess
     chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
   fi
@@ -249,20 +261,23 @@ function configure
     [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && { source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir; } || true
   )"
   if [[ -z "${OPCACHEDIR}" ]]; then
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" "--defaults"
-  else mkdir --parents "$OPCACHEDIR"
-       chown -R "$HTUSER":"$HTUSER" "$OPCACHEDIR"
-       install_template "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
+    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+  else
+    mkdir --parents "$OPCACHEDIR"
+    chown -R "$HTUSER":"$HTUSER" "$OPCACHEDIR"
+    install_template "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
   fi
   
   ## RE-CREATE DATABASE TABLE
   # Launch MariaDB if not already running (for docker build)
-  if [[ ! -f "$MYSQL_PID" ]]; then log -1 "Starting: MariaDB"
+  if [[ ! -f "$MYSQL_PID" ]]; then
+    log -1 "Starting: MariaDB"
     mysqld &
     local DB_PID="$!"
   fi
 
-  while :; do [[ -S "$MYSQL_SOCKET" ]] && break
+  while :; do
+    [[ -S "$MYSQL_SOCKET" ]] && break
     sleep 1
   done
 
@@ -282,11 +297,12 @@ GRANT ALL PRIVILEGES ON nextcloud.* TO $DBADMIN@localhost;
 EXIT
 EOF
 
-  ## SET APACHE VHOST
+## SET APACHE VHOST
   log -1 "Setting up: Apache2 VirtualHost"
   
   install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" --allow-fallback || {
-      log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"; exit 1
+      log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"
+      exit 1
   }
   a2ensite nextcloud
 
@@ -348,10 +364,14 @@ EOF
   crontab -u "$HTUSER" /tmp/crontab_http
   rm /tmp/crontab_http
 
-  # Detach MySQL during the build
-  if [[ "$DB_PID" != "" ]]; then log -1 "Shutting down MariaDB [$DB_PID]"
-    mysqladmin -u root shutdown; wait "$DB_PID"
-  fi; log 0 "Completed: ${BASH_SOURCE[0]##*/}"; log -1 "Don't forget to run nc-init"
+  # dettach mysql during the build
+  if [[ "$DB_PID" != "" ]]; then
+    log -1 "Shutting down MariaDB [$DB_PID]"
+    mysqladmin -u root shutdown
+    wait "$DB_PID"
+  fi
+  log 0 "Completed: ${BASH_SOURCE[0]##*/}"
+  log -1 "Don't forget to run nc-init"
 }
 
 # License
