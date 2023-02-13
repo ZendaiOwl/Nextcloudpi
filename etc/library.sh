@@ -1163,27 +1163,19 @@ if isSet LIBRARY; then log -2 "LIBRARY: $LIBRARY"; fi
 
 CFGDIR="${CFGDIR:-etc/ncp-config.d}"
 
-if isDirectory "$CFGDIR"; then
-  CFGDIR="$CFGDIR"
-elif isDirectory '/usr/local/etc/ncp-config.d'; then
-  CFGDIR='/usr/local/etc/ncp-config.d'
-else
-  log 2 "Directory not found: ncp-config.d"
-  return 1
-fi
+if isDirectory "$CFGDIR"; then CFGDIR="$CFGDIR"
+elif isDirectory '/usr/local/etc/ncp-config.d'; then CFGDIR='/usr/local/etc/ncp-config.d'
+else { log 2 "Directory not found: ncp-config.d"; return 1; }; fi
 
 log -2 "CFGDIR: $CFGDIR"; export CFGDIR
 
 BINDIR="${BINDIR:-/usr/local/bin/ncp}"
-
 log -2 "BINDIR: $BINDIR"; export BINDIR
 
 NCDIR="${NCDIR:-/var/www/nextcloud}"
-
 log -2 "NCDIR: $NCDIR"; export NCDIR
 
 ncc="${ncc:-/usr/local/bin/ncc}"
-
 log -2 "ncc: $ncc"; export ncc
 
 # if isFile "$ncc"; then
@@ -1198,8 +1190,7 @@ elif isFile 'ncp.cfg'; then                NCPCFG='ncp.cfg'
 else { log 2 "File not found: ncp.cfg"; return 1; }
 fi
 
-log -2 "NCPCFG: $NCPCFG"
-export NCPCFG
+log -2 "NCPCFG: $NCPCFG"; export NCPCFG
 
 if ! hasCMD dpkg; then { log 2 "Missing command: dpkg"; return 1; }
 else ARCH="$(dpkg --print-architecture)"; fi
@@ -1241,18 +1232,13 @@ fi
 
 # Prevent systemd pager from blocking script execution
 export SYSTEMD_PAGER=
-log -2 "ARCH: $ARCH"
-export ARCH
-log -2 "INIT_SYSTEM: $INIT_SYSTEM"
-export INIT_SYSTEM
-log -2 "NCVER: $NCVER"
-export NCVER
-log -2 "NCLATESTVER: $NCLATESTVER"
-export NCLATESTVER
-log -2 "PHPVER: $PHPVER"
-export PHPVER
-log -2 "RELEASE: $RELEASE"
-export RELEASE
+log -2 "ARCH: $ARCH";               export ARCH
+log -2 "INIT_SYSTEM: $INIT_SYSTEM"; export INIT_SYSTEM
+log -2 "NCVER: $NCVER";             export NCVER
+log -2 "NCLATESTVER: $NCLATESTVER"; export NCLATESTVER
+log -2 "PHPVER: $PHPVER";           export PHPVER
+log -2 "RELEASE: $RELEASE";         export RELEASE
+
 
 
 # License
