@@ -192,7 +192,7 @@ rm --recursive --force /var/www/ncp-app
 cp --recursive ncp-app /var/www/
 
 # install ncp-previewgenerator
-rm --recursive --froce     /var/www/ncp-previewgenerator
+rm --recursive --force     /var/www/ncp-previewgenerator
 cp -r ncp-previewgenerator /var/www/
 chown -R www-data:         /var/www/ncp-previewgenerator
 
