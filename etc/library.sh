@@ -50,6 +50,12 @@ function log
   fi
 }
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print
+{
+  printf '%s\n' "$@"
+}
+
 # Check if user ID executing script is 0 or not
 # Return codes
 # 0: Is root

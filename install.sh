@@ -308,7 +308,8 @@ function hasText
 # 0: Command exists on the system
 # 1: Command is unavailable on the system
 # 2: Missing command argument to check
-function hasCMD {
+function hasCMD
+{
   if [[ "$#" -eq 1 ]]; then
     local -r CHECK="$1"
     if command -v "$CHECK" &>/dev/null; then
@@ -360,12 +361,12 @@ function installPKG
   fi
 }
 
-function add_install_variables
+function add_install_variable
 {
   declare -x -a INSTALL_VARIABLES
   INSTALL_VARIABLES+=("$@")
   if ! hasText 'INSTALL_VARIABLES' "${INSTALL_VARIABLES[@]}"; then
-    add_install_variables INSTALL_VARIABLES
+    add_install_variable INSTALL_VARIABLES
   fi
 }
 
@@ -413,10 +414,9 @@ function clean_install_script
 
 
 ########################
-##### Installation #####
+###### Variables #######
 ########################
 
-# (${BASH_SOURCE[0]##*/})
 
 if ! isRoot; then
   log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"
@@ -429,31 +429,57 @@ else
   set -e
 fi
 
+# Repository owner
 #OWNER="${OWNER:-nextcloud}"
-#REPO="${REPO:-nextcloudpi}"
-#BRANCH="${BRANCH:-master}"
 OWNER="${OWNER:-ZendaiOwl}"
+
+# Repository name
+#REPO="${REPO:-nextcloudpi}"
 REPO="${REPO:-nextcloudpi}"
+
+# Repository branch
+#BRANCH="${BRANCH:-master}"
 BRANCH="${BRANCH:-Refactoring}"
+
+# URL to the code repository
 URL="https://github.com/${OWNER}/${REPO}"
+
+# Library files with functions()
 LIBRARY="${LIBRARY:-etc/library.sh}"
+
+# Config file for nextcloudpi with version numbers
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
+
+# NextcloudPi template directory
 NCP_TEMPLATES_DIR="${NCPTEMPLATES:-etc/ncp-templates}"
+
+# Database name for Nextcloud
 DBNAME='nextcloud'
 
+# Temporary directory for storing the repository code during build
 TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "Failed to create temp directory"; exit 1; }))"
 
-add_install_variables OWNER REPO BRANCH URL LIBRARY NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
+# Add variables to be unset during cleanup to free up memory
+# allocation and not leave dangling variables in the system environment
+add_install_variable OWNER REPO BRANCH URL LIBRARY NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
 
+# Trap cleanup function() for install.sh
 trap 'clean_install_script' EXIT SIGHUP SIGILL SIGABRT SIGINT
 
+
+########################
+##### Installation #####
+########################
+
+
+# Add to PATH if needed
 if ! hasText '/usr/local/sbin:/usr/sbin:/sbin:' "$PATH"; then
   PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
 fi
 
 export PATH
 
-# Check installed software
+# Check is MariaDB/MySQL is installed
 if hasCMD mysqld; then
   log 1 "Existing MySQL configuration will be changed"
   if isSet DBNAME; then
@@ -469,7 +495,7 @@ if hasCMD mysqld; then
   fi
 fi
 
-# Get dependencies
+# Install packages
 installPKG git \
            ca-certificates \
            sudo \
@@ -479,14 +505,15 @@ installPKG git \
            apt-utils \
            apt-transport-https
 
-# get install code
+# Get installation/build code from repository
 if isZero "$CODE_DIR" || ! isSet CODE_DIR; then
   log -1 "Fetching build code"
   CODE_DIR="$TMPDIR"/"$REPO"
   git clone -b "$BRANCH" "$URL" "$CODE_DIR"
-  add_install_variables CODE_DIR
+  add_install_variable CODE_DIR
 fi
 
+# Change directory to the code directory in the temporary directory
 if isSet CODE_DIR; then
   if isDirectory "$CODE_DIR"; then
     if ! cd "$CODE_DIR"; then
@@ -496,7 +523,7 @@ if isSet CODE_DIR; then
   fi 
 fi
 
-# install NCP
+# Install NextcloudPi
 log -1 "Installing NextcloudPi"
 
 if isFile "$LIBRARY"; then
@@ -507,7 +534,9 @@ else
   exit 1
 fi
 
+# Check so NextcloudPi configuration file exists
 if isFile "$NCPCFG"; then
+  # Check so the distribution is supported by the script
   if ! check_distro "$NCPCFG"; then
     log 2 "Distro not supported"
     if ! cat '/etc/issue'; then
@@ -521,17 +550,20 @@ else
   exit 1
 fi
 
-# indicate that this will be an image build
+# Mark the build as an image build for other scripts in the installation/build flow
 if ! touch '/.ncp-image'; then
   log 2 "Failed creating file: /.ncp-image"
   exit 1
 fi
 
+# Create the local NextcloudPi configuration directory
 if ! mkdir --parents '/usr/local/etc/ncp-config.d'; then
   log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"
   exit 1
 fi
 
+# Check so the local & build configuration directories exists and
+# the nextcloud configuration file as well then copy it.
 if isDirectory 'etc/ncp-config.d'; then
   if isDirectory '/usr/local/etc/ncp-config.d'; then
     if isFile 'etc/ncp-config.d/nc-nextcloud.cfg'; then
@@ -589,44 +621,107 @@ fi
 # cp etc/ncp.cfg /usr/local/etc/
 # cp -r etc/ncp-templates /usr/local/etc/
 
-install_app lamp.sh
-
-install_app bin/ncp/CONFIG/nc-nextcloud.sh
-
-run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh
-
-rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg    # armbian overlay is ro
-
-systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
-
-install_app ncp.sh
-
-run_app_unsafe bin/ncp/CONFIG/nc-init.sh
-
-log -1 "Moving data directory to a more sensible location"
-df -h
-mkdir --parents /opt/ncdata
-
-[[ -f "/usr/local/etc/ncp-config.d/nc-datadir.cfg" ]] || {
-  should_rm_datadir_cfg=true
-  cp etc/ncp-config.d/nc-datadir.cfg /usr/local/etc/ncp-config.d/nc-datadir.cfg
-}
-
-DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe bin/ncp/CONFIG/nc-datadir.sh
-
-[[ -z "$should_rm_datadir_cfg" ]] || rm /usr/local/etc/ncp-config.d/nc-datadir.cfg
-
-rm /.ncp-image
-
-# skip on Armbian / Vagrant / LXD ...
-[[ "$CODE_DIR" != "" ]] || bash /usr/local/bin/ncp-provisioning.sh
-
-if ! cd -; then
-  log 2 "Unable to change directory to: -"
+if isFile 'lamp.sh'; then
+  install_app lamp.sh
+else
+  log 2 "File not found: lamp.sh"
   exit 1
 fi
 
-rm --recursive --force "$TMPDIR"
+if isFile 'bin/ncp/CONFIG/nc-nextcloud.sh'; then
+  install_app bin/ncp/CONFIG/nc-nextcloud.sh
+else
+  log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"
+  exit 1
+fi
+
+if isFile 'bin/ncp/CONFIG/nc-nextcloud.sh'; then
+  run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh
+else
+  log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"
+  exit 1
+fi
+
+if isFile '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'; then
+  rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg    # armbian overlay is ro
+else
+  log 2 "File not found: /usr/local/etc/ncp-config.d/nc-nextcloud.cfg"
+  exit 1
+fi
+
+systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
+
+if isFile 'ncp.sh'; then
+  install_app ncp.sh
+else
+  log 2 "File not found: ncp.sh"
+  exit 1
+fi
+
+if isFile 'bin/ncp/CONFIG/nc-init.sh'; then
+  run_app_unsafe bin/ncp/CONFIG/nc-init.sh
+else
+  log 2 "File not found: bin/ncp/CONFIG/nc-init.sh"
+  exit 1
+fi
+
+log -1 "Moving data directory to: /opt/ncdata"
+df -h
+mkdir --parents /opt/ncdata
+
+if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg" ]]; then
+  should_rm_datadir_cfg=true
+  if isFile 'etc/ncp-config.d/nc-datadir.cfg'; then
+    if ! cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg'; then
+      log 2 "Filed to copy file: etc/ncp-config.d/nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
+    fi
+  else
+    log 2 "File not found: etc/ncp-config.d/nc-datadir.cfg"
+    exit 1
+  fi
+fi
+
+if isFile 'bin/ncp/CONFIG/nc-datadir.sh'; then
+  DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/CONFIG/nc-datadir.sh'
+else
+  log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"
+  exit 1
+fi
+
+if notZero "$should_rm_datadir_cfg"; then
+  if isFile '/usr/local/etc/ncp-config.d/nc-datadir.cfg'; then
+    rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
+  else
+    log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
+    exit 1
+  fi
+fi
+
+if isFile '/.ncp-image'; then
+  rm '/.ncp-image'
+fi
+
+# Skip on Armbian / Vagrant / LXD
+if notZero "$CODE_DIR"; then
+  if isFile '/usr/local/bin/ncp-provisioning.sh'; then
+    bash /usr/local/bin/ncp-provisioning.sh
+  else
+    log 2 "File not found: /usr/local/bin/ncp-provisioning.sh"
+    exit 1
+  fi
+fi
+
+if ! cd -; then
+  log 2 "Failed to change directory to: -"
+  exit 1
+fi
+
+if isDirectory "$TMPDIR"; then
+  rm --recursive --force "$TMPDIR"
+else
+  log 2 "Directory not found: $TMPDIR"
+  exit 1
+fi
 
 trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 
@@ -634,17 +729,17 @@ IP="$(get_ip)"
 
 log 0 "Completed installation"
 
-printf '%s\n' "
+Print "
 Visit:
 - https://$IP/
 - https://nextcloudpi.local/
 - Windows/Mac: https://nextcloudpi.lan/ or https://nextcloudpi/
 
 Activate your instance of NC and save the auto generated passwords.
-You may review or reset them anytime by using 'nc-admin' and 'nc-passwd'."
+You may review or reset them anytime by using 'nc-admin' and 'nc-passwd'.
 
-printf '%s\n' "Type 'sudo ncp-config' to further configure NCP or access ncp-web on https://$IP:4443/
-Note: You will have to add an exception to bypass the browser warning when you first access the activation page and the :4443 page.
+Type 'sudo ncp-config' to further configure NCP or access ncp-web on https://$IP:4443/
+Note: You will have to add an exception to bypass the certificate warning when you first access the activation & :4443 page.
 You can run letsencrypt to get rid of the warning if you have a (sub)domain available.
 "
 
