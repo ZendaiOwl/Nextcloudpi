@@ -64,9 +64,7 @@ LOCAL_LIBRARY='/usr/local/etc/library.sh'
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
 
-if isSet DBG; then set -e"$DBG"
-else set -e
-fi
+if isSet DBG; then set -e"$DBG"; else set -e; fi
 
 if is_docker; then log 1 "Docker images should be updated by replacing the container with the latest docker image.
 Refer to the documentation for instructions at: https://docs.nextcloudpi.com or on the forum: https://help.nextcloud.com

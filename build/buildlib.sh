@@ -37,8 +37,7 @@ function log
          2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-    fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
   fi
 }
 
@@ -56,10 +55,8 @@ function Print
 function isFunction
 {
   if [[ "$#" -eq 1 ]]; then local -r FUNC="$1"
-    if declare -f "$FUNC" &>/dev/null; then return 0; else return 1
-    fi
-  else return 2
-  fi
+    if declare -f "$FUNC" &>/dev/null; then return 0; else return 1; fi
+  else return 2; fi
 }
 
 # Check if user ID executing script is 0 or not
@@ -253,8 +250,7 @@ function isReference
 function isArray
 {
   if [[ "$#" -ne 1 ]]; then return 2
-  elif ! declare -a "$1" &>/dev/null; then return 1; else return 0
-  fi
+  elif ! declare -a "$1" &>/dev/null; then return 1; else return 0; fi
 }
 
 # Checks if a given pattern in a String
@@ -278,10 +274,8 @@ function hasCMD
 {
   if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
     if command -v "$CHECK" &>/dev/null; then return 0
-    else return 1
-    fi
-  else return 2
-  fi
+    else return 1; fi
+  else return 2; fi
 }
 
 # Checks if a package exists on the system
@@ -295,10 +289,8 @@ function hasPKG
   if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
     if dpkg-query --status "$CHECK" &>/dev/null; then return 0
     elif apt-cache show "$CHECK" &>/dev/null; then return 1
-    else return 2
-    fi
-  else return 3
-  fi
+    else return 2; fi
+  else return 3; fi
 }
 
 # Installs package(s) using the package manager and pre-configured options
@@ -318,17 +310,14 @@ function installPKG
        local PKG=(); IFS=' ' read -ra PKG <<<"$@"
        if [[ ! "$EUID" -eq 0 ]]; then log -1 "Updating apt lists"
          if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1
-         fi; log -1 "Installing ${PKG[*]}"
+         else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
          if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
          else log 2 "Something went wrong during installation"; return 2; fi
        else log -1 "Updating apt lists"
-         if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1
-         fi; log -1 "Installing ${PKG[*]}"
-         if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
-         else log 2 "Something went wrong during installation"; return 1
-         fi
+            if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+            else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
+            if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+            else log 2 "Something went wrong during installation"; return 1; fi
        fi
   fi
 }

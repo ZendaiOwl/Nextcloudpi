@@ -198,18 +198,14 @@ function installPKG
        local PKG=(); IFS=' ' read -ra PKG <<<"$@"
        if [[ ! "$EUID" -eq 0 ]]; then log -1 "Updating apt lists"
          if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1
-         fi; log -1 "Installing ${PKG[*]}"
+         else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
          if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
-         else log 2 "Something went wrong during installation"; return 2
-         fi
+         else log 2 "Something went wrong during installation"; return 2; fi
        else log -1 "Updating apt lists"
-         if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1
-         fi; log -1 "Installing ${PKG[*]}"
-         if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
-         else log 2 "Something went wrong during installation"; return 1
-         fi
+            if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+            else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
+            if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+            else log 2 "Something went wrong during installation"; return 1; fi
        fi
   fi
 }
