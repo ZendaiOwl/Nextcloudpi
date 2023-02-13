@@ -203,6 +203,7 @@ function updatePKG
   else log -1 "Updating apt lists"
        if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
        else log 2 "Couldn't update apt lists"; return 1; fi
+  fi
 }
 
 # Installs package(s) using the package manager and pre-configured options
