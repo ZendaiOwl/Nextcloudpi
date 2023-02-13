@@ -276,7 +276,7 @@ function install
     fi
     
     install_with_shadow_workaround --no-install-recommends systemd
-    installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2}
+    installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql}
 
     mkdir --parents "$PHPDAEMON"
 
@@ -286,7 +286,7 @@ function install
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
-    installPKG mariadb-server php"$PHPVER"-mysql
+    installPKG mariadb-server
     mkdir --parents "$DBDAEMON"
     chown "$DBUSER" "$DBDAEMON"
 
