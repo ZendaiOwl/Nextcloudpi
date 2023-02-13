@@ -58,28 +58,19 @@ function log
   if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
     if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
-        -2)
-           local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
+        -2) local -r CYAN='\e[1;36m'; printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
-        -1)
-           local -r BLUE='\e[1;34m'
-           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+        -1) local -r BLUE='\e[1;34m'; printf "${BLUE}INFO${Z} %s\n" "$TEXT"
            ;;
-         0)
-           local -r GREEN='\e[1;32m'
-           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+         0) local -r GREEN='\e[1;32m'; printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
            ;;
-         1)
-           local -r YELLOW='\e[1;33m'
-           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+         1) local -r YELLOW='\e[1;33m'; printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
            ;;
-         2)
-           local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
+         2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    fi
   fi
 }
 

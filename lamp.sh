@@ -28,33 +28,21 @@
 #  2: Error
 function log
 {
-  if [[ "$#" -gt 0 ]]; then
-    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+  if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
     if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
-        -2)
-           local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
+        -2) local -r CYAN='\e[1;36m'; printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
-        -1)
-           local -r BLUE='\e[1;34m'
-           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+        -1) local -r BLUE='\e[1;34m'; printf "${BLUE}INFO${Z} %s\n" "$TEXT"
            ;;
-         0)
-           local -r GREEN='\e[1;32m'
-           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+         0) local -r GREEN='\e[1;32m'; printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
            ;;
-         1)
-           local -r YELLOW='\e[1;33m'
-           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+         1) local -r YELLOW='\e[1;33m'; printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
            ;;
-         2)
-           local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
+         2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else
-      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
     fi
   fi
 }
@@ -78,10 +66,7 @@ function isRoot
 function isUser
 {
   [[ "$#" -ne 1 ]] && return 2
-  if id -u "$1" &>/dev/null; then
-    return 0
-  else
-    return 1
+  if id -u "$1" &>/dev/null; then return 0; else return 1
   fi
 }
 
@@ -189,15 +174,10 @@ function notZero
 # 2: Missing command argument to check
 function hasCMD
 {
-  if [[ "$#" -eq 1 ]]; then
-    local -r CHECK="$1"
-    if command -v "$CHECK" &>/dev/null; then
-      return 0
-    else
-      return 1
+  if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null; then return 0; else return 1
     fi
-  else
-    return 2
+  else return 2
   fi
 }
 
@@ -209,50 +189,28 @@ function hasCMD
 # 3: Missing package argument
 function installPKG
 {
-  if [[ "$#" -eq 0 ]]; then
-    log 2 "Requires: [PKG(s) to install]"
-    return 3
-  else
-    local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-    local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-             SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-             ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
-             ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-    local PKG=()
-    IFS=' ' read -ra PKG <<<"$@"
-    if [[ ! "$EUID" -eq 0 ]]; then
-      log -1 "Updating apt lists"
-      if "${SUDOUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
-      log -1 "Installing ${PKG[*]}"
-      if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 2
-      fi
-    else
-      log -1 "Updating apt lists"
-      if "${ROOTUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
-      log -1 "Installing ${PKG[*]}"
-      if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 1
-      fi
-    fi
+  if [[ "$#" -eq 0 ]]; then log 2 "Requires: [PKG(s) to install]"; return 3
+  else local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+       local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+                SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+                ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+                ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+       local PKG=(); IFS=' ' read -ra PKG <<<"$@"
+       if [[ ! "$EUID" -eq 0 ]]; then log -1 "Updating apt lists"
+         if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+         else log 2 "Couldn't update apt lists"; return 1
+         fi; log -1 "Installing ${PKG[*]}"
+         if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+         else log 2 "Something went wrong during installation"; return 2
+         fi
+       else log -1 "Updating apt lists"
+         if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+         else log 2 "Couldn't update apt lists"; return 1
+         fi; log -1 "Installing ${PKG[*]}"
+         if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+         else log 2 "Something went wrong during installation"; return 1
+         fi
+       fi
   fi
 }
 
@@ -270,7 +228,7 @@ function install
              MYCNF_FILE='/root/.my.cnf'
 
     # MariaDB password
-    local DBPASSWD="default"
+    local DBPASSWD="default" DBPID
     
     # Setup apt repository for php 8
     wget -O /etc/apt/trusted.gpg.d/php.gpg "$PHPREPO_GPGKEY"
@@ -284,8 +242,7 @@ function install
     apache2ctl -V || true
 
     # Create systemd users to keep uids persistent between containers
-    if ! isUser systemd-resolve; then
-      addgroup --quiet --system systemd-journal
+    if ! isUser systemd-resolve; then addgroup --quiet --system systemd-journal
       adduser --quiet -u 180 --system --group --no-create-home --home /run/systemd \
         --gecos "systemd Network Management" systemd-network
       adduser --quiet -u 181 --system --group --no-create-home --home /run/systemd \
@@ -345,20 +302,17 @@ function install
     install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" "--defaults"
 
   # Start MariaDB if it's not already running
-  if ! isFile "$DBPID_FILE"; then
-    log -1 "Starting MariaDB"
+  if ! isFile "$DBPID_FILE"; then log -1 "Starting MariaDB"
     mysqld &
+    DBPID="$!"
   fi
 
   # Wait for MariaDB to start
-  while :; do
-    isSocket "$DBSOCKET" && break
+  while :; do isSocket "$DBSOCKET" && break
     sleep 1
   done
 
-  if ! cd /tmp; then
-    log 2 "Failed to change directory to: /tmp"
-    exit 1
+  if ! cd /tmp; then log 2 "Failed to change directory to: /tmp"; exit 1
   fi
   
   mysql_secure_installation <<EOF

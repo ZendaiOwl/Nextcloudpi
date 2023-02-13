@@ -10,25 +10,18 @@
 
 function add_build_variables
 {
-  declare -x -a BUILDVARIABLES
-  BUILDVARIABLES+=("$@")
-  if [[ "${BUILDVARIABLES[@]}" != *"BUILDVARIABLES"* ]]; then
-    add_build_variables BUILDVARIABLES
+  declare -x -a BUILDVARIABLES; BUILDVARIABLES+=("$@")
+  if [[ "${BUILDVARIABLES[@]}" != *"BUILDVARIABLES"* ]]; then add_build_variables BUILDVARIABLES
   fi
 }
 
-if [[ -z "$DBG" ]]; then
-  set -e
-elif [[ -v "$DBG" ]]; then
-  set -e"$DBG"
+if [[ -z "$DBG" ]]; then set -e
+elif [[ -v "$DBG" ]]; then set -e"$DBG"
 fi
 
-BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"
-add_build_variables BUILDLIBRARY
+BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"; add_build_variables BUILDLIBRARY
 
-if [[ ! -f "$BUILDLIBRARY" ]]; then
-  printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"
-  exit 1
+if [[ ! -f "$BUILDLIBRARY" ]]; then printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"; exit 1
 fi
 
 # shellcheck disable=SC1090
@@ -56,17 +49,11 @@ function clean_build_sd_rpi
 
 ##############################################################################
 
-if isFile "$TAR"; then
-  log 1 "File exists: $TAR"
-  exit 0
+if isFile "$TAR"; then log 1 "File exists: $TAR"; exit 0
 fi
-if findFullProcess qemu-arm-static; then
-  log 2 "qemu-arm-static already running"
-  exit 1
+if findFullProcess qemu-arm-static; then log 2 "qemu-arm-static already running"; exit 1
 fi
-if findFullProcess qemu-aarch64-static; then
-  log 2 "qemu-aarch64-static already running"
-  exit 1
+if findFullProcess qemu-aarch64-static; then log 2 "qemu-aarch64-static already running"; exit 1
 fi
 ## preparations
 
@@ -84,30 +71,23 @@ resize_image      "$IMG" "$SIZE"
 update_boot_uuid  "$IMG"
 
 # Make sure we don't accidentally disable first run wizard
-if isRoot; then
-  rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
-else
-  sudo rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
+if isRoot; then rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
+else sudo rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
 fi
 
 ## BUILD NCP
 
 prepare_chroot_raspbian "$IMG"
 
-if isRoot; then
-  mkdir "$ROOTDIR"/"$BUILD_DIR"
-else
-  sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
+if isRoot; then mkdir "$ROOTDIR"/"$BUILD_DIR"
+else sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
 fi
 
-if isRoot; then
-  rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
-else
-  sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+if isRoot; then rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+else sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 fi
 
-if isRoot; then
-  PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+if isRoot; then PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
   chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
     set -ex
 
@@ -146,8 +126,7 @@ if isRoot; then
     rm /etc/resolv.conf
     rm -rf /tmp/ncp-build
 EOFCHROOT
-else
-  PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+else PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
   sudo chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
     set -ex
 
@@ -188,12 +167,8 @@ else
 EOFCHROOT
 fi
 
-if isRoot; then
-  log -1 "Image created: $(basename $IMG)"
-  basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
-else
-  log -1 "Image created: $(sudo basename $IMG)"
-  sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+if isRoot; then log -1 "Image created: $(basename $IMG)"; basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+else log -1 "Image created: $(sudo basename $IMG)"; sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
 clean_build_sd_rpi
@@ -205,9 +180,7 @@ pack_image "$IMG" "$TAR"
 ## Pack IMG
 [[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; pack_image "$IMG" "$TAR"; }
 
-log 0 "Build is complete"
-
-exit 0
+log 0 "Build is complete"; exit 0
 
 ## test
 

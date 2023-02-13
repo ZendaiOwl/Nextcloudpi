@@ -23,33 +23,21 @@ export VERSION
 #  2: Error
 function log
 {
-  if [[ "$#" -gt 0 ]]; then
-    local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
+  if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
     if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
       case "$LOGLEVEL" in
-        -2)
-           local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
+        -2) local -r CYAN='\e[1;36m'; printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
-        -1)
-           local -r BLUE='\e[1;34m'
-           printf "${BLUE}INFO${Z} %s\n" "$TEXT"
+        -1) local -r BLUE='\e[1;34m'; printf "${BLUE}INFO${Z} %s\n" "$TEXT"
            ;;
-         0)
-           local -r GREEN='\e[1;32m'
-           printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
+         0) local -r GREEN='\e[1;32m'; printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
            ;;
-         1)
-           local -r YELLOW='\e[1;33m'
-           printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
+         1) local -r YELLOW='\e[1;33m'; printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
            ;;
-         2)
-           local -r RED='\e[1;31m'
-           printf "${RED}ERROR${Z} %s\n" "$TEXT" 1>&2
+         2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else
-      log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
     fi
   fi
 }
@@ -67,15 +55,10 @@ function Print
 # 2: Too many/few arguments
 function isFunction
 {
-  if [[ "$#" -eq 1 ]]; then
-    local -r FUNC="$1"
-    if declare -f "$FUNC" &>/dev/null; then
-      return 0
-    else
-      return 1
+  if [[ "$#" -eq 1 ]]; then local -r FUNC="$1"
+    if declare -f "$FUNC" &>/dev/null; then return 0; else return 1
     fi
-  else
-    return 2
+  else return 2
   fi
 }
 
@@ -269,13 +252,21 @@ function isReference
 # 2: Missing argument: Variable to check
 function isArray
 {
-  if [[ "$#" -ne 1 ]]; then
-    return 2
-  elif ! declare -a "$1" &>/dev/null; then
-    return 1
-  else
-    return 0
+  if [[ "$#" -ne 1 ]]; then return 2
+  elif ! declare -a "$1" &>/dev/null; then return 1; else return 0
   fi
+}
+
+# Checks if a given pattern in a String
+# Return codes
+# 0: Has String pattern
+# 1: No String pattern
+# 2: Invalid number of arguments
+function hasText
+{
+  [[ "$#" -ne 2 ]] && return 2
+  local -r PATTERN="$1" STRING="$2"
+  [[ "$STRING" == *"$PATTERN"* ]]
 }
 
 # Checks if a command exists on the system
@@ -285,15 +276,11 @@ function isArray
 # 2: Missing command argument to check
 function hasCMD
 {
-  if [[ "$#" -eq 1 ]]; then
-    local -r CHECK="$1"
-    if command -v "$CHECK" &>/dev/null; then
-      return 0
-    else
-      return 1
+  if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
+    if command -v "$CHECK" &>/dev/null; then return 0
+    else return 1
     fi
-  else
-    return 2
+  else return 2
   fi
 }
 
@@ -305,17 +292,12 @@ function hasCMD
 # 3: Missing package argument to check
 function hasPKG
 {
-  if [[ "$#" -eq 1 ]]; then
-    local -r CHECK="$1"
-    if dpkg-query --status "$CHECK" &>/dev/null; then
-      return 0
-    elif apt-cache show "$CHECK" &>/dev/null; then
-      return 1
-    else
-      return 2
+  if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
+    if dpkg-query --status "$CHECK" &>/dev/null; then return 0
+    elif apt-cache show "$CHECK" &>/dev/null; then return 1
+    else return 2
     fi
-  else
-    return 3
+  else return 3
   fi
 }
 
@@ -327,50 +309,27 @@ function hasPKG
 # 3: Missing package argument
 function installPKG
 {
-  if [[ "$#" -eq 0 ]]; then
-    log 2 "Requires: [PKG(s) to install]"
-    return 3
-  else
-    local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-    local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-             SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-             ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
-             ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-    local PKG=()
-    IFS=' ' read -ra PKG <<<"$@"
-    if [[ ! "$EUID" -eq 0 ]]; then
-      log -1 "Updating apt lists"
-      if "${SUDOUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
-      log -1 "Installing ${PKG[*]}"
-      if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 2
-      fi
-    else
-      log -1 "Updating apt lists"
-      if "${ROOTUPDATE[@]}" &>/dev/null; then
-        log 0 "Apt list updated"
-      else
-        log 2 "Couldn't update apt lists"
-        return 1
-      fi
-      log -1 "Installing ${PKG[*]}"
-      if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then
-        log 0 "Installation completed"
-        return 0
-      else
-        log 2 "Something went wrong during installation"
-        return 1
-      fi
-    fi
+  if [[ "$#" -eq 0 ]]; then log 2 "Requires: [PKG(s) to install]"; return 3
+  else local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+       local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+                SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+                ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+                ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+       local PKG=(); IFS=' ' read -ra PKG <<<"$@"
+       if [[ ! "$EUID" -eq 0 ]]; then log -1 "Updating apt lists"
+         if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+         else log 2 "Couldn't update apt lists"; return 1
+         fi; log -1 "Installing ${PKG[*]}"
+         if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+         else log 2 "Something went wrong during installation"; return 2; fi
+       else log -1 "Updating apt lists"
+         if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+         else log 2 "Couldn't update apt lists"; return 1
+         fi; log -1 "Installing ${PKG[*]}"
+         if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+         else log 2 "Something went wrong during installation"; return 1
+         fi
+       fi
   fi
 }
 
@@ -383,19 +342,10 @@ function installPKG
 function findProcess
 {
   if hasCMD pgrep; then
-    if [[ "$#" -eq 1 ]]; then
-      local -r PROCESS="$1"
-      if pgrep "$PROCESS" &>/dev/null; then
-        return 0
-      else
-        return 1
-      fi
-    else
-      return 2
-    fi
-  else
-    return 3
-  fi
+    if [[ "$#" -eq 1 ]]; then local -r PROCESS="$1"
+      if pgrep "$PROCESS" &>/dev/null; then return 0; else return 1; fi
+    else return 2; fi
+  else return 3; fi
 }
 
 # Checks for a running process
@@ -406,23 +356,11 @@ function findProcess
 # 3: Missing command: pgrep
 function findFullProcess
 {
-  if hasCMD pgrep &>/dev/null
-  then
-    if [[ "$#" -eq 1 ]]
-    then
-      local -r PROCESS="$1"
-      if pgrep --full "$PROCESS" &>/dev/null
-      then
-        return 0
-      else
-        return 1
-      fi
-    else
-      return 2
-    fi
-  else
-    return 3
-  fi
+  if hasCMD pgrep &>/dev/null; then
+    if [[ "$#" -eq 1 ]]; then local -r PROCESS="$1"
+      if pgrep --full "$PROCESS" &>/dev/null; then return 0; else return 1; fi
+    else log 2 "Requires argument: process"; return 2; fi
+  else log 2 "Command not found: pgrep"; return 3; fi
 }
 
 #
@@ -434,29 +372,15 @@ function launch_install_qemu
 {
   [[ "$#" -lt 2 ]] && return 1
   local IMG="$1" IP="$2" IMGOUT
-  if isZero "$IP"; then
-    log 2 "Invalid argument #2: [IP]"
-    return 2
-  elif ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
-    return 3
-  fi
-  IMGOUT="${IMG}-$( date +%s )"
+  if isZero "$IP"; then log 2 "Invalid argument #2: [IP]"; return 2
+  elif ! isFile "$IMG"; then log 2 "File not found: $IMG"; return 3
+  fi; IMGOUT="${IMG}-$( date +%s )"
   
-  if ! cp --reflink=auto -v "$IMG" "$IMGOUT"; then
-    log 2 "Copying IMG failed"
-    return 1
-  fi
+  if ! cp --reflink=auto -v "$IMG" "$IMGOUT"; then log 2 "Copying IMG failed"; return 1; fi
 
   if hasCMD pgrep; then
-    if findProcess qemu-system-aarch64; then
-      log 2 "QEMU is already running"
-      return 1
-    fi
-  else
-    log 2 "Missing command: pgrep"
-    return 1
-  fi
+    if findProcess qemu-system-aarch64; then log 2 "QEMU is already running"; return 1; fi
+  else log 2 "Missing command: pgrep"; return 1; fi
 
   # TODO
   launch_qemu "$IMGOUT" &
@@ -476,25 +400,13 @@ function launch_qemu
 {
   [[ "$#" -lt 1 ]] && return 1
   local IMG="$1"
-  if ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
-    return 2
-  fi
+  if ! isFile "$IMG"; then log 2 "File not found: $IMG"; return 2; fi
 
-  if ! isDirectory qemu-raspbian-network; then
-    git clone https://github.com/nachoparker/qemu-raspbian-network.git
-  fi
+  if ! isDirectory qemu-raspbian-network; then git clone https://github.com/nachoparker/qemu-raspbian-network.git; fi
 
-  if hasCMD sed; then
-    sed -i '30s/NO_NETWORK=1/NO_NETWORK=0/' qemu-raspbian-network/qemu-pi.sh
-    sed -i '35s/NO_GRAPHIC=0/NO_GRAPHIC=1/' qemu-raspbian-network/qemu-pi.sh
-  else
-    log 2 "Missing command: sed"
-    return 3
-  fi
-  
-  log -1 "Starting QEMU image: $IMG"
-  
+  if hasCMD sed; then sed -i '30s/NO_NETWORK=1/NO_NETWORK=0/' qemu-raspbian-network/qemu-pi.sh
+                      sed -i '35s/NO_GRAPHIC=0/NO_GRAPHIC=1/' qemu-raspbian-network/qemu-pi.sh
+  else log 2 "Missing command: sed"; return 3; fi; log -1 "Starting QEMU image: $IMG"  
   (
     cd qemu-raspbian-network && sudo ./qemu-pi.sh ../"$IMG" 2>/dev/null
   )
@@ -508,23 +420,15 @@ function ssh_pi
         PIUSER="${PIUSER:-pi}" \
         PIPASS="${PIPASS:-raspberry}" \
         SSHPASS SSH RET
-  
   SSH=( ssh -q  -o UserKnownHostsFile=/dev/null\
                 -o StrictHostKeyChecking=no\
                 -o ServerAliveInterval=20\
                 -o ConnectTimeout=20\
                 -o LogLevel=quiet )
   type sshpass &>/dev/null && SSHPASS=( sshpass -p"$PIPASS" )
-  if [[ "${SSHPASS[*]}" == "" ]]; then
-    "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}";
-  else
-    "${SSHPASS[@]}" "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}"
-    RET="$?"
-    if [[ "$RET" -eq 5 ]]; then
-      "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}"
-      return "$?"
-    fi
-    return "$RET"
+  if [[ "${SSHPASS[*]}" == "" ]]; then "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}";
+  else "${SSHPASS[@]}" "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}"; RET="$?"
+       if [[ "$RET" -eq 5 ]]; then "${SSH[@]}" "$PIUSER"@"$IP" "${ARGS[@]}"; return "$?"; fi; return "$RET"
   fi
 }
 
@@ -533,13 +437,10 @@ function ssh_pi
 function wait_SSH
 {
   [[ "$#" -lt 1 ]] && return 1
-  local IP="$1"
-  log -1 "Waiting for SSH on: $IP"
-  while true; do
-    ssh_pi "$IP" : && break
+  local IP="$1"; log -1 "Waiting for SSH on: $IP"
+  while true; do ssh_pi "$IP" : && break
     sleep 1
-  done
-  log -1 "SSH is up"
+  done; log -1 "SSH is up"
 }
 
 # Return codes
@@ -551,13 +452,8 @@ function launch_installation
 {
   [[ "$#" -lt 1 ]] && return 1
   local IP="$1"
-  if isZero "$INSTALLATION_CODE"; then
-    log 2 "Configuration is required to be run first"
-    return 2
-  elif isZero "$INSTALLATION_STEPS"; then
-    log 2 "No installation instructions provided"
-    return 3
-  fi
+  if isZero "$INSTALLATION_CODE"; then log 2 "Configuration is required to be run first"; return 2
+  elif isZero "$INSTALLATION_STEPS"; then log 2 "No installation instructions provided"; return 3; fi
   
   local PREINST_CODE="
 set -e$DBG
@@ -566,9 +462,7 @@ set -e$DBG
 "
   log 2 "Launching installation"
   if ! ssh_pi "$IP" "$PREINST_CODE" "$INSTALLATION_CODE" "$INSTALLATION_STEPS"; then
-    log 2 "SSH installation failed to QEMU target at: $IP"
-    return 4
-  fi
+    log 2 "SSH installation failed to QEMU target at: $IP"; return 4; fi
 }
 
 # Return codes
@@ -579,15 +473,9 @@ function launch_installation_qemu
   local -r IP="$1" MATCH="1"
   local CFG_STEP CLEANUP_STEP HALT_STEP INSTALLATION_STEPS
 
-  if notMatch "$NO_CFG_STEP" "$MATCH"; then
-    CFG_STEP=configure
-  fi
-  if notMatch "$NO_CLEANUP" "$MATCH"; then
-    CLEANUP_STEP="if [[ \$( type -t cleanup ) == function ]];then cleanup; fi"
-  fi
-  if notMatch "$NO_HALT_STEP" "$MATCH"; then
-    HALT_STEP="nohup halt &>/dev/null &"
-  fi
+  if notMatch "$NO_CFG_STEP" "$MATCH"; then CFG_STEP=configure; fi
+  if notMatch "$NO_CLEANUP" "$MATCH"; then CLEANUP_STEP="if [[ \$( type -t cleanup ) == function ]];then cleanup; fi"; fi
+  if notMatch "$NO_HALT_STEP" "$MATCH"; then HALT_STEP="nohup halt &>/dev/null &"; fi
   
   INSTALLATION_STEPS="
 install
@@ -606,9 +494,7 @@ function launch_installation_online
   [[ "$#" -lt 1 ]] && return 1
   local -r IP="$1" MATCH="1"
   local CFG_STEP INSTALLATION_STEPS
-  if notMatch "$NO_CFG_STEP" "$MATCH"; then
-    CFG_STEP=configure
-  fi
+  if notMatch "$NO_CFG_STEP" "$MATCH"; then CFG_STEP=configure; fi
   INSTALLATION_STEPS="
 install
 $CFG_STEP
@@ -620,9 +506,7 @@ $CFG_STEP
 function prepare_dirs
 {
   local DIRS=(tmp output cache)
-  if notMatch "$CLEAN" "0"; then
-    rm --recursive --force "${DIRS[2]}"
-  fi
+  if notMatch "$CLEAN" "0"; then rm --recursive --force "${DIRS[2]}"; fi
   rm --recursive --force "${DIRS[0]}"
   mkdir --parents "${DIRS[@]}"
 }
@@ -637,41 +521,22 @@ function mount_raspbian
   [[ "$#" -lt 1 ]] && return 1
   local -r IMG="$1" MP='raspbian_root'
   local SECTOR OFFSET
-  if ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
-    return 2
-  elif isPath "$MP"; then
-    log 2 "Mountpoint already exists"
-    return 3
-  fi
+  if ! isFile "$IMG"; then log 2 "File not found: $IMG"; return 2
+  elif isPath "$MP"; then log 2 "Mountpoint already exists"; return 3; fi
   log -1 "Mounting: $MP"
-  if ! hasCMD fdisk; then
-    installPKG fdisk
-  fi
+  if ! hasCMD fdisk; then installPKG fdisk; fi
 
-  if isRoot; then
-    SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
-  else
-    SECTOR="$( sudo fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
-  fi
+  if isRoot; then SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
+  else SECTOR="$( sudo fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"; fi
   log -1 "Sector: $SECTOR"
   OFFSET=$(( "$SECTOR" * 512 ))
   log -1 "Offset: $OFFSET"
   log -1 "Mountpoint: $MP"
   mkdir -p "$MP"
   
-  if isRoot; then
-    if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
-      return 4
-    fi
-  else
-    if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
-      return 4
-    fi
-  fi
-  log 0 "IMG is mounted at: $MP"
+  if isRoot; then if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then log 2 "Failed to mount IMG at: $MP"; return 4; fi
+  else if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then log 2 "Failed to mount IMG at: $MP"; return 4; fi
+  fi; log 0 "IMG is mounted at: $MP"
 }
 
 # Return codes
@@ -683,37 +548,20 @@ function mount_raspbian_boot
 {
   [[ "$#" -lt 1 ]] && return 1
   local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
-  if ! isFile "$IMG"; then
-    log 2 "File not found: $IMG"
-    return 2
-  elif isPath "$MP"; then
-    log 2 "Mountpoint already exists"
-    return 3
-  fi
-  log -1 "Mounting: $MP"
-  if isRoot; then
-    SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
-  else
-    SECTOR="$( sudo fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
-  fi
+  if ! isFile "$IMG"; then log 2 "File not found: $IMG"; return 2
+  elif isPath "$MP"; then log 2 "Mountpoint already exists"; return 3
+  fi; log -1 "Mounting: $MP"
+  if isRoot; then SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
+  else SECTOR="$( sudo fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"; fi
   log -1 "Sector: $SECTOR"
   OFFSET=$(( "$SECTOR" * 512 ))
   log -1 "Offset: $OFFSET"
   log -1 "Mountpoint: $MP"
   mkdir -p "$MP"
   
-  if isRoot; then
-    if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
-      return 4
-    fi
-  else
-    if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then
-      log 2 "Failed to mount IMG at: $MP"
-      return 4
-    fi
-  fi
-  log 0 "IMG is mounted at: $MP"
+  if isRoot; then if ! mount "$IMG" -o offset="$OFFSET" "$MP"; then log 2 "Failed to mount IMG at: $MP"; return 4; fi
+  else if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"; then log 2 "Failed to mount IMG at: $MP"; return 4; fi
+  fi; log 0 "IMG is mounted at: $MP"
 }
 
 # Return codes
@@ -727,54 +575,18 @@ function umount_raspbian
   local -r ROOTDIR="${ROOTDIR:-raspbian_root}" \
            BOOTDIR="${BOOTDIR:-raspbian_boot}"
   log -1 "Unmounting IMG"
-  if ! isDirectory "$ROOTDIR" && ! isDirectory "$BOOTDIR"; then
-    log -1 "Nothing to unmount"
-    return 0
-  fi
+  if ! isDirectory "$ROOTDIR" && ! isDirectory "$BOOTDIR"; then log -1 "Nothing to unmount"; return 0; fi
   if isDirectory "$ROOTDIR"; then
-    if isRoot; then
-      if ! umount --lazy "$ROOTDIR"; then
-        log 2 "Could not unmount: $ROOTDIR"
-        return 1
-      fi
-      if ! rmdir "$ROOTDIR"; then
-        log 2 "Could not remove: $ROOTDIR"
-        return 2
-      fi
-    else
-      if ! sudo umount --lazy "$ROOTDIR"; then
-        log 2 "Could not unmount: $ROOTDIR"
-        return 1
-      fi
-      if ! sudo rmdir "$ROOTDIR"; then
-        log 2 "Could not remove: $ROOTDIR"
-        return 2
-      fi
-    fi
-  fi
+    if isRoot; then if ! umount --lazy "$ROOTDIR"; then log 2 "Could not unmount: $ROOTDIR"; return 1; fi
+                    if ! rmdir "$ROOTDIR"; then log 2 "Could not remove: $ROOTDIR"; return 2; fi
+    else if ! sudo umount --lazy "$ROOTDIR"; then log 2 "Could not unmount: $ROOTDIR"; return 1; fi
+         if ! sudo rmdir "$ROOTDIR"; then log 2 "Could not remove: $ROOTDIR"; return 2; fi; fi; fi
   if isDirectory "$BOOTDIR"; then
-    if isRoot; then
-      if ! umount --lazy "$BOOTDIR"; then
-        log 2 "Could not unmount: $BOOTDIR"
-        return 3
-      fi
-      if ! rmdir "$BOOTDIR"; then
-        log 2 "Could not remove: $BOOTDIR"
-        return 4
-      fi
-    else
-      if ! sudo umount --lazy "$BOOTDIR"; then
-        log 2 "Could not unmount: $BOOTDIR"
-        return 3
-      fi
-      if ! sudo rmdir "$BOOTDIR"; then
-        log 2 "Could not remove: $BOOTDIR"
-        return 4
-      fi
-    fi
-  fi
-  log 0 "Unmounted IMG"
-  return 0
+    if isRoot; then if ! umount --lazy "$BOOTDIR"; then log 2 "Could not unmount: $BOOTDIR"; return 3; fi
+                    if ! rmdir "$BOOTDIR"; then log 2 "Could not remove: $BOOTDIR"; return 4; fi
+    else if ! sudo umount --lazy "$BOOTDIR"; then log 2 "Could not unmount: $BOOTDIR"; return 3; fi
+         if ! sudo rmdir "$BOOTDIR"; then log 2 "Could not remove: $BOOTDIR"; return 4; fi; fi
+  fi; log 0 "Unmounted IMG"; return 0
 }
 
 # Return codes
@@ -785,64 +597,42 @@ function prepare_chroot_raspbian
 {
   local -r IMG="$1" \
            ROOTDIR="${ROOTDIR:-raspbian_root}"
-  if ! mount_raspbian "$IMG"; then
-    return 2
-  fi
-  if isRoot; then
-    mount -t proc proc     "$ROOTDIR"/proc/
-    mount -t sysfs sys     "$ROOTDIR"/sys/
-    mount -o bind /dev     "$ROOTDIR"/dev/
-    mount -o bind /dev/pts "$ROOTDIR"/dev/pts
-  else
-    sudo mount -t proc proc     "$ROOTDIR"/proc/
-    sudo mount -t sysfs sys     "$ROOTDIR"/sys/
-    sudo mount -o bind /dev     "$ROOTDIR"/dev/
-    sudo mount -o bind /dev/pts "$ROOTDIR"/dev/pts
-  fi
+  if ! mount_raspbian "$IMG"; then return 2; fi
+  if isRoot; then mount -t proc proc     "$ROOTDIR"/proc/
+                  mount -t sysfs sys     "$ROOTDIR"/sys/
+                  mount -o bind /dev     "$ROOTDIR"/dev/
+                  mount -o bind /dev/pts "$ROOTDIR"/dev/pts
+  else sudo mount -t proc proc           "$ROOTDIR"/proc/
+       sudo mount -t sysfs sys           "$ROOTDIR"/sys/
+       sudo mount -o bind /dev           "$ROOTDIR"/dev/
+       sudo mount -o bind /dev/pts       "$ROOTDIR"/dev/pts; fi
 
   if isFile 'qemu-aarch64-static'; then
-    if isRoot; then
-      cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
-    else
-      sudo cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
-    fi
-  else
-    if isFile '/usr/bin/qemu-aarch64-static'; then
-      if isRoot; then
-        cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
-      else
-        sudo cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
-      fi
-    else
-      log 2 "File not found: /usr/bin/qemu-aarch64-static"
-      return 3
-    fi
+    if isRoot; then cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
+    else sudo cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static; fi
+  else if isFile '/usr/bin/qemu-aarch64-static'; then
+         if isRoot; then cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
+         else sudo cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static; fi
+       else log 2 "File not found: /usr/bin/qemu-aarch64-static"; return 3; fi
   fi
 
   # Prevent services from auto-starting
-  if isRoot; then
-    bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
-    chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
-  else
-    sudo bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
-    sudo chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
-  fi
+  if isRoot; then bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
+                  chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
+  else sudo bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
+       sudo chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d; fi
 }
 
 function clean_chroot_raspbian
 {
-  local -r ROOTDIR="${ROOTDIR:-raspbian_root}"
-  log -1 "Cleaning chroot"
-  if isRoot; then
-    rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
-    rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
-    #umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
-  else
-    sudo rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
-    sudo rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
-    #sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
-  fi
-  umount_raspbian
+  local -r ROOTDIR="${ROOTDIR:-raspbian_root}"; log -1 "Cleaning chroot"
+  if isRoot; then rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
+                  rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
+                  #umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
+  else sudo rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
+       sudo rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
+       #sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
+  fi; umount_raspbian
 }
 
 # Sets DEV
@@ -851,50 +641,24 @@ function clean_chroot_raspbian
 function resize_image
 {
   [[ "$#" -lt 2 ]] && return 1
-  local IMG="$1" SIZE="$2" DEV
-  log -1 "Resize: $IMG"
+  local IMG="$1" SIZE="$2" DEV; log -1 "Resize: $IMG"
   
-  if ! hasCMD fallocate; then
-    installPKG util-linux
-  fi
+  if ! hasCMD fallocate; then installPKG util-linux; fi
   
-  if ! hasCMD parted; then
-    installPKG parted
-  fi
+  if ! hasCMD parted; then installPKG parted; fi
   
-  if ! hasCMD resize2fs; then
-    installPKG e2fsprogs
-  fi
+  if ! hasCMD resize2fs; then installPKG e2fsprogs; fi
   
-  if isRoot; then
-    log -1 "fallocate"
-    fallocate -l"$SIZE" "$IMG"
-    log -1 "parted"
-    parted "$IMG" -- resizepart 2 -1s
-    log -1 "losetup"
-    DEV="$( losetup -f )"
-  else
-    log -1 "fallocate"
-    sudo fallocate -l"$SIZE" "$IMG"
-    log -1 "parted"
-    sudo parted "$IMG" -- resizepart 2 -1s
-    log -1 "losetup"
-    DEV="$( sudo losetup -f )"
-  fi
+  if isRoot; then log -1 "fallocate"; fallocate -l"$SIZE" "$IMG"
+                  log -1 "parted";    parted "$IMG" -- resizepart 2 -1s
+                  log -1 "losetup";   DEV="$( losetup -f )"
+  else log -1 "fallocate"; sudo fallocate -l"$SIZE" "$IMG"
+       log -1 "parted";    sudo parted "$IMG" -- resizepart 2 -1s
+       log -1 "losetup";   DEV="$( sudo losetup -f )"
+  fi; log -1 "Mount: $IMG"; mount_raspbian "$IMG"
   
-  log -1 "Mount: $IMG"
-  mount_raspbian "$IMG"
-  
-  if isRoot; then
-    log -1 "resize2fs"
-    resize2fs -f "$DEV"
-  else
-    log -1 "resize2fs"
-    sudo resize2fs -f "$DEV"
-  fi
-  
-  log 0 "Resized: $IMG"
-  umount_raspbian
+  if isRoot; then log -1 "resize2fs"; resize2fs -f "$DEV"
+  else log -1 "resize2fs"; sudo resize2fs -f "$DEV"; fi; log 0 "Resized: $IMG"; umount_raspbian
 }
 
 # Return codes
@@ -908,43 +672,23 @@ function update_boot_uuid
            ROOTDIR="${ROOTDIR:-raspbian_root}" \
            BOOTDIR="${BOOTDIR:-raspbian_boot}"
   local PTUUID
-  if isRoot; then
-    PTUUID="$(blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
-  else
-    PTUUID="$(sudo blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
-  fi
-  log -1 "Updating IMG Boot UUID's"
+  if isRoot; then PTUUID="$(blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
+  else PTUUID="$(sudo blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"; fi; log -1 "Updating IMG Boot UUID's"
 
-  if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
-    return 2
-  fi
-  if isRoot; then
-    bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
+  if ! mount_raspbian "$IMG"; then log 2 "Failed to mount IMG root"; return 2; fi
+  if isRoot; then bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
 PARTUUID=${PTUUID}-01  /boot           vfat    defaults          0       2
 PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
 EOF
-  else
-    sudo bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
+  else sudo bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
 PARTUUID=${PTUUID}-01  /boot           vfat    defaults          0       2
 PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
 EOF
-  fi
+  fi; umount_raspbian
+  if ! mount_raspbian_boot "$IMG"; then log 2 "Failed to mount IMG boot"; return 3; fi
   
-  umount_raspbian
-
-  if ! mount_raspbian_boot "$IMG"; then
-    log 2 "Failed to mount IMG boot"
-    return 3
-  fi
-
-  if isRoot; then
-    bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
-  else
-    sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
-  fi
-  
-  umount_raspbian
+  if isRoot; then bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
+  else sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"; fi; umount_raspbian
 }
 
 # Return codes
@@ -955,23 +699,10 @@ function prepare_sshd_raspbian
 {
   [[ "$#" -lt 1 ]] && return 1
   local -r IMG="$1" BOOTDIR="${BOOTDIR:-raspbian_boot}"
-  if ! mount_raspbian_boot "$IMG"; then
-    log 2 "Failed to mount IMG boot"
-    return 2
-  fi
+  if ! mount_raspbian_boot "$IMG"; then log 2 "Failed to mount IMG boot"; return 2; fi
   # Enable SSH
-  if isRoot; then
-    if ! touch "$BOOTDIR"/ssh; then
-      log 2 "Failed to create SSH file in IMG boot"
-      return 3
-    fi
-  else
-    if ! sudo touch "$BOOTDIR"/ssh; then
-      log 2 "Failed to create SSH file in IMG boot"
-      return 3
-    fi
-  fi
-  umount_raspbian
+  if isRoot; then if ! touch "$BOOTDIR"/ssh; then log 2 "Failed to create SSH file in IMG boot"; return 3; fi
+  else if ! sudo touch "$BOOTDIR"/ssh; then log 2 "Failed to create SSH file in IMG boot"; return 3; fi; fi; umount_raspbian
 }
 
 # Return codes
@@ -981,13 +712,9 @@ function set_static_IP
 {
   [[ "$#" -lt 2 ]] && return 1
   local -r IMG="$1" IP="$2" ROOTDIR="${ROOTDIR:-raspbian_root}"
-  if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
-    return 2
-  fi
+  if ! mount_raspbian "$IMG"; then log 2 "Failed to mount IMG root"; return 2; fi
   
-  if isRoot; then
-    bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
+  if isRoot; then bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
 interface eth0
 static ip_address=$IP/24
 static routers=192.168.0.1
@@ -997,8 +724,7 @@ static domain_name_servers=8.8.8.8
 auto lo
 iface lo inet loopback
 EOF
-  else
-    sudo bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
+  else sudo bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
 interface eth0
 static ip_address=$IP/24
 static routers=192.168.0.1
@@ -1008,9 +734,7 @@ static domain_name_servers=8.8.8.8
 auto lo
 iface lo inet loopback
 EOF
-  fi
-  
-  umount_raspbian
+  fi; umount_raspbian
 }
 
 # Return codes
@@ -1020,23 +744,11 @@ function copy_to_image
 {
   [[ "$#" -lt 2 ]] && return 1
   local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR="${ROOTDIR:-raspbian_root}"
-  if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
-    return 1
-  fi
+  if ! mount_raspbian "$IMG"; then log 2 "Failed to mount IMG root"; return 1; fi
   if isRoot; then
-    if ! cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
-      log 2 "Copy to image failed"
-      return 2
-    fi
-  else
-    if ! sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then
-      log 2 "Copy to image failed"
-      return 2
-    fi
-  fi
-  sync
-  umount_raspbian
+    if ! cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then log 2 "Copy to image failed"; return 2; fi
+  else if ! sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"; then log 2 "Copy to image failed"; return 2; fi
+  fi; sync; umount_raspbian
 }
 
 # Return codes
@@ -1046,20 +758,12 @@ function deactivate_unattended_upgrades
 {
   [[ "$#" -lt 1 ]] && return 1
   local -r IMG="$1" ROOTDIR="${ROOTDIR:-raspbian_root}"
-  if ! mount_raspbian "$IMG"; then
-    log 2 "Failed to mount IMG root"
-    return 2
-  fi
+  if ! mount_raspbian "$IMG"; then log 2 "Failed to mount IMG root"; return 2; fi
   if ! isFile "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades; then
     log 1 "Directory not found: ${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
-  else
-    if isRoot; then
-      rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
-    else
-      sudo rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
-    fi
-  fi
-  umount_raspbian
+  else if isRoot; then rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
+       else sudo rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades; fi
+  fi; umount_raspbian
 }
 
 # Return codes
@@ -1076,34 +780,14 @@ function download_raspbian
            ZIP_CACHE='cache/raspios_lite.xz'
   log -1 "Downloading Raspberry Pi OS"
   mkdir --parents cache
-  if isFile "$IMG_CACHE"; then
-    log -1 "File exists: $IMG_CACHE"
-    log -1 "Skipping download"
-    if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
-      log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
-      return 2
-    fi
-    return 0
-  elif isFile "$ZIP_CACHE"; then
-    log -1 "File exists: $ZIP_CACHE"
-    log -1 "Skipping download"
-  else
-    if ! wget "$URL" -nv -O "$ZIP_CACHE"; then
-      log 2 "Download failed from: $URL"
-      return 3
-    fi
-  fi
+  if isFile "$IMG_CACHE"; then log -1 "File exists: $IMG_CACHE"; log -1 "Skipping download"
+    if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"; return 2; fi; return 0
+  elif isFile "$ZIP_CACHE"; then log -1 "File exists: $ZIP_CACHE"; log -1 "Skipping download"
+  else if ! wget "$URL" -nv -O "$ZIP_CACHE"; then log 2 "Download failed from: $URL"; return 3; fi; fi
 
-  if hasCMD unxz; then
-    unxz -k -c "$ZIP_CACHE" > "$IMG_CACHE"
-    if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then
-      log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
-      return 2
-    fi
-  else
-    log 2 "Missing command: unxz"
-    return 4
-  fi
+  if hasCMD unxz; then unxz -k -c "$ZIP_CACHE" > "$IMG_CACHE"
+    if ! cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE"; then log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"; return 2; fi
+  else log 2 "Missing command: unxz"; return 4; fi
 }
 
 # Return codes
@@ -1119,21 +803,10 @@ function pack_image
   IMGNAME="$( basename "$IMG" )"
   log -1 "Packing image: $IMG → $TAR"
   if isRoot; then
-    if tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then
-      log 0 "$TAR packed successfully"
-      return 0
-    else
-      log 2 "Failed packing IMG: $TAR"
-      return 2
-    fi
-  else
-    if sudo tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then
-      log 0 "$TAR packed successfully"
-      return 0
-    else
-      log 2 "Failed packing IMG: $TAR"
-      return 2
-    fi
+    if tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then log 0 "$TAR packed successfully"; return 0
+    else log 2 "Failed packing IMG: $TAR"; return 2; fi
+  else if sudo tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then log 0 "$TAR packed successfully"; return 0
+       else log 2 "Failed packing IMG: $TAR"; return 2; fi
   fi
 }
 
@@ -1146,16 +819,10 @@ function create_torrent
   local -r TAR="$1"
   local IMGNAME DIR
   log -1 "Creating torrent"
-  if ! isFile "$TAR"; then
-    log 2 "File not found: $TAR"
-    return 1
-  fi
+  if ! isFile "$TAR"; then log 2 "File not found: $TAR"; return 1; fi
   IMGNAME="$( basename "$TAR" .tar.bz2 )"
   DIR="torrent/$IMGNAME"
-  if isDirectory "$DIR"; then
-    log 2 "Directory already exists: $DIR"
-    return 1
-  fi
+  if isDirectory "$DIR"; then log 2 "Directory already exists: $DIR"; return 1; fi
   mkdir --parents torrent/"$IMGNAME" && cp -v --reflink=auto "$TAR" torrent/"$IMGNAME"
   md5sum "$DIR"/*.bz2 > "$DIR"/md5sum
   createtorrent -a udp://tracker.opentrackr.org -p 1337 -c "NextcloudPi. Nextcloud ready to use image" "$DIR" "$DIR".torrent
@@ -1183,24 +850,12 @@ function upload_ftp
   local -r IMGNAME="$1"
   local RET
   log -1 "Upload FTP: $IMGNAME"
-  if ! isFile torrent/"$IMGNAME"/"$IMGNAME".tar.bz2; then
-    log 2 "File not found: $IMGNAME"
-    return 2
-  fi
-  if isZero "$FTPPASS"; then
-    log 2 "No FTP password was found, variable not set, skipping upload"
-    return 0
-  fi
+  if ! isFile torrent/"$IMGNAME"/"$IMGNAME".tar.bz2; then log 2 "File not found: $IMGNAME"; return 2; fi
+  if isZero "$FTPPASS"; then log 2 "No FTP password was found, variable not set, skipping upload"; return 0; fi
 
   if isDirectory torrent; then
-    if ! cd torrent; then
-      log 2 "Failed to change directory"
-      return 3
-    fi
-  else
-    log 2 "Directory not found:  torrent/$IMGNAME"
-    return 4
-  fi
+    if ! cd torrent; then log 2 "Failed to change directory"; return 3; fi
+  else log 2 "Directory not found:  torrent/$IMGNAME"; return 4; fi
 
   ftp -np ftp.ownyourbits.com <<EOF
 user root@ownyourbits.com $FTPPASS
@@ -1212,19 +867,10 @@ rm  $IMGNAME.torrent
 put $IMGNAME.torrent
 bye
 EOF
-  if ! cd -; then
-    log 2 "Failed to change directory to: -"
-    return 3
-  fi
+  if ! cd -; then log 2 "Failed to change directory to: -"; return 3; fi
   if isDirectory torrent/"$IMGNAME"; then
-    if ! cd torrent/"$IMGNAME"; then
-      log 2 "Failed to change directory to: torrent/$IMGNAME"
-      return 3
-    fi
-  else
-    log 2 "Directory not found:  torrent/$IMGNAME"
-    return 4
-  fi
+    if ! cd torrent/"$IMGNAME"; then log 2 "Failed to change directory to: torrent/$IMGNAME"; return 3; fi
+  else log 2 "Directory not found:  torrent/$IMGNAME"; return 4; fi
 
   ftp -np ftp.ownyourbits.com <<EOF
 user root@ownyourbits.com $FTPPASS
@@ -1237,29 +883,16 @@ put md5sum
 bye
 EOF
   RET="$?"
-  if ! cd -; then
-    log 2 "Failed to change directory to: -"
-    return 3
-  fi
+  if ! cd -; then log 2 "Failed to change directory to: -"; return 3; fi
   return "$RET"
 }
 
 function upload_images
 {
-  if ! isDirectory output; then
-    log 2 "Directory not found: output"
-    log 1 "No uploads available"
-    return
-  fi
-  if isZero "$FTPPASS"; then
-    log 2 "No FTP password was found, variable not set, skipping upload"
-    return 0
-  fi
-
+  if ! isDirectory output; then log 2 "Directory not found: output"; log 1 "No uploads available"; return; fi
+  if isZero "$FTPPASS"; then log 2 "No FTP password was found, variable not set, skipping upload"; return 0; fi
   mkdir --parents archive
-  for IMG in output/*.tar.bz2; do
-    upload_ftp "$(basename "$IMG" .tar.bz2)" && mv "$IMG" archive
-  done
+  for IMG in output/*.tar.bz2; do upload_ftp "$(basename "$IMG" .tar.bz2)" && mv "$IMG" archive; done
 }
 
 function upload_docker
@@ -1322,14 +955,8 @@ function is_docker
 {
   (
     if isDirectory build/docker; then
-      if ! cd build/docker; then
-        log 2 "Failed to change directory to: build/docker" 
-        return 3
-      fi
-    else
-      log 2 "Directory not found: build/docker"
-      return 4
-    fi
+      if ! cd build/docker; then log 2 "Failed to change directory to: build/docker" ; return 3; fi
+    else log 2 "Directory not found: build/docker"; return 4; fi
     docker compose down
     docker volume rm docker_ncdata
     docker compose up -d
