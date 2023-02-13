@@ -1,4 +1,8 @@
-﻿. /usr/local/etc/library.sh
+#! /bin/bash
+
+set -e
+source /usr/local/etc/library.sh
+
 cat <<EOF
 Protocols h2 h2c http/1.1
 

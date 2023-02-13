@@ -1,6 +1,11 @@
-﻿. /usr/local/etc/library.sh
-if [[ "$1" == "--defaults" ]]; then
-  echo "Restoring template to default settings" >&2
+#!/usr/bin/env bash
+
+set -e
+source /usr/local/etc/library.sh
+
+if [[ "$1" == "--defaults" ]]
+then
+  echo "INFO: Restoring template to default settings" >&2
   INNODB_BUFFER_POOL_SIZE=256M
 else
   INNODB_BUFFER_POOL_SIZE="$(source "${BINDIR}/CONFIG/nc-limits.sh"; tmpl_innodb_buffer_pool_size)"
