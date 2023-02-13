@@ -276,22 +276,22 @@ function install
     fi
     
     install_with_shadow_workaround --no-install-recommends systemd
-    installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql}
+    installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2}
 
     mkdir --parents "$PHPDAEMON"
 
-    echo -e "[client]\npassword=$DBPASSWD" > /root/.my.cnf
+    printf '%s\n' "[mysqld]" "[client]" "password=$DBPASSWD" > /root/.my.cnf
     chmod 600 /root/.my.cnf
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
-    installPKG mariadb-server
+    installPKG mariadb-server php"$PHPVER"-mysql
     mkdir --parents "$DBDAEMON"
     chown "$DBUSER" "$DBDAEMON"
 
     # CONFIGURE APACHE
     ##########################################
-
+    
     install_template apache2/http2.conf.sh /etc/apache2/conf-available/http2.conf --defaults
 
     # CONFIGURE PHP7
