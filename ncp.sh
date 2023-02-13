@@ -194,8 +194,8 @@ function install
   # add the ncc shortcut
   cat > /usr/local/bin/ncc <<'EOF'
 #!/usr/bin/env bash
-[[ ${EUID} -eq 0 ]] && SUDO="sudo -E -u www-data"
-${SUDO} php /var/www/nextcloud/occ "$@"
+[[ "$EUID" -eq 0 ]] && SUDO=(sudo -E -u www-data)
+"${SUDO[@]}" php /var/www/nextcloud/occ "$@"
 EOF
   chmod +x /usr/local/bin/ncc
 
