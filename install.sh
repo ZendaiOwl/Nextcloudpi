@@ -330,8 +330,7 @@ function installPKG
 function add_install_variable
 {
   declare -x -a INSTALL_VARIABLES; INSTALL_VARIABLES+=("$@")
-  if ! hasText 'INSTALL_VARIABLES' "${INSTALL_VARIABLES[@]}"; then add_install_variable INSTALL_VARIABLES
-  fi
+  if ! hasText 'INSTALL_VARIABLES' "${INSTALL_VARIABLES[@]}"; then add_install_variable INSTALL_VARIABLES; fi
 }
 
 function clean_install_variables
@@ -344,23 +343,16 @@ function clean_install_tmp
   if ! isSet TMPDIR; then log 2 "Variable not set: TMPDIR"; return 1
   elif ! cd -; then log 2 "Unable to change directory to: -"; return 1
   elif ! isDirectory "$TMPDIR"; then log 2 "Directory not found: TMPDIR"; return 1
-  else
-    if isRoot; then rm --recursive --force "$TMPDIR"
-    else sudo rm --recursive --force "$TMPDIR"
-    fi
-  fi
+  else if isRoot; then rm --recursive --force "$TMPDIR"
+       else sudo rm --recursive --force "$TMPDIR"; fi; fi
 }
 
 function clean_install_script
 {
   log -1 "Cleaning up from install script"
-  if isSet TMPDIR; then if isDirectory "$TMP"; then clean_install_tmp
-                        fi
-  fi
-  if isSet INSTALL_VARIABLES; then clean_install_variables
-  fi
-  if isFile '/.ncp-image'; then rm /.ncp-image
-  fi; log 0 "Cleaned up from install script"
+  if isSet TMPDIR; then if isDirectory "$TMP"; then clean_install_tmp; fi; fi
+  if isSet INSTALL_VARIABLES; then clean_install_variables; fi
+  if isFile '/.ncp-image'; then rm /.ncp-image; fi; log 0 "Cleaned up from install script"
 }
 
 
@@ -369,12 +361,9 @@ function clean_install_script
 ########################
 
 
-if ! isRoot; then log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"; exit 1
-fi
+if ! isRoot; then log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"; exit 1; fi
 
-if isSet DBG && notZero "$DBG"; then set -e"$DBG"
-else set -e
-fi
+if isSet DBG && notZero "$DBG"; then set -e"$DBG"; else set -e; fi
 
 # Repository owner
 #OWNER="${OWNER:-nextcloud}"
@@ -420,17 +409,13 @@ trap 'clean_install_script' EXIT SIGHUP SIGILL SIGABRT SIGINT
 
 
 # Add to PATH if needed
-if ! hasText '/usr/local/sbin:/usr/sbin:/sbin:' "$PATH"; then
-  PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
-fi
-
+if ! hasText '/usr/local/sbin:/usr/sbin:/sbin:' "$PATH"; then PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"; fi
 export PATH
 
 # Check for existing MariaDB/MySQL install
 if hasCMD mysqld; then log 1 "Existing MySQL configuration will be changed"
   if isSet DBNAME; then if mysql -e 'use '"$DBNAME"'' &>/dev/null; then { log 2 "Database exists: $DBNAME"; exit 1; }; fi
-  else if mysql -e 'use nextcloud' &>/dev/null; then log 2 "Database exists: nextcloud"; exit 1; fi
-  fi
+  else if mysql -e 'use nextcloud' &>/dev/null; then log 2 "Database exists: nextcloud"; exit 1; fi; fi
 fi
 
 # Install packages
@@ -452,9 +437,7 @@ fi
 
 # Change directory to the code directory in the temporary directory
 if isSet CODE_DIR; then
-  if isDirectory "$CODE_DIR"; then
-    if ! cd "$CODE_DIR"; then log 2 "Failed changing directory to: $CODE_DIR"; exit 1; fi
-  fi
+  if isDirectory "$CODE_DIR"; then if ! cd "$CODE_DIR"; then log 2 "Failed changing directory to: $CODE_DIR"; exit 1; fi; fi
 fi
 
 # Install NextcloudPi
@@ -462,25 +445,21 @@ log -1 "Installing NextcloudPi"
 
 # shellcheck disable=SC1091
 if isFile "$LIBRARY"; then source "$LIBRARY"
-else log 2 "File not found: $LIBRARY"; exit 1
-fi
+else log 2 "File not found: $LIBRARY"; exit 1; fi
 
 # Check so NextcloudPi configuration file exists
 if isFile "$NCPCFG"; then
   # Check so the distribution is supported by the script
   if ! check_distro "$NCPCFG"; then log 2 "Distro not supported"
-    if ! cat '/etc/issue'; then log 2 "Failed to read file: /etc/issue"; fi
-    exit 1
+    if ! cat '/etc/issue'; then log 2 "Failed to read file: /etc/issue"; fi; exit 1
   fi
-else log 2 "File not found: $NCPCFG"; exit 1
-fi
+else log 2 "File not found: $NCPCFG"; exit 1; fi
 
 # Mark the build as an image build for other scripts in the installation/build flow
 if ! touch '/.ncp-image'; then log 2 "Failed to create file: /.ncp-image"; exit 1; fi
 
 # Create the local NextcloudPi configuration directory
-if ! mkdir --parents '/usr/local/etc/ncp-config.d'; then log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"; exit 1
-fi
+if ! mkdir --parents '/usr/local/etc/ncp-config.d'; then log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"; exit 1; fi
 
 # Check so the local & build configuration directories exists and
 # the nextcloud configuration file as well then copy it.
@@ -488,112 +467,90 @@ if isDirectory 'etc/ncp-config.d'; then
   if isDirectory '/usr/local/etc/ncp-config.d'; then
     if isFile 'etc/ncp-config.d/nc-nextcloud.cfg'; then
       if ! cp 'etc/ncp-config.d/nc-nextcloud.cfg' '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'; then
-        log 2 "Failed to copy file: nc-nextcloud.cfg"; exit 1
-      fi
-    else log 2 "File not found: etc/ncp-config.d/nc-nextcloud.cfg"; exit 1
-    fi
-  else log 2 "Directory not found: /usr/local/etc/ncp-config.d"; exit 1
-  fi
-else log 2 "Directory not found: etc/ncp-config.d"; exit 1
-fi
+        log 2 "Failed to copy file: nc-nextcloud.cfg"; exit 1; fi
+    else log 2 "File not found: etc/ncp-config.d/nc-nextcloud.cfg"; exit 1; fi
+  else log 2 "Directory not found: /usr/local/etc/ncp-config.d"; exit 1; fi
+else log 2 "Directory not found: etc/ncp-config.d"; exit 1; fi
 
 if isFile "$LIBRARY"; then
-  if ! cp "$LIBRARY" '/usr/local/etc/library.sh'; then log 2 "Failed to copy file: $LIBRARY"; exit 1
-  fi
+  if ! cp "$LIBRARY" '/usr/local/etc/library.sh'; then log 2 "Failed to copy file: $LIBRARY"; exit 1; fi
   LIBRARY='/usr/local/etc/library.sh'
   declare -x -g LIBRARY
   log -2 "LIBRARY: $LIBRARY"
 fi
 
 if isFile "$NCPCFG"; then
-  if ! cp "$NCPCFG" '/usr/local/etc/ncp.cfg'; then log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1
-  fi
+  if ! cp "$NCPCFG" '/usr/local/etc/ncp.cfg'; then log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1; fi
   NCPCFG='/usr/local/etc/ncp.cfg'
   declare -x -g NCPCFG
   log -2 "NCPCFG: $NCPCFG"
 fi
 
 if isDirectory "$NCP_TEMPLATES_DIR"; then
-  if ! cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/'; then log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1
-  fi
+  if ! cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/'; then log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1; fi
   NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
   declare -x -g NCP_TEMPLATES_DIR; log -2 "NCP_TEMPLATES_DIR: $NCP_TEMPLATES_DIR"
-else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1
-fi
+else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1; fi
 
 # cp etc/library.sh /usr/local/etc/
 # cp etc/ncp.cfg /usr/local/etc/
 # cp -r etc/ncp-templates /usr/local/etc/
 
 if isFile 'lamp.sh'; then install_app lamp.sh
-else log 2 "File not found: lamp.sh"; exit 1
-fi
+else log 2 "File not found: lamp.sh"; exit 1; fi
 
 if isFile 'bin/ncp/CONFIG/nc-nextcloud.sh'; then install_app bin/ncp/CONFIG/nc-nextcloud.sh
-else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1
-fi
+else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1; fi
 
 if isFile 'bin/ncp/CONFIG/nc-nextcloud.sh'; then run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh
-else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1
-fi
+else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1; fi
 
 # armbian overlay is ro
 if isFile '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'; then rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg
-else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-nextcloud.cfg"; exit 1
-fi
+else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-nextcloud.cfg"; exit 1; fi
 
 systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
 
 if isFile 'ncp.sh'; then install_app ncp.sh
-else log 2 "File not found: ncp.sh"; exit 1
-fi
+else log 2 "File not found: ncp.sh"; exit 1; fi
 
 if isFile 'bin/ncp/CONFIG/nc-init.sh'; then run_app_unsafe bin/ncp/CONFIG/nc-init.sh
-else log 2 "File not found: bin/ncp/CONFIG/nc-init.sh"; exit 1
-fi
+else log 2 "File not found: bin/ncp/CONFIG/nc-init.sh"; exit 1; fi
 
 log -1 "Moving data directory to: /opt/ncdata"
 df -h
 mkdir --parents /opt/ncdata
 
-if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg" ]]; then
-  should_rm_datadir_cfg=true
+if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg" ]]; then should_rm_datadir_cfg=true
   if isFile 'etc/ncp-config.d/nc-datadir.cfg'; then
     if ! cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg'; then
       log 2 "Filed to copy file: etc/ncp-config.d/nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
     fi
-  else log 2 "File not found: etc/ncp-config.d/nc-datadir.cfg"; exit 1
-  fi
+  else log 2 "File not found: etc/ncp-config.d/nc-datadir.cfg"; exit 1; fi
 fi
 
 if isFile 'bin/ncp/CONFIG/nc-datadir.sh'; then
   DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/CONFIG/nc-datadir.sh'
-else log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
-fi
+else log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1; fi
 
 if notZero "$should_rm_datadir_cfg"; then
   if isFile '/usr/local/etc/ncp-config.d/nc-datadir.cfg'; then rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
-  else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
-  fi
+  else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1; fi
 fi
 
-if isFile '/.ncp-image'; then rm '/.ncp-image'
-fi
+if isFile '/.ncp-image'; then rm '/.ncp-image'; fi
 
 # Skip on Armbian / Vagrant / LXD
 if notZero "$CODE_DIR"; then
   if isFile '/usr/local/bin/ncp-provisioning.sh'; then
     bash /usr/local/bin/ncp-provisioning.sh
-  else log 2 "File not found: /usr/local/bin/ncp-provisioning.sh"; exit 1
-  fi
+  else log 2 "File not found: /usr/local/bin/ncp-provisioning.sh"; exit 1; fi
 fi
 
-if ! cd -; then log 2 "Failed to change directory to: -"; exit 1
-fi
+if ! cd -; then log 2 "Failed to change directory to: -"; exit 1; fi
 
 if isDirectory "$TMPDIR"; then rm --recursive --force "$TMPDIR"
-else log 2 "Directory not found: $TMPDIR"; exit 1
-fi
+else log 2 "Directory not found: $TMPDIR"; exit 1; fi
 
 trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 
