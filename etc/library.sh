@@ -362,22 +362,19 @@ function hasPKG
 # Return codes
 # 0: Install completed
 # 1: Coudn't update apt list
-# 2: Error during installation
-# 3: Invalid number of arguments
+# 2: Invalid number of arguments
 function updatePKG
 {
-  if [[ "$#" -ne 0 ]]; then log 2 "Invalid number of arguments, requires none"; return 3
+  if [[ "$#" -ne 0 ]]; then log 2 "Invalid number of arguments, requires none"; return 2
   else local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
        local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                 ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
     if isRoot; then log -1 "Updating apt lists"
       if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-      else log 2 "Couldn't update apt lists"; return 1
-      fi
+      else log 2 "Couldn't update apt lists"; return 1; fi
     else log -1 "Updating apt lists"
          if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1
-         fi
+         else log 2 "Couldn't update apt lists"; return 1; fi
     fi
   fi
 }

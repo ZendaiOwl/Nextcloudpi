@@ -25,28 +25,23 @@ function log
          2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-    fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
   fi
 }
 
 function remove_tmp_directory
 {
   if ! rm --recursive --force "$TMPDIR"; then log 2 "Failed to remove directory: $TMPDIR"; return 1
-  else log 0 "Removed tmp directory: $TMPDIR"; return 0
-  fi
+  else log 0 "Removed tmp directory: $TMPDIR"; return 0; fi
 }
 
 function clean_ncp_update
 {
-  if ! cd /; then
-    log 2 "Failed to change directory to: /"
+  if ! cd /; then log 2 "Failed to change directory to: /"
     log -1 "Attempting to remove tmp directory nonetheless"
-    if ! remove_tmp_directory; then exit 1
-    fi
+    if ! remove_tmp_directory; then exit 1; fi
   else
-    if ! remove_tmp_directory; then exit 1
-    fi
+    if ! remove_tmp_directory; then exit 1; fi
   fi
 }
 
@@ -61,8 +56,7 @@ If you are sure that you know what you are doing, you can still execute the upda
 fi
 
 {
-  if [[ "$(id -u)" -ne 0 ]]; then log 2 "Must be run as root or with sudo. Try 'sudo ${BASH_SOURCE[0]}'"; exit 1
-  fi
+  if [[ "$(id -u)" -ne 0 ]]; then log 2 "Must be run as root or with sudo. Try 'sudo ${BASH_SOURCE[0]}'"; exit 1; fi
 
   #OWNER="${OWNER:-nextcloud}"
   OWNER="${OWNER:-ZendaiOwl}"
@@ -81,8 +75,7 @@ fi
   # shellcheck disable=SC2164
   [[ -f /.ncp-image ]] || {
     # Update locally during build
-    if ! cd "$TMPDIR"; then log 2 "Failed to change directory to: $TMPDIR"; exit 1
-    fi
+    if ! cd "$TMPDIR"; then log 2 "Failed to change directory to: $TMPDIR"; exit 1; fi
 
     [[ -z "$2" ]] || {
       git fetch origin "$2" || {
