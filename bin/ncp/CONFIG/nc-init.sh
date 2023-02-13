@@ -8,23 +8,29 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print
+{
+  printf '%s\n' "$@"
+}
+
 DBADMIN='ncadmin'
 
 function configure
 {
-  echo "Setting up a clean Nextcloud instance... wait until message 'NC init done'"
+  Print "Setting up a Nextcloud instance"
+  Print "Wait until you see the message: NC init done"
 
   # checks
-  local REDISPASS=$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )
-  [[ "$REDISPASS" == "" ]] && { echo "redis server without a password. Abort"; return 1; }
+  local REDISPASS="$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )"
+  [[ "$REDISPASS" == "" ]] && { Print "Redis server is without a password"; return 1; }
 
   ## RE-CREATE DATABASE TABLE
 
-  echo "Setting up database..."
+  Print "Setting up: Database"
 
   # launch mariadb if not already running
-  if ! [[ -f /run/mysqld/mysqld.pid ]]; then
-    echo "Starting mariaDB"
+  if ! [[ -f /run/mysqld/mysqld.pid ]]; then Print "Starting MariaDB"
     mysqld &
     local db_pid="$!"
   fi
@@ -37,7 +43,7 @@ function configure
   sleep 1
 
   # workaround to emulate DROP USER IF EXISTS ..;)
-  local DBPASSWD=$( grep password /root/.my.cnf | sed 's|password=||' )
+  local DBPASSWD="$( grep password /root/.my.cnf | sed 's|password=||' )"
   mysql <<EOF
 DROP DATABASE IF EXISTS nextcloud;
 CREATE DATABASE nextcloud
@@ -54,8 +60,9 @@ EOF
 
   # make sure redis is running first
   if ! pgrep -c redis-server &>/dev/null; then
-    mkdir -p /var/run/redis
-    chown redis /var/run/redis
+    mkdir --parents /var/run/redis
+    chown redis     /var/run/redis
+    # Add hostname check to stop sudo error: unable to resolve host
     sudo -u redis redis-server /etc/redis/redis.conf &
   fi
 
@@ -65,7 +72,7 @@ EOF
   done
 
 
-  echo "Setting up Nextcloud..."
+  Print "Setting up: Nextcloud"
 
   cd /var/www/nextcloud/
   rm -f config/config.php
@@ -92,8 +99,8 @@ EOF
 EOF
 
   # tmp upload dir
-  local UPLOADTMPDIR=/var/www/nextcloud/data/tmp
-  mkdir -p "$UPLOADTMPDIR"
+  local UPLOADTMPDIR='/var/www/nextcloud/data/tmp'
+  mkdir --parents "$UPLOADTMPDIR"
   chown www-data:www-data "$UPLOADTMPDIR"
   ncc config:system:set tempdirectory --value "$UPLOADTMPDIR"
   sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/"$PHPVER"/cli/php.ini
@@ -112,13 +119,13 @@ EOF
   ncc config:system:set mail_smtpmode     --value="sendmail"
   ncc config:system:set mail_smtpauthtype --value="LOGIN"
   ncc config:system:set mail_from_address --value="admin"
-  ncc config:system:set mail_domain       --value="ownyourbits.com"
+  ncc config:system:set mail_domain       --value="nextcloudpi.com"
 
   # NCP theme
   [[ -e /usr/local/etc/logo ]] && {
-    local ID=$( grep instanceid config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )
+    local ID="$( grep instanceid config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
     [[ "$ID" == "" ]] && { echo "failed to get ID"; return 1; }
-    mkdir -p data/appdata_"$ID"/theming/images
+    mkdir --parents data/appdata_"$ID"/theming/images
     cp /usr/local/etc/background data/appdata_"$ID"/theming/images
     cp /usr/local/etc/logo data/appdata_"$ID"/theming/images/logo
     cp /usr/local/etc/logo data/appdata_"$ID"/theming/images/logoheader
@@ -140,13 +147,13 @@ EOF
 
   # enable some apps by default
   ncc app:install calendar
-  ncc app:enable  calendar
+  # ncc app:enable  calendar
   ncc app:install contacts
-  ncc app:enable  contacts
+  # ncc app:enable  contacts
   ncc app:install notes
-  ncc app:enable  notes
+  # ncc app:enable  notes
   ncc app:install tasks
-  ncc app:enable  tasks
+  # ncc app:enable  tasks
 
   # we handle this ourselves
   ncc app:disable updatenotification
@@ -154,19 +161,19 @@ EOF
   # News dropped support for 32-bit -> https://github.com/nextcloud/news/issues/1423
   if ! [[ "$ARCH" =~ armv7 ]]; then
     ncc app:install news
-    ncc app:enable  news
+    # ncc app:enable  news
   fi
 
   # ncp-previewgenerator
   local ncver
   ncver="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
   if is_more_recent_than "21.0.0" "${ncver}"; then
-    local ncprev=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20
+    ncprev='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
   else
     ncc app:install notify_push
     ncc app:enable  notify_push
-    test -f /.ncp-image || start_notify_push # don't start during build
-    local ncprev=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21
+    [[ -f /.ncp-image ]] || start_notify_push # don't start during build
+    ncprev='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
   fi
   ln -snf "${ncprev}" /var/www/nextcloud/apps/previewgenerator
   chown -R www-data: /var/www/nextcloud/apps/previewgenerator
@@ -182,32 +189,32 @@ EOF
   ncc config:app:set preview jpeg_quality --value="60"
 
   # other
-  ncc config:system:set overwriteprotocol --value=https
+  ncc config:system:set overwriteprotocol --value='https'
   ncc config:system:set overwrite.cli.url --value="https://nextcloudpi/"
 
   # bash completion for ncc
   apt_install bash-completion
   ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
-  echo ". /etc/bash_completion" >> /etc/bash.bashrc
-  echo ". /usr/share/bash-completion/completions/ncp" >> /etc/bash.bashrc
+  Print ". /etc/bash_completion" >> /etc/bash.bashrc
+  Print ". /usr/share/bash-completion/completions/ncp" >> /etc/bash.bashrc
 
   # TODO temporary workaround for https://github.com/nextcloud/server/pull/13358
   ncc -n db:convert-filecache-bigint
   ncc db:add-missing-indices
 
   # Default trusted domain (only from ncp-config)
-  test -f /usr/local/bin/nextcloud-domain.sh && {
-    test -f /.ncp-image || bash /usr/local/bin/nextcloud-domain.sh
+  [[ -f /usr/local/bin/nextcloud-domain.sh ]] && {
+    [[ -f /.ncp-image ]] || bash /usr/local/bin/nextcloud-domain.sh
   }
 
   # dettach mysql during the build
   if [[ "$db_pid" != "" ]]; then
-    echo "Shutting down mariaDB ($db_pid)"
+    Print "Shutting down MariaDB ($db_pid)"
     mysqladmin -u root shutdown
     wait "$db_pid"
   fi
 
-  echo "NC init done"
+  Print "NC init done"
 }
 
 function install { :; }
