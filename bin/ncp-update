@@ -91,7 +91,7 @@ fi
   BRANCH="${1:-master}"
   [[ "$BRANCH" != "master" ]] && log -1 "Updating to development branch: $BRANCH"
 
-  TMPDIR="$( mktemp -d /tmp/ncp-update.XXXXXX || ({ log 2 "Failed to create temp dir. Exiting"; exit 1 }) )"
+  TMPDIR="$(mktemp -d /tmp/ncp-update.XXXXXX || {( log 2 "Failed to create temp dir. Exiting"; exit 1; )})"
   trap 'clean_ncp_update' EXIT SIGHUP SIGILL SIGABRT SIGINT
 
   log -1 "Downloading updates"

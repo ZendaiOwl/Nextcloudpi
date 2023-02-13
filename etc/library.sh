@@ -1111,9 +1111,7 @@ else INIT_SYSTEM="unknown"; fi
 
 unset DETECT_DOCKER
 
-if ! hasCMD jq; then
-  if ! installPKG jq; then return 1; fi
-fi
+if ! hasCMD jq; then if ! installPKG jq; then return 1; fi; fi
 
 NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
 PHPVER="$(     jq -r '.php_version'       "$NCPCFG")"
@@ -1127,8 +1125,7 @@ fi
 
 if hasCMD ncc; then
   NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-  log -2 "Found command: ncc"
-  log -2 "NCVER: $NCVER"
+  log -2 "Found command: ncc"; log -2 "NCVER: $NCVER"
 fi
 
 # Prevent systemd pager from blocking script execution
