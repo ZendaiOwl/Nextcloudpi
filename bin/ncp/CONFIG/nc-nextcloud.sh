@@ -234,11 +234,11 @@ function configure
   chmod +x "$OCPATH"/occ
 
   log -1 "chmod ($HTUSER) & chown (0644): .htaccess"
-  if [ -f "$OCPATH"/.htaccess ]; then
+  if [[ -f "$OCPATH"/.htaccess ]]; then
     chmod 0644 "$OCPATH"/.htaccess
     chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
   fi
-  if [ -f "$OCPATH"/data/.htaccess ]; then
+  if [[ -f "$OCPATH"/data/.htaccess ]]; then
     chmod 0644 "$OCPATH"/data/.htaccess
     chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
   fi
