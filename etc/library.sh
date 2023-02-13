@@ -1115,19 +1115,13 @@ fi
 
 export CFGDIR
 
-log -2 "CFGDIR: $CFGDIR"
-
 BINDIR="${BINDIR:-/usr/local/bin/ncp}"
 
 export BINDIR
 
-log -2 "BINDIR: $BINDIR"
-
 NCDIR="${NCDIR:-/var/www/nextcloud}"
 
 export NCDIR
-
-log -2 "NCDIR: $NCDIR"
 
 ncc="${ncc:-/usr/local/bin/ncc}"
 
@@ -1136,8 +1130,6 @@ export ncc
 # if isFile "$ncc"; then
 #   ncc="$ncc"
 # fi
-
-log -2 "ncc: $ncc"
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 
@@ -1148,16 +1140,14 @@ elif isFile '/usr/local/etc/ncp.cfg'; then
 elif isFile 'ncp.cfg'; then
   NCPCFG='ncp.cfg'
 else
-  log 2 "File not found: ncp.cfg" >&2
+  log 2 "File not found: ncp.cfg"
   return 1
 fi
 
 export NCPCFG
 
-log -2 "NCPCFG: $NCPCFG"
-
 if ! hasCMD dpkg; then
-  log 2 "Missing command: dpkg" >&2
+  log 2 "Missing command: dpkg"
   return 1
 else
   ARCH="$(dpkg --print-architecture)"
@@ -1210,12 +1200,6 @@ export NCVER
 export NCLATESTVER
 export PHPVER
 export RELEASE
-
-log -2 "ARCH: $ARCH"
-log -2 "NCLATESTVER: $NCLATESTVER"
-log -2 "PHPVER: $PHPVER"
-log -2 "RELEASE: $RELEASE"
-log -2 "CFGRELEASE: $CFGRELEASE"
 
 
 # License

@@ -280,7 +280,8 @@ function install
 
     mkdir --parents "$PHPDAEMON"
 
-    printf '%s\n' "[mysqld]" "[client]" "password=$DBPASSWD" > /root/.my.cnf
+    #printf '%s\n' "[mysqld]" "[client]" "password=$DBPASSWD" > /root/.my.cnf
+    printf '%s\n' "[client]" "password=$DBPASSWD" > /root/.my.cnf
     chmod 600 /root/.my.cnf
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
