@@ -31,8 +31,7 @@ function log
          2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-    fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
   fi
 }
 
@@ -61,8 +60,7 @@ function isRoot
 function hasCMD
 {
   if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
-    if command -v "$CHECK" &>/dev/null; then return 0; else return 1; fi
-  else return 2; fi
+    if command -v "$CHECK" &>/dev/null; then return 0; else return 1; fi; else return 2; fi
 }
 
 # Installs package(s) using the package manager and pre-configured options
@@ -185,8 +183,7 @@ ExecStart=/bin/bash /usr/local/bin/ncp-provisioning.sh
 [Install]
 WantedBy=multi-user.target
 EOF
-  [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nc-provisioning
-  return 0
+  [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nc-provisioning; return 0
 }
 
 function configure
@@ -265,8 +262,7 @@ function configure
     local DB_PID="$!"
   fi
 
-  while :; do
-    [[ -S "$MYSQL_SOCKET" ]] && break
+  while :; do [[ -S "$MYSQL_SOCKET" ]] && break
     sleep 1
   done
 
@@ -330,10 +326,10 @@ EOF
 
   ## SET LIMITS
   cat > /etc/php/"$PHPVER"/fpm/conf.d/90-ncp.ini <<EOF
-# disable .user.ini files for performance and workaround NC update bugs
+; disable .user.ini files for performance and workaround NC update bugs
 user_ini.filename =
 
-# from Nextcloud .user.ini
+; from Nextcloud .user.ini
 upload_max_filesize=$MAXFILESIZE
 post_max_size=$MAXFILESIZE
 memory_limit=$MEMORYLIMIT
@@ -342,7 +338,7 @@ always_populate_raw_post_data=-1
 default_charset='UTF-8'
 output_buffering=0
 
-# slow transfers will be killed after this time
+; slow transfers will be killed after this time
 max_execution_time=$MAXTRANSFERTIME
 max_input_time=$MAXTRANSFERTIME
 EOF
@@ -354,11 +350,8 @@ EOF
 
   # Detach MySQL during the build
   if [[ "$DB_PID" != "" ]]; then log -1 "Shutting down MariaDB [$DB_PID]"
-    mysqladmin -u root shutdown
-    wait "$DB_PID"
-  fi
-  log 0 "Completed: ${BASH_SOURCE[0]##*/}"
-  log -1 "Don't forget to run nc-init"
+    mysqladmin -u root shutdown; wait "$DB_PID"
+  fi; log 0 "Completed: ${BASH_SOURCE[0]##*/}"; log -1 "Don't forget to run nc-init"
 }
 
 # License
