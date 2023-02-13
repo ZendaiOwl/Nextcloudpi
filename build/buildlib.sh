@@ -29,7 +29,7 @@ function log
       case "$LOGLEVEL" in
         -2)
            local -r CYAN='\e[1;36m'
-           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT"
+           printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
            ;;
         -1)
            local -r BLUE='\e[1;34m'
@@ -52,6 +52,12 @@ function log
       log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
     fi
   fi
+}
+
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print
+{
+  printf '%s\n' "$@"
 }
 
 # Test if a function() is available
