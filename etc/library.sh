@@ -33,8 +33,7 @@ function log
          2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
            ;;
       esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-    fi
+    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
   fi
 }
 
@@ -327,8 +326,7 @@ function hasText
 function hasCMD
 {
   if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
-    if command -v "$CHECK" &>/dev/null; then return 0
-    else return 1; fi
+    if command -v "$CHECK" &>/dev/null; then return 0; else return 1; fi
   else return 2; fi
 }
 
@@ -356,9 +354,28 @@ function hasPKG
 {
   if [[ "$#" -eq 1 ]]; then local -r CHECK="$1"
     if dpkg-query --status "$CHECK" &>/dev/null; then return 0
-    elif apt-cache show "$CHECK" &>/dev/null; then return 1
-    else return 2; fi
+    elif apt-cache show "$CHECK" &>/dev/null; then return 1; else return 2; fi
   else return 3; fi
+}
+
+# Update apt list and packages
+# Return codes
+# 0: Install completed
+# 1: Coudn't update apt list
+# 2: Error during installation
+# 3: Invalid number of arguments
+function updatePKG
+{
+  if [[ "$#" -ne 0 ]]; then log 2 "Invalid number of arguments, requires none"; return 3
+  else local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+       local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+                ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
+  if isRoot; then log -1 "Updating apt lists"
+    if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+    else log 2 "Couldn't update apt lists"; return 1; fi;
+  else log -1 "Updating apt lists"
+       if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+       else log 2 "Couldn't update apt lists"; return 1; fi;
 }
 
 # Installs package(s) using the package manager and pre-configured options
@@ -371,19 +388,13 @@ function installPKG
 {
   if [[ "$#" -eq 0 ]]; then log 2 "Requires: [PKG(s) to install]"; return 3
   else local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-       local -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-                SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-                ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
+       local -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                 ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
        local PKG=(); IFS=' ' read -ra PKG <<<"$@"
-       if [[ ! "$EUID" -eq 0 ]]; then log -1 "Updating apt lists"
-         if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
+       if [[ ! "$EUID" -eq 0 ]]; then updatePKG; log -1 "Installing ${PKG[*]}"
          if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
          else log 2 "Something went wrong during installation"; return 2; fi
-       else log -1 "Updating apt lists"
-            if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-            else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
+       else updatePKG; log -1 "Installing ${PKG[*]}"
             if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
             else log 2 "Something went wrong during installation"; return 1; fi
        fi
