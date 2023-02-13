@@ -917,7 +917,7 @@ function needs_decrypt
 {
   local ACTIVE
   ACTIVE="$(find_app_param_num nc-encrypt ACTIVE)"
-  (! isActiveApp nc-encrypt) && isMatch "$ACTIVE" "yes"
+  (! is_active_app nc-encrypt) && isMatch "$ACTIVE" "yes"
 }
 
 function set_ncpcfg {
