@@ -404,14 +404,12 @@ function install_with_shadow_workaround
     [[ -L /etc/shadow ]] || RESTORE_SHADOW=false
     [[ "$RESTORE_SHADOW" == "false" ]] || {
       trap "mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow" EXIT SIGINT SIGABRT SIGHUP
-      rm /etc/shadow
-      cp /data/etc/shadow /etc/shadow
+      rm /etc/shadow; cp /data/etc/shadow /etc/shadow
     }
     if isRoot; then DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes "$@"
     else DEBIAN_FRONTEND=noninteractive sudo apt-get install --assume-yes "$@"; fi
     [[ "$RESTORE_SHADOW" == "false" ]] || {
-      mv /etc/shadow /data/etc/shadow
-      ln -s /data/etc/shadow /etc/shadow
+      mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow
     }
     trap - EXIT SIGINT SIGABRT SIGHUP
   )
