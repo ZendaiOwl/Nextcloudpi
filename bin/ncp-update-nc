@@ -17,49 +17,46 @@
 # - failure at each test point
 # -> must pass basic NC in tests.py ( meaning it's not in a broken state )
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
+
 # A log that uses log levels for logging different outputs
-# Log levels
-# -2: Debug
-# -1: Info
-#  0: Success
-#  1: Warning
-#  2: Error
-function log
-{
-  if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
-    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
-      case "$LOGLEVEL" in
-        -2) local -r CYAN='\e[1;36m'; printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
-           ;;
-        -1) local -r BLUE='\e[1;34m'; printf "${BLUE}INFO${Z} %s\n" "$TEXT"
-           ;;
-         0) local -r GREEN='\e[1;32m'; printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
-           ;;
-         1) local -r YELLOW='\e[1;33m'; printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
-           ;;
-         2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
-           ;;
-      esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-    fi
+# Log levels  | Colour
+# -2: Debug   | CYAN='\e[1;36m'
+# -1: Info    | BLUE='\e[1;34m'
+#  0: Success | GREEN='\e[1;32m'
+#  1: Warning | YELLOW='\e[1;33m'
+#  2: Error   | RED='\e[1;31m'
+function log {
+    if [[ "$#" -gt 0 ]]
+    then declare -r LOGLEVEL="$1" TEXT="${*:2}"
+         if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+         then case "$LOGLEVEL" in
+                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "$TEXT" >&2 ;;
+                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "$TEXT"     ;;
+                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "$TEXT"     ;;
+                   1) printf '\e[1;33mWARNING\e[0m %s\n' "$TEXT"     ;;
+                   2) printf '\e[1;31mERROR\e[0m %s\n'   "$TEXT" >&2 ;;
+              esac
+         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         fi
   fi
 }
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print
-{
-  printf '%s\n' "$@"
-}
+#########################
+# Bash - Test Functions #
+#########################
 
 # Check if user ID executing script is 0 or not
 # Return codes
 # 0: Is root
 # 1: Not root
 # 2: Invalid number of arguments
-function isRoot
-{
-  [[ "$#" -ne 0 ]] && return 2
-  [[ "$EUID" -eq 0 ]]
+function isRoot {
+    [[ "$#" -ne 0 ]] && return 2
+    [[ "$EUID" -eq 0 ]]
 }
 
 # Checks if a user exists
@@ -67,10 +64,12 @@ function isRoot
 # 0: Is a user
 # 1: Not a user
 # 2: Invalid number of arguments
-function isUser
-{
-  [[ "$#" -ne 1 ]] && return 2
-  if id -u "$1" &>/dev/null; then return 0; else return 1; fi
+function isUser {
+    [[ "$#" -ne 1 ]] && return 2
+    if id -u "$1" &>/dev/null
+    then return 0
+    else return 1
+    fi
 }
 
 # Checks if a given path to a file exists
@@ -78,50 +77,45 @@ function isUser
 # 0: Path exist
 # 1: No such path
 # 2: Invalid number of arguments
-function isPath
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -e "$1" ]]
+function isPath {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -e "$1" ]]
 }
 
 # Checks if a given path is a regular file
 # 0: Is a file
 # 1: Not a file
 # 2: Invalid number of arguments
-function isFile
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -f "$1" ]]
+function isFile {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -f "$1" ]]
 }
 
 # Checks if a given path is a readable file
 # 0: Is readable
 # 1: Not readable
 # 2: Invalid number of arguments
-function isReadable
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -r "$1" ]]
+function isReadable {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -r "$1" ]]
 }
 
 # Checks if a given path is a writable file
 # 0: Is writable
 # 1: Not writable
 # 2: Invalid number of arguments
-function isWritable
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -w "$1" ]]
+function isWritable {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -w "$1" ]]
 }
 
 # Checks if a given path is an executable file
 # 0: Is executable
 # 1: Not executable
 # 2: Invalid number of arguments
-function isExecutable
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -x "$1" ]]
+function isExecutable {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -x "$1" ]]
 }
 
 # Checks if given path is a directory 
@@ -129,10 +123,9 @@ function isExecutable
 # 0: Is a directory
 # 1: Not a directory
 # 2: Invalid number of arguments
-function isDirectory
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -d "$1" ]]
+function isDirectory {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -d "$1" ]]
 }
 
 # Checks if given path is a named pipe
@@ -140,21 +133,9 @@ function isDirectory
 # 0: Is a named pipe
 # 1: Not a named pipe
 # 2: Invalid number of arguments
-function isPipe
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -p "$1" ]]
-}
-
-# Checks if a given path is a socket
-# Return codes
-# 0: Is a socket
-# 1: Not a socket
-# 2: Invalid number of arguments
-function isSocket
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -S "$1" ]]
+function isPipe {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -p "$1" ]]
 }
 
 # Checks if the first given digit is greater than the second digit
@@ -162,10 +143,9 @@ function isSocket
 # 0: Is greater
 # 1: Not greater
 # 2: Invalid number of arguments
-function isGreater
-{
-  [[ "$#" -ne 2 ]] && return 2
-  [[ "$1" -gt "$2" ]]
+function isGreater {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" -gt "$2" ]]
 }
 
 # Checks if the first given digit is greater than or equal to the second digit
@@ -173,10 +153,9 @@ function isGreater
 # 0: Is greater than or equal
 # 1: Not greater than or equal
 # 2: Invalid number of arguments
-function isGreaterOrEqual
-{
-  [[ "$#" -ne 2 ]] && return 2
-  [[ "$1" -ge "$2" ]]
+function isGreaterOrEqual {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" -ge "$2" ]]
 }
 
 # Checks if the first given digit is less than the second digit
@@ -184,10 +163,9 @@ function isGreaterOrEqual
 # 0: Is less
 # 1: Not less
 # 2: Invalid number of arguments
-function isLess
-{
-  [[ "$#" -ne 2 ]] && return 2
-  [[ "$1" -lt "$2" ]]
+function isLess {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" -lt "$2" ]]
 }
 
 # Checks if a given variable has been set and is a name reference
@@ -195,10 +173,19 @@ function isLess
 # 0: Is set name reference
 # 1: Not set name reference
 # 2: Invalid number of arguments
-function isReference
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -R "$1" ]]
+function isReference {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -R "$1" ]]
+}
+
+# Checks if a given path is a socket
+# Return codes
+# 0: Is a socket
+# 1: Not a socket
+# 2: Invalid number of arguments
+function isSocket {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -S "$1" ]]
 }
 
 # Checks if a given variable has been set and assigned a value.
@@ -206,10 +193,9 @@ function isReference
 # 0: Is set
 # 1: Not set 
 # 2: Invalid number of arguments
-function isSet
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -v "$1" ]]
+function isSet {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -v "$1" ]]
 }
 
 # Checks if a given variable has been set and assigned a value.
@@ -217,10 +203,9 @@ function isSet
 # 0: Not set
 # 1: Is set 
 # 2: Invalid number of arguments
-function notSet
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ ! -v "$1" ]]
+function notSet {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ ! -v "$1" ]]
 }
 
 # Checks if 2 given digits are equal
@@ -228,10 +213,9 @@ function notSet
 # 0: Is equal
 # 1: Not equal
 # 2: Invalid number of arguments
-function isEqual
-{
-  [[ "$#" -ne 2 ]] && return 2
-  [[ "$1" -eq "$2" ]]
+function isEqual {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" -eq "$2" ]]
 }
 
 # Checks if 2 given digits are not equal
@@ -239,10 +223,9 @@ function isEqual
 # 0: Not equal
 # 1: Is equal
 # 2: Invalid number of arguments
-function notEqual
-{
-  [[ "$#" -ne 2 ]] && return 2
-  [[ "$1" -ne "$2" ]]
+function notEqual {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" -ne "$2" ]]
 }
 
 # Checks if 2 given String variables match
@@ -250,10 +233,9 @@ function notEqual
 # 0: Is a match
 # 1: Not a match
 # 2: Invalid number of arguments
-function isMatch
-{
-  [[ "$#" -ne 2 ]] && return 2
-  [[ "$1" == "$2" ]]
+function isMatch {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" == "$2" ]]
 }
 
 # Checks if 2 given String variables do not match
@@ -261,10 +243,9 @@ function isMatch
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function notMatch
-{
-  [[ "$#" -ne 2 ]] && return 2
-  [[ "$1" != "$2" ]]
+function notMatch {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" != "$2" ]]
 }
 
 # Checks if a given String is zero
@@ -272,10 +253,9 @@ function notMatch
 # 0: Is zero
 # 1: Not zero
 # 2: Invalid number of arguments
-function isZero
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -z "$1" ]]
+function isZero {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -z "$1" ]]
 }
 
 # Checks if a given String is not zero
@@ -283,43 +263,80 @@ function isZero
 # 0: Not zero
 # 1: Is zero
 # 2: Invalid number of arguments
-function notZero
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -n "$1" ]]
+function notZero {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -n "$1" ]]
 }
 
-# Checks if a given pattern exists in a String
+# Checks if a given variable is an array or not
+# Return codes
+# 0: Variable is an array
+# 1: Variable is not an array
+# 2: Missing argument: Variable to check
+function isArray {
+    if [[ "$#" -ne 1 ]]
+    then return 2
+    elif ! declare -a "$1" &>/dev/null
+    then return 1
+    else return 0
+    fi
+}
+
+# Test if a function() is available
+# Return codes
+# 0: Available
+# 1: Unvailable
+# 2: Too many/few arguments
+function isFunction {
+    if [[ "$#" -eq 1 ]]
+    then declare -r FUNC="$1"
+         if declare -f "$FUNC" &>/dev/null
+         then return 0
+         else return 1
+         fi
+    else return 2
+    fi
+}
+
+# Checks if a given pattern in a String
 # Return codes
 # 0: Has String pattern
 # 1: No String pattern
 # 2: Invalid number of arguments
-function hasText
-{
-  [[ "$#" -ne 2 ]] && return 2
-  local -r PATTERN="$1" STRING="$2"
-  [[ "$STRING" == *"$PATTERN"* ]]
+function hasText {
+    [[ "$#" -ne 2 ]] && return 2
+    declare -r PATTERN="$1" STRING="$2"
+    [[ "$STRING" == *"$PATTERN"* ]]
 }
 
 VER="$1"
 BIN="${0##*/}"
 
 # shellcheck disable=SC1090
-if isFile '/usr/local/etc/library.sh'; then source '/usr/local/etc/library.sh'
-elif isFile 'etc/library.sh'; then source '/usr/local/etc/library.sh'; fi
+if isFile '/usr/local/etc/library.sh'
+then source '/usr/local/etc/library.sh'
+elif isFile 'etc/library.sh'
+then source '/usr/local/etc/library.sh'
+fi
 
 # pre-checks
 ####################
-if isZero "$VER"; then log 2 "Usage: $BIN <version>"; exit 1; fi
+if isZero "$VER"
+then log 2 "Usage: $BIN <version>"; exit 1
+fi
 
-if isFile '/.docker-image'; then BASEDIR='/data'
-else BASEDIR='/var/www'; fi
+if isFile '/.docker-image'
+then BASEDIR='/data'
+else BASEDIR='/var/www'
+fi
 
 log -2 "BASEDIR: $BASEDIR"
 
-if ! cd "$BASEDIR"; then log 2 "Failed to change directory to: $BASEDIR"; exit 1; fi
+if ! cd "$BASEDIR"
+then log 2 "Failed to change directory to: $BASEDIR"; exit 1
+fi
 
-DATADIR="$( get_nc_config_value datadirectory )"
+DATADIR="$(get_nc_config_value datadirectory)"
 ncc status &>/dev/null          || { [[ "$DBG" == "x" ]] && ncc status; log 2 "Nextcloud is currently down"; exit 1; }
 [[ -d /var/www/nextcloud-old ]] && { log 2 "Nextcloud backup directory found. Interrupted or already running installation?"; exit 1; }
 [[ -d /var/www/nextcloud     ]] || { log 2 "Nextcloud directory not found"; exit 1; }
@@ -328,47 +345,52 @@ ncc status &>/dev/null          || { [[ "$DBG" == "x" ]] && ncc status; log 2 "N
 # check version
 ####################
 
-if isRoot; then SUDO=(sudo -u www-data); fi
+if isRoot
+then SUDO=(sudo -u www-data)
+fi
 
-CURRENT="$( "${SUDO[@]}" php /var/www/nextcloud/occ status | grep "version:" | awk '{ print $3 }' )"
+CURRENT="$("${SUDO[@]}" php /var/www/nextcloud/occ status | grep "version:" | awk '{ print $3 }')"
 MAJOR_CUR="$( cut -d. -f1 <<<"$CURRENT" )"
 MAJOR_NEW="$( cut -d. -f1 <<<"$VER" )"
 
-if [[ "$((MAJOR_NEW - MAJOR_CUR))" -gt 1 ]]; then
-  log 2 "Upgrade cannot skip major versions. Please upgrade one major version at a time" >&2; exit 1
+if [[ "$((MAJOR_NEW - MAJOR_CUR))" -gt 1 ]]
+then log 2 "Upgrade cannot skip major versions. Please upgrade one major version at a time" >&2; exit 1
 fi
 
-if [[ "$MAJOR_NEW" -ge 24 ]] && [[ "$(lsb_release -r)" =~ .*10 ]]; then
-  log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 10 (Buster). Please run ncp-dist-upgrade."; exit 1
+if [[ "$MAJOR_NEW" -ge 24 ]] && [[ "$(lsb_release -r)" =~ .*10 ]]
+then log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 10 (Buster). Please run ncp-dist-upgrade."; exit 1
 fi
 
 grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT" || { echo "Malformed version $CURRENT"; exit 1; }
 grep -qP "\d+\.\d+\.\d+" <<<"$VER"     || { echo "Malformed version $VER"    ; exit 1; }
 
-log -1 "Current Nextcloud version: $CURRENT"; log -1 "Available Nextcloud version: $VER"
+log -1 "Current Nextcloud version: $CURRENT"
+log -1 "Available Nextcloud version: $VER"
+
 is_more_recent_than "$VER" "$CURRENT" || { log -1 "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
 
 
-if ! is_more_recent_than '25.0.0' "$VER" && is_more_recent_than "8.1.0" "${PHPVER}.0" && is_docker; then
-  log 2 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'; exit 1
+if ! is_more_recent_than '25.0.0' "$VER" \
+  && is_more_recent_than "8.1.0" "${PHPVER}.0" \
+  && is_docker
+then log 2 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'; exit 1
 fi
 
 # make sure that cron.php is not running and there are no pending jobs
 # https://github.com/nextcloud/server/issues/10949
 pgrep -cf cron.php &>/dev/null && { pkill -f cron.php; sleep 3; }
-pgrep -cf cron.php &>/dev/null && { echo "cron.php running. Abort"; exit 1; }
+pgrep -cf cron.php &>/dev/null && { Print "cron.php running. Abort"; exit 1; }
 mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 
 # cleanup
 ####################
-function cleanup
-{
-  local RET="$?"
-  set +eE
-  echo "Cleanup"
-  rm -rf "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
-  trap "" EXIT
-  exit "$RET"
+function cleanup {
+    local RET="$?"
+    set +eE
+    Print "Cleanup"
+    rm --recursive --force "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
+    trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
+    exit "$RET"
 }
 
 trap 'cleanup' EXIT SIGHUP SIGILL SIGABRT SIGINT
@@ -376,8 +398,8 @@ trap 'cleanup' EXIT SIGHUP SIGILL SIGABRT SIGINT
 # get new code
 ####################
 URL="https://download.nextcloud.com/server/releases/nextcloud-$VER.tar.bz2"
-log -1 "Download Nextcloud: $VER..."
-wget -q "$URL" -O nextcloud.tar.bz2 || { log -1 "Error downloading"; exit 1; }
+log -1 "Downloading Nextcloud: $VER"
+wget -q "$URL" -O nextcloud.tar.bz2 || { log 2 "Error downloading"; exit 1; }
 
 # backup
 ####################
@@ -386,7 +408,7 @@ WITH_DATA=no
 COMPRESSED=yes
 LIMIT=0
 
-echo "Back up current instance..."
+Print "Backup current instance"
 set +eE
 ncp-backup "$BKPDIR" "$WITH_DATA" "$COMPRESSED" "$LIMIT" # && false # test point
 RET="$?"
@@ -394,31 +416,31 @@ sync
 set -eE
 
 BKP_="$( ls -1t "$BKPDIR"/nextcloud-bkp_*.tar.gz 2>/dev/null | head -1 )"
-[[ -f "$BKP_"  ]] || {                set +eE; echo "Error backing up"; false || cleanup; }
-[[ "$RET" -ne 0  ]] && { rm -f "$BKP_"; set +eE; echo "Error backing up"; false || cleanup; }
-BKP="$( dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
-echo "Storing backup at '$BKP'..."
+[[ -f "$BKP_"  ]] || {                  set +eE; log 2 "Error backing up"; false || cleanup; }
+[[ "$RET" -ne 0  ]] && { rm -f "$BKP_"; set +eE; log 2 "Error backing up"; false || cleanup; }
+BKP="$(dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
+Print "Storing backup at: $BKP"
 mv "$BKP_" "$BKP"
 
 # simple restore if anything fails from here
 ####################
 rollback_simple() {
-  set +eE
-  trap "" INT TERM HUP ERR
-  echo -e "Abort\nSimple roll back..."
-  rm --recursive --force "$BASEDIR"/nextcloud
-  mv "$BASEDIR"/nextcloud-old "$BASEDIR"/nextcloud
-  false || cleanup                 # so cleanup exits with 1
+    set +eE
+    trap "" INT TERM HUP ERR
+    Print "Abort" "Simple rollback"
+    rm --recursive --force "$BASEDIR"/nextcloud
+    mv "$BASEDIR"/nextcloud-old "$BASEDIR"/nextcloud
+    false || cleanup                 # so cleanup exits with 1
 }
 
 trap 'rollback_simple' INT TERM HUP ERR
 
 # replace code
 ####################
-echo "Install Nextcloud $VER..."
+Print "Installing Nextcloud: $VER"
 mv -T nextcloud nextcloud-old
 tar -xf nextcloud.tar.bz2             # && false # test point
-rm -rf /var/www/nextcloud.tar.bz2
+rm --recursive --force /var/www/nextcloud.tar.bz2
 
 # copy old config
 ####################
@@ -430,46 +452,49 @@ cp -raT nextcloud-old/themes/ nextcloud/themes/
 
 # copy old NCP apps
 ####################
-for app in nextcloudpi previewgenerator; do
-  if [[ -d nextcloud-old/apps/"${app}" ]]; then cp -r -L nextcloud-old/apps/"${app}" /var/www/nextcloud/apps/; fi
+for APP in nextcloudpi previewgenerator
+do if [[ -d nextcloud-old/apps/"$APP" ]]
+   then cp -r -L nextcloud-old/apps/"$APP" /var/www/nextcloud/apps/
+   fi
 done
 
 #false # test point
 
 # copy data if it was at the default location
 ####################
-if [[ "$DATADIR" == "/var/www/nextcloud/data" ]] || [[ "$DATADIR" == "/data/nextcloud/data" ]]; then echo "Restore data..."
-  mv -T nextcloud-old/data nextcloud/data
+if [[ "$DATADIR" == "/var/www/nextcloud/data" ]] || [[ "$DATADIR" == "/data/nextcloud/data" ]]
+then Print "Restoring data"
+     mv -T nextcloud-old/data nextcloud/data
 fi
 
 # nc-restore if anything fails from here
 ####################
 rollback() {
-  set +eE
-  trap "" INT TERM HUP ERR EXIT
-  echo -e "Abort\nClean up..."
-  rm -rf /var/www/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
-  echo "Rolling back to backup $BKP..."
-  local TMPDATA
-  mkdir -p "$BASEDIR/recovery/"
-  TMPDATA="$( mktemp -d "$BASEDIR/recovery/ncp-data.XXXXXX" )" || { echo "Failed to create temp dir" >&2; exit 1; }
-  [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && mv -T "$DATADIR" "$TMPDATA"
-  ncp-restore "$BKP" || { echo "Rollback failed! Data left at $TMPDATA"; exit 1; }
-  [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && { rm -rf "$DATADIR"; mv -T "$TMPDATA" "$DATADIR"; }
-  rm "$BKP"; echo "Rollback successful. Nothing was updated"; exit 1
+    set +eE
+    trap "" INT TERM HUP ERR EXIT
+    Print "Abort" "Doing cleanup"
+    rm -rf /var/www/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
+    log -1 "Rollback to backup: $BKP"
+    local TMPDATA
+    mkdir --parents "${BASEDIR}/recovery/"
+    TMPDATA="$(mktemp -d "$BASEDIR/recovery/ncp-data.XXXXXX")" || { log 2 "Failed to create temp dir" >&2; exit 1; }
+    [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && mv -T "$DATADIR" "$TMPDATA"
+    ncp-restore "$BKP" || { log 2 "Rollback failed! Data left at: $TMPDATA"; exit 1; }
+    [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && { rm --recursive --force "$DATADIR"; mv -T "$TMPDATA" "$DATADIR"; }
+    rm "$BKP"; log 0 "Rollback successful. Nothing was updated"; exit 1
 }
-trap rollback INT TERM HUP ERR
+trap 'rollback' INT TERM HUP ERR
 
 # fix permissions
 ####################
-log -1 "Fix permissions..."
+log -1 "Fix permissions"
 chown -R www-data:www-data nextcloud
 find nextcloud/ -type d -exec chmod 750 {} \;
 find nextcloud/ -type f -exec chmod 640 {} \;
 
 # upgrade
 ####################
-log -1 "Upgrade..."
+log -1 "Upgrade"
 ncc=(sudo -u www-data php nextcloud/occ)
 "${ncc[@]}" upgrade      # && false # test point
 "${ncc[@]}" | grep -q db:add-missing-indices && "${ncc[@]}" db:add-missing-indices -n
@@ -479,112 +504,98 @@ ncc=(sudo -u www-data php nextcloud/occ)
 
 # use the correct version for custom apps
 NCVER="$(ncc status | grep "version:" | awk '{ print $3 }')"
-if is_more_recent_than "21.0.0" "${NCVER}"; then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
-else
-  # Install notify_push if not installed
-  if ! is_app_enabled notify_push; then
-    "${ncc[@]}" app:install notify_push
-    "${ncc[@]}" app:enable  notify_push
-    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf
-    a2enmod proxy proxy_http proxy_wstunnel
-    apachectl -k graceful
-    ## make sure the notify_push daemon is runnnig
-
-    install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
-    start_notify_push
-    nc_domain="$(ncc config:system:get overwrite.cli.url)"
-    set-nc-domain "$nc_domain" || {
-      log 2 "notify_push setup failed. You are probably behind a proxy"
-      log -1 "Run 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
-      log -1 "Check https://help.nextcloud.com/tags/ncp for support"
-    }
-
-  fi
-  NCPREV=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21
+if is_more_recent_than "21.0.0" "$NCVER"
+then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
+else if ! is_app_enabled notify_push # Install notify_push if not installed
+     then "${ncc[@]}" app:install notify_push
+          "${ncc[@]}" app:enable  notify_push
+          install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf
+          a2enmod proxy proxy_http proxy_wstunnel
+          apachectl -k graceful
+          ## make sure the notify_push daemon is runnnig
+          install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
+          start_notify_push
+          NC_DOMAIN="$(ncc config:system:get overwrite.cli.url)"
+          set-nc-domain "$NC_DOMAIN" || {
+              log 2 "notify_push setup failed. Are you behind a proxy?"
+              log -1 "Run: 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
+              log -1 "Check https://help.nextcloud.com/tags/ncp for support"
+          }
+     fi
+     NCPREV=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21
 fi
-rm -rf /var/www/nextcloud/apps/previewgenerator
+
+rm --recursive --force /var/www/nextcloud/apps/previewgenerator
 ln -snf "$NCPREV" /var/www/nextcloud/apps/previewgenerator
 
-if ! is_docker && ! is_more_recent_than "24.0.0" "${NCVER}" && is_more_recent_than "8.1.0" "${PHPVER}.0"; then
-  (
-    log -1 "Upgrading PHP"
-    export DEBIAN_FRONTEND=noninteractive
-    PHPVER_OLD="$PHPVER"
-    PHPVER_NEW="8.1"
-    PHP_PACKAGES_OLD=(php-{common,igbinary,redis,json} "php${PHPVER_OLD}" \
-      "php${PHPVER_OLD}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,json,common,readline,mysql,bcmath,gmp})
-    PHP_PACKAGES_NEW=(php"$PHPVER_NEW" \
-      php"$PHPVER_NEW"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql,bcmath,gmp,redis,common})
-    
-    function php_restore
-    {
-      trap "" INT TERM HUP ERR
-      log 2 "Something went wrong while upgrading PHP. Rolling back to PHP: $PHPVER_OLD"
-      set +e
-      service "php${PHPVER_NEW}-fpm" stop
-      a2disconf php"$PHPVER_NEW"-fpm
-      rm /etc/apt/sources.list.d/php.list
-      apt-get update
-      apt-get remove --purge -y "${PHP_PACKAGES_NEW[@]}"
-      apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_OLD[@]}"
-      set_ncpcfg "php_version" "$PHPVER_OLD"
-      install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
-      run_app nc-limits
-      a2enconf php"$PHPVER_OLD"-fpm
-      service php"$PHPVER_OLD"-fpm start
-      service apache2 restart
-      log 0 "PHP upgrade has successfully been reverted"
-      set -e
-    }
-    
-    trap php_restore INT TERM HUP ERR
-    
-    # Setup apt repository for php 8
-    wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-    Print "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
-    apt-get update
-    
-    clear_opcache
-    
-    log -1 "Stopping apache and php-fpm..."
-    service php"$PHPVER_OLD"-fpm stop
-    service apache2 stop
-    
-    log -1 "Remove old PHP ($PHPVER_OLD)..."
-    a2disconf php"$PHPVER_OLD"-fpm
-    
-    apt-get remove --purge -y "${PHP_PACKAGES_OLD[@]}"
-    
-    log -1 "Installing PHP: $PHPVER_NEW"
-    install_with_shadow_workaround --no-install-recommends systemd
-    apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_NEW[@]}"
-    
-    set_ncpcfg "php_version" "$PHPVER_NEW"
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
-    ( set -e; export PHPVER="$PHPVER_NEW"; run_app nc-limits )
-    
-    a2enconf php"$PHPVER_NEW"-fpm
-    
-    echo "Starting apache and php-fpm..."
-    service php"$PHPVER_NEW"-fpm start
-    service apache2 start
-    "${ncc[@]}" status
-  )
-  # Reload library.sh to reset PHPVER
-  source /usr/local/etc/library.sh
+if ! is_docker \
+&& ! is_more_recent_than "24.0.0" "$NCVER" \
+&& is_more_recent_than "8.1.0" "${PHPVER}.0"
+then (
+        log -1 "Upgrading PHP"
+        export DEBIAN_FRONTEND=noninteractive
+        PHPVER_OLD="$PHPVER"
+        PHPVER_NEW="8.1"
+        PHP_PACKAGES_OLD=(php-{common,igbinary,redis,json} "php${PHPVER_OLD}" \
+        "php${PHPVER_OLD}"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,json,common,readline,mysql,bcmath,gmp})
+        PHP_PACKAGES_NEW=(php"$PHPVER_NEW" php"$PHPVER_NEW"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql,bcmath,gmp,redis,common})
+        function php_restore {
+            trap "" INT TERM HUP ERR
+            log 2 "Something went wrong while upgrading PHP. Rollback PHP to: $PHPVER_OLD"
+            set +e
+            service "php${PHPVER_NEW}-fpm" stop
+            a2disconf php"$PHPVER_NEW"-fpm
+            rm /etc/apt/sources.list.d/php.list
+            apt-get update
+            apt-get remove --purge -y "${PHP_PACKAGES_NEW[@]}"
+            apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_OLD[@]}"
+            set_ncpcfg "php_version" "$PHPVER_OLD"
+            install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
+            run_app nc-limits
+            a2enconf php"$PHPVER_OLD"-fpm
+            service php"$PHPVER_OLD"-fpm start
+            service apache2 restart
+            log 0 "PHP upgrade has successfully been reverted"
+            set -e
+        }
+        trap php_restore INT TERM HUP ERR
+        # Setup apt repository for php 8
+        wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+        Print "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
+        apt-get update
+        clear_opcache
+        log -1 "Stopping apache and php-fpm..."
+        service php"$PHPVER_OLD"-fpm stop
+        service apache2 stop
+        log -1 "Remove old PHP ($PHPVER_OLD)..."
+        a2disconf php"$PHPVER_OLD"-fpm
+        apt-get remove --purge -y "${PHP_PACKAGES_OLD[@]}"
+        log -1 "Installing PHP: $PHPVER_NEW"
+        install_with_shadow_workaround --no-install-recommends systemd
+        apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_NEW[@]}"
+        set_ncpcfg "php_version" "$PHPVER_NEW"
+        install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
+        ( set -e; export PHPVER="$PHPVER_NEW"; run_app nc-limits )
+        a2enconf php"$PHPVER_NEW"-fpm
+        Print "Starting apache and php-fpm"
+        service php"$PHPVER_NEW"-fpm start
+        service apache2 start
+        "${ncc[@]}" status
+     )
+     # Reload library.sh to reset PHPVER
+     source /usr/local/etc/library.sh
 fi
 
 # refresh completions
 ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
 
-log 0 "Update completed successfully."
-# done
+log 0 "Update complete"
 
 ####################
-mkdir -p  "$DATADIR"/ncp-update-backups
-mv "$BKP" "$DATADIR"/ncp-update-backups
+mkdir --parents            "$DATADIR"/ncp-update-backups
+mv                  "$BKP" "$DATADIR"/ncp-update-backups
 chown -R www-data:www-data "$DATADIR"/ncp-update-backups
-BKP="$DATADIR"/ncp-update-backups/"$( basename "$BKP" )"
+BKP="${DATADIR}/ncp-update-backups/$(basename "$BKP")"
 log -1 "Backup stored at: $BKP"
 
 bash -c "sleep 5; source /usr/local/etc/library.sh; clear_opcache;" &>/dev/null &
