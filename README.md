@@ -176,7 +176,7 @@ Packages
 - `build-essential`
 - `binfmt-support`
 - `binutils`
-- `bzip2`
+- `pbzip2`
 - `ca-certificates`
 - `chroot`
 - `cron`
