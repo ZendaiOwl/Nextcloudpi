@@ -654,7 +654,7 @@ log -1 "Moving data directory to: /opt/ncdata"
 df -h
 mkdir --parents /opt/ncdata
 
-if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg" ]]
+if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg"
 then should_rm_datadir_cfg=true
      if isFile 'etc/ncp-config.d/nc-datadir.cfg'
      then if ! cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
