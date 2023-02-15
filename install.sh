@@ -294,27 +294,50 @@ function hasCMD
   else return 2; fi
 }
 
+# Update apt list and packages
+# Return codes
+# 0: Install completed
+# 1: Coudn't update apt list
+# 2: Invalid number of arguments
+function updatePKG {
+    if [[ "$#" -ne 0 ]]; then log 2 "Invalid number of arguments, requires none"; return 2
+    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+         declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+                    ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
+        if isRoot; then log -1 "Updating apt lists"
+        if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+        else log 2 "Couldn't update apt lists"; return 1
+        fi
+        else log -1 "Updating apt lists"
+             if "${SUDOUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
+             else log 2 "Couldn't update apt lists"; return 1
+             fi
+        fi
+    fi
+}
+
 # Installs package(s) using the package manager and pre-configured options
 # Return codes
 # 0: Install completed
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-# 4: Not running as root/sudo
-function installPKG
-{
-  if [[ "$#" -eq 0 ]]; then log 2 "Requires: [PKG(s) to install]"; return 3
-  elif [[ "$EUID" -ne 0 ]]; then log 2 "Requires root privileges"; return 4 
-  else local -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-       local -r ROOTUPDATE=(apt-get "${OPTIONS[@]}" update) \
-                ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-       local PKG=(); IFS=' ' read -ra PKG <<<"$@"
-       log -1 "Updating apt lists"
-       if "${ROOTUPDATE[@]}" &>/dev/null; then log 0 "Apt list updated"
-       else log 2 "Couldn't update apt lists"; return 1; fi; log -1 "Installing ${PKG[*]}"
-       if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
-       else log 2 "Something went wrong during installation"; return 1; fi
-  fi
+function installPKG {
+    if [[ "$#" -eq 0 ]]; then log 2 "Requires: [PKG(s) to install]"; return 3
+    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+         declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+                    ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+         declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
+        if isRoot; then log -1 "Installing ${PKG[*]}"
+            if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+            else log 2 "Something went wrong during installation"; return 2
+            fi
+        else log -1 "Installing ${PKG[*]}"
+             if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"; then log 0 "Installation completed"; return 0
+             else log 2 "Something went wrong during installation"; return 1
+             fi
+        fi
+    fi
 }
 
 function add_install_variable
@@ -407,6 +430,9 @@ if hasCMD mysqld; then log 1 "Existing MySQL configuration will be changed"
   if isSet DBNAME; then if mysql -e 'use '"$DBNAME"'' &>/dev/null; then { log 2 "Database exists: $DBNAME"; exit 1; }; fi
   else if mysql -e 'use nextcloud' &>/dev/null; then log 2 "Database exists: nextcloud"; exit 1; fi; fi
 fi
+
+# Update apt list
+updatePKG
 
 # Install packages
 installPKG git \
