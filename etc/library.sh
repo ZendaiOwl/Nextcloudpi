@@ -467,14 +467,14 @@ function configure_app {
     local -r NCP_APP="$1"
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local BACKTITLE="NextcloudPi installer configuration" \
-        RET=1 CFG LENGTH VAR VAL IDX VALUE \
-        PARAMETERS=() VARIABLES=() VALUES=() RETURN_VALUES=()
+          RET=1 CFG LENGTH VAR VAL IDX VALUE \
+          PARAMETERS=() VARIABLES=() VALUES=() RETURN_VALUES=()
     # Dialog
     local DIALOG_OK=0 \
-        DIALOG_CANCEL=1 \
-        DIALOG_ERROR=254 \
-        DIALOG_ESC=255 \
-        RES=0
+          DIALOG_CANCEL=1 \
+          DIALOG_ERROR=254 \
+          DIALOG_ESC=255 \
+          RES=0
     log -1 "Configuring app: $NCP_APP"
     # Checks
     if ! hasPKG dialog; then log 1 "Missing package: dialog"; log -1 "Attempting to install: dialog"
