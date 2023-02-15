@@ -658,7 +658,7 @@ if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg"
 then should_rm_datadir_cfg=true
      if isFile 'etc/ncp-config.d/nc-datadir.cfg'
      then if ! cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
-          then log 2 "Filed to copy file: etc/ncp-config.d/nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
+          then log 2 "Failed to copy file: nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
           fi
      else log 2 "File not found: etc/ncp-config.d/nc-datadir.cfg"; exit 1
      fi
