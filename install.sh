@@ -504,14 +504,14 @@ fi; export PATH
 # Check for existing MariaDB/MySQL install
 if hasCMD mysqld
 then log 1 "Existing MySQL configuration will be changed"
-    if isSet DBNAME
-    then if mysql -e 'use '"$DBNAME"'' &>/dev/null
-         then log 2 "Database exists: $DBNAME"; exit 1
-         fi
-    else if mysql -e 'use nextcloud' &>/dev/null
-         then log 2 "Database exists: nextcloud"; exit 1
-         fi
-    fi
+     if isSet DBNAME
+     then if mysql -e 'use '"$DBNAME"'' &>/dev/null
+          then log 2 "Database exists: $DBNAME"; exit 1
+          fi
+     else if mysql -e 'use nextcloud' &>/dev/null
+          then log 2 "Database exists: nextcloud"; exit 1
+          fi
+     fi
 fi
 
 # Update apt list
@@ -593,8 +593,7 @@ then if ! cp "$LIBRARY" '/usr/local/etc/library.sh'
      then log 2 "Failed to copy file: $LIBRARY"; exit 1
      fi
      LIBRARY='/usr/local/etc/library.sh'
-     declare -x -g LIBRARY
-     log -2 "LIBRARY: $LIBRARY"
+     declare -x -g LIBRARY; log -2 "LIBRARY: $LIBRARY"
 fi
 
 if isFile "$NCPCFG"
@@ -602,8 +601,7 @@ then if ! cp "$NCPCFG" '/usr/local/etc/ncp.cfg'
      then log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1
      fi
      NCPCFG='/usr/local/etc/ncp.cfg'
-     declare -x -g NCPCFG
-     log -2 "NCPCFG: $NCPCFG"
+     declare -x -g NCPCFG; log -2 "NCPCFG: $NCPCFG"
 fi
 
 if isDirectory "$NCP_TEMPLATES_DIR"
