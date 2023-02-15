@@ -521,6 +521,7 @@ updatePKG
 installPKG git \
            ca-certificates \
            sudo \
+           jq \
            lsb-release \
            wget \
            curl \
@@ -531,8 +532,9 @@ installPKG git \
 if isZero "$CODE_DIR" || ! isSet CODE_DIR
 then CODE_DIR="$TMPDIR"/"$REPO"
      log -1 "Fetching build code to: $CODE_DIR"
-     git clone -b "$BRANCH" "$URL" "$CODE_DIR"
-     add_install_variable CODE_DIR
+     if ! git clone -b "$BRANCH" "$URL" "$CODE_DIR"
+     then log 2 "Failed to clone repository: $URL"; exit 1
+     fi; add_install_variable CODE_DIR
 fi
 
 # Change directory to the code directory in the temporary directory
@@ -613,10 +615,6 @@ then if ! cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/'
 else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1
 fi
 
-# cp etc/library.sh /usr/local/etc/
-# cp etc/ncp.cfg /usr/local/etc/
-# cp -r etc/ncp-templates /usr/local/etc/
-
 if isFile 'lamp.sh'
 then install_app lamp.sh
 else log 2 "File not found: lamp.sh"; exit 1
@@ -638,7 +636,8 @@ then rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg
 else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-nextcloud.cfg"; exit 1
 fi
 
-systemctl restart mysqld # TODO this shouldn't be necessary, but somehow it's needed in Debian 9.6. Fixme
+# TODO this shouldn't be necessary, but somehow it's needed. FIXME
+systemctl restart mysqld
 
 if isFile 'ncp.sh'
 then install_app ncp.sh
