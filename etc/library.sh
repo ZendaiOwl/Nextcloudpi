@@ -265,9 +265,9 @@ function notZero {
 # 1: Variable is not an array
 # 2: Missing argument: Variable to check
 function isArray {
-    if [[ "$#" -ne 1 ]]; then log 2 "Requires: [The variable to check if it's an array or not]"; return 2
-    elif ! declare -a "$1" &>/dev/null; then log -1 "Not an array: $1"; return 1
-    else log -1 "Is an array: $1"; return 0
+    if [[ "$#" -ne 1 ]]; then return 2
+    elif ! declare -a "$1" &>/dev/null; then return 1
+    else return 0
     fi
 }
 
@@ -279,10 +279,10 @@ function isArray {
 function isFunction {
     if [[ "$#" -eq 1 ]]; then
         declare -r FUNC="$1"
-        if declare -f "$FUNC" &>/dev/null; then log -1 "Available"; return 0
-        else log -1 "Unavailable"; return 1
+        if declare -f "$FUNC" &>/dev/null; then return 0
+        else return 1
         fi
-    else log 2 "Requires argument: [Function name]"; return 2
+    else return 2
     fi
 }
 
@@ -304,10 +304,10 @@ function hasText {
 # 2: Missing command argument to check
 function hasCMD {
     if [[ "$#" -eq 1 ]]; then declare -r CHECK="$1"
-        if command -v "$CHECK" &>/dev/null; then log -1 "Available: $CHECK"; return 0
-        else log -1 "Unavailable: $CHECK"; return 1
+        if command -v "$CHECK" &>/dev/null; then return 0
+        else return 1
         fi
-    else log 2 "Requires: [Command]"; return 2
+    else return 2
     fi
 }
 
@@ -333,11 +333,11 @@ function hasCMD_NCC {
 # 3: Missing package argument to check
 function hasPKG {
     if [[ "$#" -eq 1 ]]; then declare -r CHECK="$1"
-        if dpkg-query --status "$CHECK" &>/dev/null; then log -1 "Installed"; return 0
-        elif apt-cache show "$CHECK" &>/dev/null; then log -1 "Not installed, install available"; return 1
-        else log -1 "Not installed, install unavailable"; return 2
+        if dpkg-query --status "$CHECK" &>/dev/null; then return 0
+        elif apt-cache show "$CHECK" &>/dev/null; then return 1
+        else return 2
         fi
-    else log 2 "Requires: [Package name]"; return 3
+    else return 3
     fi
 }
 
