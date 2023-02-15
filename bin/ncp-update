@@ -2,121 +2,130 @@
 
 # Update to the latest NextcloudPi code from GitHub
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
+
 # A log that uses log levels for logging different outputs
-# Log levels
-# -2: Debug
-# -1: Info
-#  0: Success
-#  1: Warning
-#  2: Error
-function log
-{
-  if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
-    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
-      case "$LOGLEVEL" in
-        -2) local -r CYAN='\e[1;36m'; printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
-           ;;
-        -1) local -r BLUE='\e[1;34m'; printf "${BLUE}INFO${Z} %s\n" "$TEXT"
-           ;;
-         0) local -r GREEN='\e[1;32m'; printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
-           ;;
-         1) local -r YELLOW='\e[1;33m'; printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
-           ;;
-         2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
-           ;;
-      esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
+# Log levels  | Colour
+# -2: Debug   | CYAN='\e[1;36m'
+# -1: Info    | BLUE='\e[1;34m'
+#  0: Success | GREEN='\e[1;32m'
+#  1: Warning | YELLOW='\e[1;33m'
+#  2: Error   | RED='\e[1;31m'
+function log {
+    if [[ "$#" -gt 0 ]]
+    then declare -r LOGLEVEL="$1" TEXT="${*:2}"
+         if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+         then case "$LOGLEVEL" in
+                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "$TEXT" >&2 ;;
+                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "$TEXT"     ;;
+                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "$TEXT"     ;;
+                   1) printf '\e[1;33mWARNING\e[0m %s\n' "$TEXT"     ;;
+                   2) printf '\e[1;31mERROR\e[0m %s\n'   "$TEXT" >&2 ;;
+              esac
+         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         fi
   fi
 }
 
-function remove_tmp_directory
-{
-  if ! rm --recursive --force "$TMPDIR"; then log 2 "Failed to remove directory: $TMPDIR"; return 1
-  else log 0 "Removed tmp directory: $TMPDIR"; return 0; fi
+function remove_tmp_directory {
+  if ! rm --recursive --force "$TMPDIR"
+  then log 2 "Failed to remove directory: $TMPDIR"; return 1
+  else log 0 "Removed tmp directory: $TMPDIR"; return 0
+  fi
 }
 
-function clean_ncp_update
-{
-  if ! cd /; then log 2 "Failed to change directory to: /"
-    log -1 "Attempting to remove tmp directory nonetheless"
-    if ! remove_tmp_directory; then exit 1; fi
-  else
-    if ! remove_tmp_directory; then exit 1; fi
-  fi
+function clean_ncp_update {
+    if ! cd /
+    then log 2 "Failed to change directory to: /"
+         log -1 "Attempting to remove tmp directory nonetheless"
+         if ! remove_tmp_directory
+         then exit 1
+         fi
+    else if ! remove_tmp_directory
+         then exit 1
+         fi
+    fi
 }
 
 [[ -z "$DBG" ]] || set -"$DBG"
 
-if [[ -f /.dockerenv ]] || [[ -f /.docker-image ]] || [[ "$DOCKERBUILD" == 1 ]]; then
-  log 1 "Docker images should be updated by replacing the container from the latest docker image.
+if [[ -f /.dockerenv ]] \
+|| [[ -f /.docker-image ]] \
+|| [[ "$DOCKERBUILD" == 1 ]]
+then log 1 "Docker images should be updated by replacing the container from the latest docker image.
 Refer to the documentation for instructions: https://docs.nextcloudpi.com
 If you are sure that you know what you are doing, you can still execute the update script by running it like this:
-'ALLOW_UPDATE_SCRIPT=1 ncp-update'"
-  [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
+ALLOW_UPDATE_SCRIPT=1 ncp-update"
+     [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
 fi
 
 {
-  if [[ "$(id -u)" -ne 0 ]]; then log 2 "Must be run as root or with sudo. Try 'sudo ${BASH_SOURCE[0]}'"; exit 1; fi
-
-  #OWNER="${OWNER:-nextcloud}"
-  OWNER="${OWNER:-ZendaiOwl}"
-  REPO="${REPO:-nextcloudpi}"
-  BRANCH="${1:-master}"
-  [[ "$BRANCH" != "master" ]] && log -1 "Updating to development branch: $BRANCH"
-
-  TMPDIR="$(mktemp -d /tmp/ncp-update.XXXXXX || {( log 2 "Failed to create temp dir. Exiting"; exit 1; )})"
-  trap 'clean_ncp_update' EXIT SIGHUP SIGILL SIGABRT SIGINT
-
-  log -1 "Downloading updates"
-  git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR" || {
-    log 2 "No internet connectivity"; exit 1
-  }
-
-  # shellcheck disable=SC2164
-  [[ -f /.ncp-image ]] || {
-    # Update locally during build
-    if ! cd "$TMPDIR"; then log 2 "Failed to change directory to: $TMPDIR"; exit 1; fi
-
-    [[ -z "$2" ]] || {
-      git fetch origin "$2" || {
-        log 2 "Could not fetch: $2"; exit 1
-      }
-      git checkout FETCH_HEAD
+    if [[ "$EUID" -ne 0 ]]
+    then log 2 "Must be run as root or with sudo, try: sudo ${BASH_SOURCE[0]}"; exit 1
+    fi
+    
+    #OWNER="${OWNER:-nextcloud}"
+    OWNER="${OWNER:-ZendaiOwl}"
+    REPO="${REPO:-nextcloudpi}"
+    BRANCH="${1:-master}"
+    
+    [[ "$BRANCH" != "master" ]] && log -1 "Updating to development branch: $BRANCH"
+    
+    TMPDIR="$(mktemp -d /tmp/ncp-update.XXXXXX || {( log 2 "Failed to create temp dir. Exiting"; exit 1; )})"
+    trap 'clean_ncp_update' EXIT SIGHUP SIGILL SIGABRT SIGINT
+    
+    log -1 "Downloading updates"
+    git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR" || {
+        log 2 "No internet connectivity"; exit 1
     }
-  }
-
-  log -1 "Performing updates"
-  ./update.sh || exit "$?"
-
-  cd "$TMPDIR" || exit 1
-  git describe --always --tags --abbrev=0 2>/dev/null | grep -qoP "v\d+\.\d+\.\d+" || git fetch --unshallow --tags -q
-  VER="$( git describe --always --tags --abbrev=0 | grep -oP "v\d+\.\d+\.\d+" )"
-
-  # check format
-  grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || {
-    git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
-    cd "$TMPDIR"/temporary || exit 1
-    VER="$(git describe --tags `git rev-list --tags --max-count=1` | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; })"
-    echo "$VER" > "$TMPDIR"/version
+    
+    # shellcheck disable=SC2164
+    [[ -f /.ncp-image ]] || {
+        # Update locally during build
+        if ! cd "$TMPDIR"
+        then log 2 "Failed to change directory to: $TMPDIR"; exit 1
+        fi
+        [[ -z "$2" ]] || {
+            git fetch origin "$2" || {
+                log 2 "Could not fetch: $2"; exit 1
+            }
+        git checkout FETCH_HEAD
+        }
+    }
+    
+    log -1 "Performing updates"
+    ./update.sh || exit "$?"
+    
     cd "$TMPDIR" || exit 1
-    rm --recursive --force "$TMPDIR"/temporary
-  }
-
-  #echo "$VER" > /usr/local/etc/ncp-version
-  #echo "$VER" > /var/run/.ncp-latest-version
-  cat "$TMPDIR"/version > /usr/local/etc/ncp-version
-  cat "$TMPDIR"/version > /var/run/.ncp-latest-version
-  rm "$TMPDIR"/version
-
-  VER="$(cat /usr/local/etc/ncp-version)"
-  
-  # write changelog
-  git log --graph --oneline --decorate \
-    --pretty=format:"[%D] %s" --date=short | \
-    grep 'tag: v' | \
-    sed '/HEAD ->\|origin/s|\[.*\(tag: v[0-9]\+\.[0-9]\+\.[0-9]\+\).*\]|[\1]|' | \
-    sed 's|* \[tag: |[|' > /usr/local/etc/ncp-changelog
-
-  log 0 "NextcloudPi updated to: $VER"; exit 0
+    git describe --always --tags --abbrev=0 2>/dev/null | grep -qoP "v\d+\.\d+\.\d+" || git fetch --unshallow --tags -q
+    VER="$(git describe --always --tags --abbrev=0 | grep -oP "v\d+\.\d+\.\d+")"
+    
+    # check format
+    grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || {
+        git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
+        cd "$TMPDIR"/temporary || exit 1
+        VER="$(git describe --tags `git rev-list --tags --max-count=1` | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; })"
+        Print "$VER" > "$TMPDIR"/version
+        cd "$TMPDIR" || exit 1
+        rm --recursive --force "$TMPDIR"/temporary
+    }
+    
+    cat "$TMPDIR"/version > /usr/local/etc/ncp-version
+    cat "$TMPDIR"/version > /var/run/.ncp-latest-version
+    rm "$TMPDIR"/version
+    
+    VER="$(cat /usr/local/etc/ncp-version)"
+    
+    # write changelog
+    git log --graph --oneline --decorate \
+            --pretty=format:"[%D] %s" --date=short | \
+            grep 'tag: v' | \
+            sed '/HEAD ->\|origin/s|\[.*\(tag: v[0-9]\+\.[0-9]\+\.[0-9]\+\).*\]|[\1]|' | \
+            sed 's|* \[tag: |[|' > /usr/local/etc/ncp-changelog
+    
+    log 0 "NextcloudPi updated to: $VER"; exit 0
 
 } # force to read the whole thing into memory, as its contents might change in update.sh
