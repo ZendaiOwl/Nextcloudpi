@@ -8,17 +8,20 @@
 # More at: https://ownyourbits.com
 #
 
-
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
 configure()
 {
-  [[ "$PASSWORD" == "" ]] && { echo "empty password"; return 1; }
-  [[ "$USER"     == "" ]] && { echo "empty user"    ; return 1; }
-  [[ "$PASSWORD" == "$CONFIRM" ]] || { echo "passwords do not match"; return 1; }
-
-  OC_PASS="$PASSWORD" \
-    sudo -E -u www-data php /var/www/nextcloud/occ \
-    user:resetpassword --password-from-env "$USER"
+    [[ "$PASSWORD" == "" ]] && { Print "Empty password"; return 1; }
+    [[ "$USER"     == "" ]] && { Print "Empty username"    ; return 1; }
+    [[ "$PASSWORD" == "$CONFIRM" ]] || { Print "Passwords do not match"; return 1; }
+    
+    OC_PASS="$PASSWORD" \
+        sudo -E -u www-data php /var/www/nextcloud/occ \
+        user:resetpassword --password-from-env "$USER"
 }
 
 install() { :; }

@@ -8,8 +8,7 @@
 # Usage: ./batch.sh <DHCP QEMU image IP>
 #
 
-function add_build_variables
-{
+function add_build_variables {
   declare -x -a BUILDVARIABLES; BUILDVARIABLES+=("$@")
   if [[ "${BUILDVARIABLES[@]}" != *"BUILDVARIABLES"* ]]
   then add_build_variables BUILDVARIABLES

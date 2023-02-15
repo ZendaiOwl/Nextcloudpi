@@ -8,89 +8,98 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
-get_total_mem() {
-  local total_mem="$(free -b | sed -n 2p | awk '{ print $2 }')"
-  local MAX_32BIT=4096000000
-  if [[ "$ARCH" == 'armv7' ]] && [[ $MAX_32BIT -lt "$total_mem" ]]
-  then
-    echo "$MAX_32BIT"
-  else
-    echo "$total_mem"
-  fi
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
+get_total_mem() {
+    local total_mem MAX_32BIT
+    total_mem="$(free -b | sed -n 2p | awk '{ print $2 }')"
+    MAX_32BIT=4096000000
+    if [[ "$ARCH" == 'armv7' ]] && [[ "$MAX_32BIT" -lt "$total_mem" ]]
+    then Print "$MAX_32BIT"
+    else Print "$total_mem"
+    fi
 }
 
 tmpl_innodb_buffer_pool_size() {
-  local TOTAL_MEM="$(get_total_mem)"
-  # DATABASE MEMORY (25%)
-  local AUTOMEM=$(( TOTAL_MEM * 25 / 100 ))
-  # Maximum MySQL Memory Usage = innodb_buffer_pool_size + key_buffer_size + (read_buffer_size + sort_buffer_size) X max_connections
-  # leave 16MiB for key_buffer_size and a bit more
-  AUTOMEM=$(( AUTOMEM - (16 + 32) * 1024 * 1024 ))
-  echo -n "$AUTOMEM"
+    local TOTAL_MEM AUTOMEM
+    TOTAL_MEM="$(get_total_mem)"
+    # DATABASE MEMORY (25%)
+    AUTOMEM=$(( "$TOTAL_MEM" * 25 / 100 ))
+    # Maximum MySQL Memory Usage = innodb_buffer_pool_size + key_buffer_size + (read_buffer_size + sort_buffer_size) X max_connections
+    # leave 16MiB for key_buffer_size and a bit more
+    AUTOMEM=$(( "$AUTOMEM" - (16 + 32) * 1024 * 1024 ))
+    echo -n "$AUTOMEM"
 }
 
 tmpl_php_max_memory() {
-  local TOTAL_MEM="$( get_total_mem )"
-  local MEMORYLIMIT="$(find_app_param nc-limits MEMORYLIMIT)"
-  [[ "$MEMORYLIMIT" == "0" ]] && echo -n "$(( TOTAL_MEM * 75 / 100 ))" || echo -n "$MEMORYLIMIT"
+    local TOTAL_MEM MEMORYLIMIT
+    TOTAL_MEM="$(get_total_mem)"
+    MEMORYLIMIT="$(find_app_param nc-limits MEMORYLIMIT)"
+    [[ "$MEMORYLIMIT" == "0" ]] && echo -n "$(( TOTAL_MEM * 75 / 100 ))" || echo -n "$MEMORYLIMIT"
 }
 
 tmpl_php_max_filesize() {
-  local FILESIZE="$(find_app_param nc-limits MAXFILESIZE)"
+  local FILESIZE
+  FILESIZE="$(find_app_param nc-limits MAXFILESIZE)"
   [[ "$FILESIZE" == "0" ]] && echo -n "10G" || echo -n "$FILESIZE"
 }
 
 tmpl_php_threads() {
-  local PHPTHREADS="$(find_app_param nc-limits PHPTHREADS)"
-  [[ $PHPTHREADS -eq 0 ]] && PHPTHREADS=$(nproc)
-  [[ $PHPTHREADS -lt 6 ]] && PHPTHREADS=6
+  local PHPTHREADS
+  PHPTHREADS="$(find_app_param nc-limits PHPTHREADS)"
+  [[ "$PHPTHREADS" -eq 0 ]] && PHPTHREADS="$(nproc)"
+  [[ "$PHPTHREADS" -lt 6 ]] && PHPTHREADS=6
   echo -n "$PHPTHREADS"
 }
 
 configure()
 {
-  # Set auto memory limit to 75% of the total memory
-  local TOTAL_MEM="$( get_total_mem )"
-  # special case of 32bit emulation (e.g. 32bit-docker on 64bit hardware)
-  file /bin/bash | grep 64-bit > /dev/null || TOTAL_MEM="$(( 1024 * 1024 * 1024 * 4 ))"
-  local AUTOMEM=$(( TOTAL_MEM * 75 / 100 ))
-
-  # MAX FILESIZE
-
-  # MAX PHP MEMORY
-  local require_fpm_restart=false
-  local CONF=/etc/php/${PHPVER}/fpm/conf.d/90-ncp.ini
-  local CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
-  echo "Using $(tmpl_php_max_memory) for PHP max memory"
-  install_template "php/90-ncp.ini.sh" "$CONF"
-  [[ "$CONF_VALUE" == "$(cat "$CONF")" ]] || require_fpm_restart=true
-
-  # MAX PHP THREADS
-  local CONF=/etc/php/${PHPVER}/fpm/pool.d/www.conf
-  CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
-  echo "Using $(tmpl_php_threads) PHP threads"
-  install_template "php/pool.d.www.conf.sh" "$CONF"
-  [[ "$CONF_VALUE"  == "$(cat "$CONF")"   ]] || require_fpm_restart=true
-
-  local CONF=/etc/mysql/mariadb.conf.d/91-ncp.cnf
-  CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
-  install_template "mysql/91-ncp.cnf.sh" "$CONF"
-  [[ "$CONF_VALUE" == "$(cat "$CONF")" ]] || service mariadb restart
-
-  # RESTART PHP
-  [[ "$require_fpm_restart" == "true" ]] && {
-    bash -c "sleep 3; source /usr/local/etc/library.sh; clear_opcache; service php${PHPVER}-fpm restart" &>/dev/null &
-  }
-
-  # redis max memory
-  local CONF=/etc/redis/redis.conf
-  local CURRENT_REDIS_MEM="$( grep "^maxmemory" "$CONF" | awk '{ print $2 }' )"
-  [[ "$REDISMEM" != "$CURRENT_REDIS_MEM" ]] && {
+    local AUTOMEM TOTAL_MEM CONF CONF_VALUE require_fpm_restart
+    # Set auto memory limit to 75% of the total memory
+    TOTAL_MEM="$(get_total_mem)"
+    # special case of 32bit emulation (e.g. 32bit-docker on 64bit hardware)
+    file /bin/bash | grep 64-bit > /dev/null || TOTAL_MEM="$(( 1024 * 1024 * 1024 * 4 ))"
+    AUTOMEM=$(( "$TOTAL_MEM" * 75 / 100 ))
+    
+    # MAX FILESIZE
+    
+    # MAX PHP MEMORY
+    require_fpm_restart=false
+    CONF=/etc/php/"$PHPVER"/fpm/conf.d/90-ncp.ini
+    CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
+    Print "Using $(tmpl_php_max_memory) for PHP max memory"
+    install_template "php/90-ncp.ini.sh" "$CONF"
+    [[ "$CONF_VALUE" == "$(cat "$CONF")" ]] || require_fpm_restart=true
+    
+    # MAX PHP THREADS
+    CONF=/etc/php/"$PHPVER"/fpm/pool.d/www.conf
+    CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
+    echo "Using $(tmpl_php_threads) PHP threads"
+    install_template "php/pool.d.www.conf.sh" "$CONF"
+    [[ "$CONF_VALUE"  == "$(cat "$CONF")"   ]] || require_fpm_restart=true
+    
+    CONF=/etc/mysql/mariadb.conf.d/91-ncp.cnf
+    CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
+    install_template "mysql/91-ncp.cnf.sh" "$CONF"
+    [[ "$CONF_VALUE" == "$(cat "$CONF")" ]] || service mariadb restart
+    
+    # RESTART PHP
+    [[ "$require_fpm_restart" == "true" ]] && {
+        bash -c "sleep 3; source /usr/local/etc/library.sh; clear_opcache; service php${PHPVER}-fpm restart" &>/dev/null &
+    }
+    
+    # redis max memory
+    local CONF=/etc/redis/redis.conf
+    local CURRENT_REDIS_MEM
+    CURRENT_REDIS_MEM="$( grep "^maxmemory" "$CONF" | awk '{ print $2 }' )"
+    [[ "$REDISMEM" != "$CURRENT_REDIS_MEM" ]] && {
     sed -i "s|^maxmemory .*|maxmemory $REDISMEM|" "$CONF"
     chown redis:redis "$CONF"
     service redis-server restart
-  }
+    }
 }
 
 install() { :; }

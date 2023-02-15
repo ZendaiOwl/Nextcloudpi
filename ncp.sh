@@ -162,6 +162,12 @@ then LIBRARY='/usr/local/etc/library.sh'
      source "$LIBRARY"; log -2 "LIBRARY: $LIBRARY"
 fi
 
+WEBADMIN='ncp'
+WEBPASSWD='ownyourbits'
+BINDIR='/usr/local/bin/ncp'
+CONFDIR='/usr/local/etc/ncp-config.d'
+BRANCH="${BRANCH:-master}"
+
 function install {
   local -r NCC_SCRIPTFILE='/usr/local/bin/ncc' \
            ACTIVATION_CONFIG='/etc/apache2/sites-available/ncp-activation.conf' \
@@ -169,12 +175,7 @@ function install {
            RASPI_CONFIG='/usr/bin/raspi-config' \
            NOLOGIN_SHELL='/usr/sbin/nologin' \
            HTTP_USER='www-data' \
-           HOME_HTTP_USER='/home/www' \
-           WEBADMIN='ncp' \
-           WEBPASSWD='ownyourbits' \
-           BINDIR='/usr/local/bin/ncp' \
-           CONFDIR='/usr/local/etc/ncp-config.d' \
-           BRANCH="${BRANCH:-master}"
+           HOME_HTTP_USER='/home/www'
 
   local NCP_LAUNCHER="${HOME_HTTP_USER}/ncp-launcher.sh" \
         BACKUP_LAUNCHER="${HOME_HTTP_USER}/ncp-backup-launcher.sh"

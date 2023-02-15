@@ -8,6 +8,11 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
+
 function is_active
 {
   local SRCDIR
@@ -22,147 +27,147 @@ function install
 
 function tmpl_opcache_dir
 {
-  DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
-  echo -n "${DATADIR}/.opcache"
-  #[[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo "/tmp" || echo "${DATADIR}/.opcache"
+    local -r DATADIR
+    DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
+    echo -n "${DATADIR}/.opcache"
+    #[[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo "/tmp" || echo "${DATADIR}/.opcache"
 }
 
 function tmpl_tmp_upload_dir
 {
-  DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
-  echo -n "${DATADIR}/tmp"
+    local -r DATADIR
+    DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
+    echo -n "${DATADIR}/tmp"
 }
 
 function create_opcache_dir
 {
-  OPCACHE_DIR="$(tmpl_opcache_dir)"
-  mkdir -p "$OPCACHE_DIR"
-  chown -R www-data:www-data "$OPCACHE_DIR"
-  if [[ "$(stat -fc%T "${BASEDIR}")" == "btrfs" ]]
-  then
-    chattr -R +C "$OPCACHE_DIR"
-  fi
+    local OPCACHE_DIR
+    OPCACHE_DIR="$(tmpl_opcache_dir)"
+    mkdir --parents "$OPCACHE_DIR"
+    chown -R www-data:www-data "$OPCACHE_DIR"
+    if [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]]
+    then chattr -R +C "$OPCACHE_DIR"
+    fi
 }
 
 function create_tmp_upload_dir
 {
-  UPLOAD_DIR="$(tmpl_tmp_upload_dir)"
-  mkdir -p "${UPLOAD_DIR}"
-  chown www-data:www-data "${UPLOAD_DIR}"
-  if [[ "$(stat -fc%T "${BASEDIR}")" == "btrfs" ]]
-  then
-    chattr +C "${UPLOAD_DIR}"
-  fi
+    local UPLOAD_DIR
+    UPLOAD_DIR="$(tmpl_tmp_upload_dir)"
+    mkdir --parents "$UPLOAD_DIR"
+    chown www-data:www-data "$UPLOAD_DIR"
+    if [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]]
+    then chattr +C "$UPLOAD_DIR"
+    fi
 }
 
 function configure
 {
-  set -e -o pipefail
-  shopt -s dotglob # includes dot files
-
-  ## CHECKS
-  local SRCDIR BASEDIR ENCDIR
-  SRCDIR="$( get_nc_config_value datadirectory )" || {
-    echo -e "Error reading data directory. Is Nextcloud running and configured?";
-    return 1;
-  }
-  [ -d "${SRCDIR?}" ] || { echo -e "data directory not found: $SRCDIR"; return 1; }
-
-  [[ "$SRCDIR" == "${DATADIR?}"      ]] && { echo -e "INFO: data already there"; return 0; }
-  [[ "$SRCDIR" == "${DATADIR}"/data ]] && { echo -e "INFO: data already there"; return 0; }
-
-  BASEDIR="$DATADIR"
-  # If the user chooses the root of the mountpoint, force a folder
-  mountpoint -q "${BASEDIR?}" && {
-    BASEDIR="${BASEDIR}/ncdata"
-  }
-
-  mkdir -p "$BASEDIR"
-  BASEDIR="$(cd "$BASEDIR" && pwd -P)" # resolve symlinks and use the real path
-  DATADIR="${BASEDIR}/data"
-  ENCDIR="${BASEDIR}/ncdata_enc"
-
-  # checks
-  [[ "$DISABLE_FS_CHECK" == 1 ]] || grep -q -e ext -e btrfs <( stat -fc%T "$BASEDIR" ) || {
-    echo -e "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
-    return 1
-  }
-
-  sudo -u www-data test -x "$BASEDIR" || {
-    echo -e "ERROR: the user www-data does not have access permissions over $BASEDIR"
-    return 1
-  }
-
-  # backup possibly existing datadir
-  [ -d "$BASEDIR" ] && {
+    set -e -o pipefail
+    shopt -s dotglob # includes dot files
+    
+    ## CHECKS
+    local SRCDIR BASEDIR ENCDIR DATADIR
+    SRCDIR="$( get_nc_config_value datadirectory )" || {
+        Print "Error reading data directory. Is Nextcloud running and configured?"; return 1;
+    }
+    [[ -d "${SRCDIR?}" ]] || { Print "Data directory not found: $SRCDIR"; return 1; }
+    
+    [[ "$SRCDIR" == "${DATADIR?}"      ]] && { Print "INFO: Data exists"; return 0; }
+    [[ "$SRCDIR" == "$DATADIR"/data ]]    && { Print "INFO: Data exists"; return 0; }
+    
+    BASEDIR="$DATADIR"
+    # If the user chooses the root of the mountpoint, force a folder
+    mountpoint -q "${BASEDIR?}" && {
+        BASEDIR="${BASEDIR}/ncdata"
+    }
+    
+    mkdir --parents "$BASEDIR"
+    BASEDIR="$(cd "$BASEDIR" && pwd -P)" # resolve symlinks and use the real path
+    DATADIR="${BASEDIR}/data"
+    ENCDIR="${BASEDIR}/ncdata_enc"
+    
+    # checks
+    [[ "$DISABLE_FS_CHECK" == 1 ]] || grep -q -e ext -e btrfs <( stat -fc%T "$BASEDIR" ) || {
+        Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
+        return 1
+    }
+    
+    sudo -u www-data test -x "$BASEDIR" || {
+        Print "ERROR: www-data user does not have permissions to access: $BASEDIR"
+        return 1
+    }
+    
+    # backup possibly existing datadir
+    [[ -d "$BASEDIR" ]] && {
     rmdir "$BASEDIR" &>/dev/null || {
-      local BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
-      echo "INFO: $BASEDIR is not empty. Creating backup ${BKP?}"
-      mv "$BASEDIR" "$BKP"
+        local BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
+        Print "INFO: $BASEDIR is not empty. Creating backup ${BKP?}"
+        mv "$BASEDIR" "$BKP"
     }
-    mkdir -p "$BASEDIR"
-  }
-
-  ## COPY
-  cd /var/www/nextcloud
-  [[ "$BUILD_MODE" == 1 ]] || save_maintenance_mode
-
-  echo "moving data directory from $SRCDIR to $BASEDIR"
-
-  # use subvolumes, if BTRFS
-  [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]] && ! is_docker && {
-    echo "BTRFS filesystem detected"
-    rmdir "$BASEDIR"
-    btrfs subvolume create "$BASEDIR"
-  }
-
-  # use encryption, if selected
-  if is_active_app nc-encrypt; then
-    # if we have encryption AND BTRFS, then store ncdata_enc in the subvolume
-    mv "$(dirname "$SRCDIR")"/ncdata_enc "${ENCDIR?}"
-    mkdir "$DATADIR"                        && mount --bind "$SRCDIR" "$DATADIR"
-    mkdir "$(dirname "$SRCDIR")"/ncdata_enc && mount --bind "$ENCDIR" "$(dirname "$SRCDIR")"/ncdata_enc
-  else
-    mv "$SRCDIR" "$DATADIR"
-  fi
-  chown -R www-data:www-data "$DATADIR"
-
-  # datadir
-  ncc config:system:set datadirectory  --value="$DATADIR" \
-  || sed -i "s|'datadirectory' =>.*|'datadirectory' => '$DATADIR',|" "${NCDIR?}"/config/config.php
-  
-  ncc config:system:set logfile --value="${DATADIR}/nextcloud.log" \
-  || sed -i "s|'logfile' =>.*|'logfile' => '${DATADIR}/nextcloud.log',|" "${NCDIR?}"/config/config.php
-  set_ncpcfg datadir "$DATADIR"
-
-  # tmp upload dir
-  create_tmp_upload_dir
-  ncc config:system:set tempdirectory --value "$DATADIR/tmp" \
-  || sed -i "s|'tempdirectory' =>.*|'tempdirectory' => '${DATADIR}/tmp',|" "${NCDIR?}"/config/config.php
-  sed -i "s|^;\?upload_tmp_dir =.*$|uploadtmp_dir = ${DATADIR}/tmp|"  /etc/php/"$PHPVER"/cli/php.ini
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = ${DATADIR}/tmp|" /etc/php/"$PHPVER"/fpm/php.ini
-  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = ${DATADIR}/tmp|"     /etc/php/"$PHPVER"/fpm/php.ini
-
-  # opcache dir
-  create_opcache_dir
-  install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
-
-  # update fail2ban logpath
-  [[ -f /etc/fail2ban/jail.local ]] && \
-  sed -i "s|logpath  =.*nextcloud.log|logpath  = ${DATADIR}/nextcloud.log|" /etc/fail2ban/jail.local
-
-  [[ "$BUILD_MODE" == 1 ]] || restore_maintenance_mode
-
-  (
-    . "${BINDIR?}/SYSTEM/metrics.sh"
-    reload_metrics_config || {
-      echo 'WARN: There was an issue reloading ncp metrics. This might not affect your installation,
-      but keep it in mind if there is an issue with metrics.'
-      true
+    mkdir --parents "$BASEDIR"
     }
-  )
-
-  echo "The NC data directory has been moved successfully."
+    
+    ## COPY
+    if ! cd /var/www/nextcloud
+    then Print "Failed to cahnge directory to: /var/www/nextcloud"; return 1
+    fi
+    [[ "$BUILD_MODE" == 1 ]] || save_maintenance_mode
+    
+    Print "Moving data directory from $SRCDIR to $BASEDIR"
+    
+    # use subvolumes, if BTRFS
+    [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]] && ! is_docker && {
+        Print "BTRFS filesystem detected"
+        rmdir "$BASEDIR"
+        btrfs subvolume create "$BASEDIR"
+    }
+    
+    # use encryption, if selected
+    if is_active_app nc-encrypt # if we have encryption AND BTRFS, then store ncdata_enc in the subvolume
+    then mv "$(dirname "$SRCDIR")"/ncdata_enc "${ENCDIR?}"
+         mkdir "$DATADIR"                        && mount --bind "$SRCDIR" "$DATADIR"
+         mkdir "$(dirname "$SRCDIR")"/ncdata_enc && mount --bind "$ENCDIR" "$(dirname "$SRCDIR")"/ncdata_enc
+    else mv "$SRCDIR" "$DATADIR"
+    fi
+    chown -R www-data:www-data "$DATADIR"
+    
+    # datadir
+    ncc config:system:set datadirectory  --value="$DATADIR" \
+    || sed -i "s|'datadirectory' =>.*|'datadirectory' => '$DATADIR',|" "${NCDIR?}"/config/config.php
+    
+    ncc config:system:set logfile --value="${DATADIR}/nextcloud.log" \
+    || sed -i "s|'logfile' =>.*|'logfile' => '${DATADIR}/nextcloud.log',|" "${NCDIR?}"/config/config.php
+    set_ncpcfg datadir "$DATADIR"
+    
+    # tmp upload dir
+    create_tmp_upload_dir
+    ncc config:system:set tempdirectory --value "$DATADIR/tmp" \
+    || sed -i "s|'tempdirectory' =>.*|'tempdirectory' => '${DATADIR}/tmp',|" "${NCDIR?}"/config/config.php
+    sed -i "s|^;\?upload_tmp_dir =.*$|uploadtmp_dir = ${DATADIR}/tmp|"  /etc/php/"$PHPVER"/cli/php.ini
+    sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = ${DATADIR}/tmp|" /etc/php/"$PHPVER"/fpm/php.ini
+    sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = ${DATADIR}/tmp|"     /etc/php/"$PHPVER"/fpm/php.ini
+    
+    # opcache dir
+    create_opcache_dir
+    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
+    
+    # update fail2ban logpath
+    [[ -f /etc/fail2ban/jail.local ]] && \
+    sed -i "s|logpath  =.*nextcloud.log|logpath  = ${DATADIR}/nextcloud.log|" /etc/fail2ban/jail.local
+    
+    [[ "$BUILD_MODE" == 1 ]] || restore_maintenance_mode
+    
+    (
+        . "${BINDIR?}/SYSTEM/metrics.sh"
+        reload_metrics_config || {
+            Print "WARNING: There was an issue reloading ncp metrics. This might not affect your installation, but keep it in mind if there is an issue with metrics."
+            true
+        }
+    )
+    
+    Print "The NC data directory has been moved successfully."
 }
 
 # License

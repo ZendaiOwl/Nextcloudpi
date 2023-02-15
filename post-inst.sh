@@ -8,15 +8,14 @@
 # More at nextcloudpi.com
 #
 
-function configure
-{
+function configure {
   (
     set +e
     
     # stop services
     pkill -x redis-server
     [[ -f /run/mysqld/mysqld.pid ]] && mysqladmin -u root shutdown
-    [[ -f /run/crond.pid ]]     && kill "$(cat /run/crond.pid)"
+    [[ -f /run/crond.pid ]]         && kill "$(cat /run/crond.pid)"
     pkill -f php-fpm
     pkill -f notify_push
     killall postdrop
@@ -24,7 +23,9 @@ function configure
     
     # cleanup all NCP extras
     find /usr/local/bin/ncp -name '*.sh' | \
-      while read script; do cleanup_script $script; done
+      while read SCRIPT
+      do cleanup_script "$SCRIPT"
+      done
     
     # clean packages and installation logs
     apt-get autoremove -y

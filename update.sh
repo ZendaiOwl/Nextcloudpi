@@ -11,37 +11,32 @@
 # This is placed here so the script doesn't fail should someone update from
 # an old NextcloudPi version and source a library.sh without the log function
 
-# A log that uses log levels for logging different outputs
-# Log levels
-# -2: Debug
-# -1: Info
-#  0: Success
-#  1: Warning
-#  2: Error
-function log
-{
-  if [[ "$#" -gt 0 ]]; then local -r LOGLEVEL="$1" TEXT="${*:2}" Z='\e[0m'
-    if [[ "$LOGLEVEL" =~ [(-2)-2] ]]; then
-      case "$LOGLEVEL" in
-        -2) local -r CYAN='\e[1;36m'; printf "${CYAN}DEBUG${Z} %s\n" "$TEXT" >&2
-           ;;
-        -1) local -r BLUE='\e[1;34m'; printf "${BLUE}INFO${Z} %s\n" "$TEXT"
-           ;;
-         0) local -r GREEN='\e[1;32m'; printf "${GREEN}SUCCESS${Z} %s\n" "$TEXT"
-           ;;
-         1) local -r YELLOW='\e[1;33m'; printf "${YELLOW}WARNING${Z} %s\n" "$TEXT"
-           ;;
-         2) local -r RED='\e[1;31m'; printf "${RED}ERROR${Z} %s\n" "$TEXT" >&2
-           ;;
-      esac
-    else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; fi
-  fi
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
 }
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print
-{
-  printf '%s\n' "$@"
+# A log that uses log levels for logging different outputs
+# Log levels  | Colour
+# -2: Debug   | CYAN='\e[1;36m'
+# -1: Info    | BLUE='\e[1;34m'
+#  0: Success | GREEN='\e[1;32m'
+#  1: Warning | YELLOW='\e[1;33m'
+#  2: Error   | RED='\e[1;31m'
+function log {
+    if [[ "$#" -gt 0 ]]
+    then declare -r LOGLEVEL="$1" TEXT="${*:2}"
+         if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
+         then case "$LOGLEVEL" in
+                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "$TEXT" >&2 ;;
+                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "$TEXT"     ;;
+                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "$TEXT"     ;;
+                   1) printf '\e[1;33mWARNING\e[0m %s\n' "$TEXT"     ;;
+                   2) printf '\e[1;31mERROR\e[0m %s\n'   "$TEXT" >&2 ;;
+              esac
+         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         fi
+  fi
 }
 
 # Checks if a given variable has been set and assigned a value.
@@ -49,10 +44,9 @@ function Print
 # 0: Is set
 # 1: Not set 
 # 2: Invalid number of arguments
-function isSet
-{
-  [[ "$#" -ne 1 ]] && return 2
-  [[ -v "$1" ]]
+function isSet {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -v "$1" ]]
 }
 
 CONFDIR='/usr/local/etc/ncp-config.d'
@@ -63,12 +57,18 @@ LOCAL_LIBRARY='/usr/local/etc/library.sh'
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
 
-if isSet DBG; then set -e"$DBG"; else set -e; fi
+if isSet DBG
+then set -e"$DBG"
+else set -e
+fi
 
-if is_docker; then log 1 "Docker images should be updated by replacing the container with the latest docker image.
+if is_docker
+then log 1 "Docker images should be updated by replacing the container with the latest docker image.
 Refer to the documentation for instructions at: https://docs.nextcloudpi.com or on the forum: https://help.nextcloud.com
 If you are sure that you know what you are doing, you can still execute the update script by running it like the example below.
-Ex: ALLOW_UPDATE_SCRIPT=1 ncp-update"; [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1; fi
+Ex: ALLOW_UPDATE_SCRIPT=1 ncp-update"
+[[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
+fi
 
 
 # These options doesn't make much sense to have in a docker container
@@ -98,7 +98,8 @@ NFS
 "
 
 # in docker, just remove the volume for this
-if is_docker; then EXCL_DOCKER+="
+if is_docker
+then EXCL_DOCKER+="
 nc-nextcloud
 nc-init
 "
@@ -106,12 +107,17 @@ nc-init
 # better use a designated container
 EXCL_DOCKER+="
 samba
-"; fi
+"
+fi
 
 # Check if apt or apt-get is running
-if pgrep -x "apt|apt-get" &>/dev/null; then log 2 "Apt is currently running. Try again later"; exit 1; fi
+if pgrep -x "apt|apt-get" &>/dev/null
+then log 2 "Apt is currently running. Try again later"; exit 1
+fi
 
-if ! cp "$ETC_LIBRARY" "$LOCAL_LIBRARY"; then log 2 "Failed to copy file: $ETC_LIBRARY"; exit 1; fi
+if ! cp "$ETC_LIBRARY" "$LOCAL_LIBRARY"
+then log 2 "Failed to copy file: $ETC_LIBRARY"; exit 1
+fi
 
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
@@ -119,7 +125,11 @@ source "$LOCAL_LIBRARY"
 mkdir --parents "$CONFDIR"
 
 # prevent installing some ncp-apps in the containerized versions
-if is_docker || is_lxc; then for OPT in $EXCL_DOCKER; do touch "$CONFDIR"/"$OPT".cfg; done; fi
+if is_docker || is_lxc
+then for OPT in $EXCL_DOCKER
+     do touch "$CONFDIR"/"$OPT".cfg
+     done
+fi
 
 # copy all files in bin and etc
 cp --recursive bin/* /usr/local/bin/
@@ -128,37 +138,46 @@ cp --no-clobber etc/ncp.cfg /usr/local/etc/ncp.cfg
 cp --recursive  etc/ncp-templates /usr/local/etc/
 
 # install new entries of ncp-config and update others
-for FILE in etc/ncp-config.d/*; do
-  # Skip directories
-  if isDirectory "$FILE"; then continue; elif ! isFile "$FILE"; then continue; fi
-
-  # Install new NextcloudPi apps
-  if ! isFile /usr/local/"$FILE"; then install_app "$(basename "$FILE" .cfg)"; fi
+for FILE in etc/ncp-config.d/* # Skip directories
+do if isDirectory "$FILE"
+   then continue
+   elif ! isFile "$FILE"
+   then continue
+   fi
+   if ! isFile /usr/local/"$FILE"
+   then install_app "$(basename "$FILE" .cfg)" # Install new NextcloudPi apps
+   fi
 
   # keep saved cfg values
-  if isFile /usr/local/"$FILE"; then
-    LENGTH="$(jq '.params | length' /usr/local/"$FILE")"
-    for (( i = 0; i < "$LENGTH"; i++ )); do
-      ID="$(jq -r ".params[$i].id" /usr/local/"$FILE")"
-      VAL="$(jq -r ".params[$i].value" /usr/local/"$FILE")"
-      for (( j = 0; j < "$LENGTH"; j++ )); do
-        NEW_ID="$(jq -r ".params[$j].id" "$FILE")"
-        if isMatch "$NEW_ID" "$ID"; then CFG="$(jq ".params[$j].value = \"$VAL\"" "$FILE")"; break; fi
-      done
-      Print "$CFG" > "$FILE"
-    done
+  if isFile /usr/local/"$FILE"
+  then LENGTH="$(jq '.params | length' /usr/local/"$FILE")"
+       for (( i = 0; i < "$LENGTH"; i++ ))
+       do ID="$(jq -r ".params[$i].id" /usr/local/"$FILE")"
+          VAL="$(jq -r ".params[$i].value" /usr/local/"$FILE")"
+          for (( j = 0; j < "$LENGTH"; j++ ))
+          do NEW_ID="$(jq -r ".params[$j].id" "$FILE")"
+             if isMatch "$NEW_ID" "$ID"
+             then CFG="$(jq ".params[$j].value = \"$VAL\"" "$FILE")"; break
+             fi
+          done
+        Print "$CFG" > "$FILE"
+        done
   fi
 
   # Configure if active by default
-  if ! isFile /usr/local/"$FILE"; then
-    if isMatch "$(jq -r ".params[0].id" "$FILE")" "ACTIVE" && \
-       isMatch "$(jq -r ".params[0].value" "$FILE")" "yes"; then
-         if ! cp "$FILE" /usr/local/"$FILE"; then log 2 "Failed to copy file: $FILE"; exit 1; fi
-         run_app "$(basename "$FILE" .cfg)"
-    fi
+  if ! isFile /usr/local/"$FILE"
+  then if isMatch "$(jq -r ".params[0].id" "$FILE")" "ACTIVE" && \
+          isMatch "$(jq -r ".params[0].value" "$FILE")" "yes"
+       then if ! cp "$FILE" /usr/local/"$FILE"
+            then log 2 "Failed to copy file: $FILE"; exit 1
+            fi
+        run_app "$(basename "$FILE" .cfg)"
+        fi
   fi
   
-  if ! cp "$FILE" /usr/local/"$FILE"; then log 2 "Failed to copy file: $FILE"; exit 1; fi
+  if ! cp "$FILE" /usr/local/"$FILE"
+  then log 2 "Failed to copy file: $FILE"; exit 1
+  fi
   
 done
 
@@ -202,12 +221,17 @@ cp --recursive /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
 chown -R www-data:              /var/www/nextcloud/apps/nextcloudpi
 
 # remove unwanted ncp-apps for containerized versions
-if is_docker || is_lxc; then
-  for OPT in $EXCL_DOCKER; do rm "$CONFDIR"/"$OPT".cfg; find /usr/local/bin/ncp -name "${OPT}.sh" -exec rm '{}' \;; done
+if is_docker || is_lxc
+then for OPT in $EXCL_DOCKER
+     do rm "$CONFDIR"/"$OPT".cfg
+        find /usr/local/bin/ncp -name "${OPT}.sh" -exec rm '{}' \;
+     done
 fi
 
 # update services for docker
-if is_docker; then cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} /etc/services-enabled.d; fi
+if is_docker
+then cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} /etc/services-enabled.d
+fi
 
 # only live updates from here
 [[ -f /.ncp-image ]] && exit 0

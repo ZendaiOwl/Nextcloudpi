@@ -8,51 +8,54 @@
 # More at https://ownyourbits.com/
 #
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
-is_active()
-{
-  local SRCDIR=$( grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }' )
-  [[ "$SRCDIR" != "/var/lib/mysql" ]]
+is_active() {
+    local SRCDIR
+    SRCDIR="$(grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }')"
+    [[ "$SRCDIR" != "/var/lib/mysql" ]]
 }
 
 tmpl_db_dir() {
-  if is_active_app nc-database; then
-    find_app_param nc-database DBDIR
-  fi
+    if is_active_app nc-database
+    then find_app_param nc-database DBDIR
+    fi
 }
 
-configure()
-{
-  local SRCDIR=$( grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }' )
-  [ -d "$SRCDIR" ] || { echo -e "database directory $SRCDIR not found"; return 1; }
-
-  [ -d "$DBDIR" ] && {
-    [[ $( find "$DBDIR" -maxdepth 0 -empty | wc -l ) == 0 ]] && {
-      echo "$DBDIR is not empty"
-      return 1
+configure() {
+    local SRCDIR
+    SRCDIR="$(grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }')"
+    [[ -d "$SRCDIR" ]] || { echo -e "database directory $SRCDIR not found"; return 1; }
+    
+    [[ -d "$DBDIR" ]] && {
+        [[ "$( find "$DBDIR" -maxdepth 0 -empty | wc -l )" == 0 ]] && {
+            Print "$DBDIR is not empty"; return 1
+        }
+        rmdir "$DBDIR"
     }
-    rmdir "$DBDIR"
-  }
-
-  local BASEDIR=$( dirname "$DBDIR" )
-  mkdir -p "$BASEDIR"
-
-  grep -q -e ext -e btrfs <( stat -fc%T "$BASEDIR" ) || { echo -e "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "${BASEDIR}")"; return 1; }
-
-  sudo -u mysql test -x "$BASEDIR" || { echo -e "ERROR: the user mysql does not have access permissions over $BASEDIR"; return 1; }
-
-  [[ $( stat -fc%d / ) == $( stat -fc%d "$BASEDIR" ) ]] && \
-    echo -e "INFO: moving database to the SD card\nIf you want to use an external mount, make sure it is properly set up"
-
-  save_maintenance_mode
-
-  echo "moving database to $DBDIR..."
-  service mysql stop
-  mv "$SRCDIR" "$DBDIR"
-  install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf"
-  service mysql start
-
-  restore_maintenance_mode
+    
+    local BASEDIR="$(dirname "$DBDIR")"
+    mkdir --parents "$BASEDIR"
+    
+    grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR") || { Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "${BASEDIR}")"; return 1; }
+    
+    sudo -u mysql test -x "$BASEDIR" || { Print "ERROR: MySQL user does not have permission to access: $BASEDIR"; return 1; }
+    
+    [[ "$(stat -fc%d /)" == "$(stat -fc%d "$BASEDIR")" ]] && \
+    Print "INFO: moving database to the SD card" "If you want to use an external mount make sure to set it up properly"
+    
+    save_maintenance_mode
+    
+    Print "Moving database to: $DBDIR"
+    service mysql stop
+    mv "$SRCDIR" "$DBDIR"
+    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf"
+    service mysql start
+    
+    restore_maintenance_mode
 }
 
 install(){ :; }

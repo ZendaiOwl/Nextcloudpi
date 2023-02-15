@@ -8,12 +8,17 @@
 # More at: https://ownyourbits.com
 #
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
+
 configure()
 {
   # update password
-  echo -e "$PASSWORD\n$CONFIRM" | passwd ncp &>/dev/null && \
-    echo "password updated successfully" || \
-    { echo "passwords do not match"; return 1; }
+  Print "$PASSWORD" "$CONFIRM" | passwd ncp &>/dev/null && \
+    Print "Password updated successfully" || \
+    { Print "Passwords do not match"; return 1; }
 
   # persist ncp-web password in docker container
   [[ -f /.docker-image ]] && {

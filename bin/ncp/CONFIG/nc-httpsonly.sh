@@ -8,19 +8,21 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
-function configure
-{
-  local opt
+function configure {
+  local OPT
   [[ -f /.ncp-image ]] && return 0
-  if [[ "$ACTIVE" == "no" ]]; then
-    opt=Off
-  else
-    opt=On
+  if [[ "$ACTIVE" == "no" ]]
+  then OPT=Off
+  else OPT=On
   fi
-  sed -i "s|RewriteEngine .*|RewriteEngine $opt|" /etc/apache2/sites-available/000-default.conf
+  sed -i "s|RewriteEngine .*|RewriteEngine $OPT|" /etc/apache2/sites-available/000-default.conf
   apachectl -k graceful
-  echo "Forcing HTTPS $opt"
+  Print "Forcing HTTPS $OPT"
 }
 
 install() { :; }
