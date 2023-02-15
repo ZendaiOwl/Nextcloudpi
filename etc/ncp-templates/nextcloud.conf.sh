@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
+
 set -e
 set +u
 source /usr/local/etc/library.sh
@@ -7,12 +12,12 @@ source /usr/local/etc/library.sh
 [[ "$1" != "--defaults" ]] || log -1 "Restoring template to default settings" >&2
 is_docker && log -1 "Docker installation detected" >&2
 
-if [[ "$1" != "--defaults" ]]; then
-  LETSENCRYPT_DOMAIN="$(
+if [[ "$1" != "--defaults" ]]
+then LETSENCRYPT_DOMAIN="$(
     # force defaults during initial build
-    if ! [[ -f /.ncp-image ]]; then
-      source "${BINDIR}/NETWORKING/letsencrypt.sh"
-      tmpl_letsencrypt_domain
+    if ! [[ -f /.ncp-image ]]
+    then source "${BINDIR}/NETWORKING/letsencrypt.sh"
+         tmpl_letsencrypt_domain
     fi
   )"
 fi
@@ -20,19 +25,18 @@ fi
 [[ -z "$LETSENCRYPT_DOMAIN" ]] || log -1 "Letsencrypt domain is ${LETSENCRYPT_DOMAIN}" >&2
 
 # skip during build
-if ! [[ -f /.ncp-image ]] && [[ "$1" != "--defaults" ]] && [[ -f "${BINDIR}/SYSTEM/metrics.sh" ]]; then
-  METRICS_IS_ENABLED="$(
+if ! [[ -f /.ncp-image ]] && [[ "$1" != "--defaults" ]] && [[ -f "${BINDIR}/SYSTEM/metrics.sh" ]]
+then METRICS_IS_ENABLED="$(
   source "${BINDIR}/SYSTEM/metrics.sh"
   tmpl_metrics_enabled && echo yes || echo no
   )"
-else
-  METRICS_IS_ENABLED=no
+else METRICS_IS_ENABLED=no
 fi
 
 log -1 "Metrics enabled: ${METRICS_IS_ENABLED}" >&2
 
-echo "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
-echo ""
+Print "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
+Print ""
 
 cat <<EOF
 <IfModule mod_ssl.c>
@@ -41,32 +45,30 @@ cat <<EOF
 EOF
 
 if [[ "$1" != "--defaults" ]] && [[ -n "$LETSENCRYPT_DOMAIN" ]]; then
-  echo "    ServerName ${LETSENCRYPT_DOMAIN}"
-
-  # try the obvious path first
-  LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/${LETSENCRYPT_DOMAIN,,}"
-
-  # find the most recent cert otherwise
-  [[ -f "${LETSENCRYPT_CERT_BASE_PATH}/fullchain.pem" ]] || {
-    LETSENCRYPT_CERT_BASE_PATH="$(find /etc/letsencrypt/live -type d -name "${LETSENCRYPT_DOMAIN,,}*" -printf "%T@ %p\n" | sort -n | cut -f2 -d' ' | tail -1)"
-  }
-
-  # otherwise, in some installs this is the path we use
-  [[ -f "${LETSENCRYPT_CERT_BASE_PATH}/fullchain.pem" ]] || {
-    if [[ -d "/etc/letsencrypt/live/ncp-nextcloud" ]]; then
-      LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/ncp-nextcloud"
-    fi
-  }
-else
-  # Make sure the default snakeoil cert exists
-  [ -f /etc/ssl/certs/ssl-cert-snakeoil.pem ] || make-ssl-cert generate-default-snakeoil --force-overwrite
-  unset LETSENCRYPT_DOMAIN
+    Print "    ServerName ${LETSENCRYPT_DOMAIN}"
+    
+    # try the obvious path first
+    LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/${LETSENCRYPT_DOMAIN,,}"
+    
+    # find the most recent cert otherwise
+    [[ -f "${LETSENCRYPT_CERT_BASE_PATH}/fullchain.pem" ]] || {
+        LETSENCRYPT_CERT_BASE_PATH="$(find /etc/letsencrypt/live -type d -name "${LETSENCRYPT_DOMAIN,,}*" -printf "%T@ %p\n" | sort -n | cut -f2 -d' ' | tail -1)"
+    }
+    
+    # otherwise, in some installs this is the path we use
+    [[ -f "${LETSENCRYPT_CERT_BASE_PATH}/fullchain.pem" ]] || {
+        if [[ -d "/etc/letsencrypt/live/ncp-nextcloud" ]]
+        then LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/ncp-nextcloud"
+        fi
+    } # Make sure the default snakeoil cert exists
+else [[ -f /etc/ssl/certs/ssl-cert-snakeoil.pem ]] || make-ssl-cert generate-default-snakeoil --force-overwrite
+     unset LETSENCRYPT_DOMAIN
 fi
 
 # NOTE: we fall back to self-signed snakeoil certs if we couldn't get a LE one
 [[ -f "${LETSENCRYPT_CERT_BASE_PATH}/fullchain.pem" ]] && [[ -f "${LETSENCRYPT_CERT_BASE_PATH}/privkey.pem" ]] && {
-  LETSENCRYPT_CERT_PATH="${LETSENCRYPT_CERT_BASE_PATH}/fullchain.pem"
-  LETSENCRYPT_KEY_PATH="${LETSENCRYPT_CERT_BASE_PATH}/privkey.pem"
+    LETSENCRYPT_CERT_PATH="${LETSENCRYPT_CERT_BASE_PATH}/fullchain.pem"
+    LETSENCRYPT_KEY_PATH="${LETSENCRYPT_CERT_BASE_PATH}/privkey.pem"
 }
 
 cat <<EOF
@@ -84,9 +86,7 @@ cat <<EOF
 EOF
 
 if [[ "$1" != "--defaults" ]] && [[ "$METRICS_IS_ENABLED" == yes ]]
-then
-
-  cat <<EOF
+then cat <<EOF
     <Location /metrics/system>
       ProxyPass http://localhost:9100/metrics
 
@@ -139,7 +139,7 @@ cat <<EOF
 </IfModule>
 EOF
 
-if ! [[ -f /.ncp-image ]]; then
-  log -1 "Apache self check" >&2
-  apache2ctl -t 1>&2
+if ! [[ -f /.ncp-image ]]
+then log -1 "Apache self check" >&2
+     apache2ctl -t 1>&2
 fi
