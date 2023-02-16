@@ -705,6 +705,17 @@ function has_ncc_command {
     fi
 }
 
+# Ncc shortcut command as a function()
+# Return codes
+# 1: Command not found: sudo
+function ncc {
+    if hasCMD sudo
+    then declare -r -a SUDO=(sudo -E -u www-data)
+         "${SUDO[@]}" php /var/www/nextcloud/occ "$@"
+    else return 1
+    fi
+}
+
 # Checks if ncc exists as a function
 # Return status codes
 # 0: Found function: ncc
