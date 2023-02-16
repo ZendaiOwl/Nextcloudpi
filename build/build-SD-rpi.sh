@@ -10,7 +10,7 @@
 
 function add_build_variables {
   declare -x -a BUILDVARIABLES; BUILDVARIABLES+=("$@")
-  if [[ "${BUILDVARIABLES[@]}" != *"BUILDVARIABLES"* ]]
+  if [[ "${BUILDVARIABLES[*]}" != *"BUILDVARIABLES"* ]]
   then add_build_variables BUILDVARIABLES
   fi
 }
@@ -37,10 +37,10 @@ SIZE=4G                     # Raspbian image size
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
 IMG="${IMG:-NextcloudPi_RPi_$( date  "+%m-%d-%y" ).img}"
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
-ROOTDIR='raspbian_root'
-BUILD_DIR='tmp/ncp-build'
-BOOTDIR='raspbian_boot'
-DSHELL='/bin/bash'
+declare -x ROOTDIR='raspbian_root'
+declare -x BUILD_DIR='tmp/ncp-build'
+declare -x BOOTDIR='raspbian_boot'
+declare -x DSHELL='/bin/bash'
 add_build_variables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
 ##############################################################################
 
@@ -99,8 +99,8 @@ else sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
 fi
 
 if isRoot
-then rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
-else sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+then rsync -Aax --exclude-from .gitignore --exclude -- *.img --exclude -- *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+else sudo rsync -Aax --exclude-from .gitignore --exclude -- *.img --exclude -- *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 fi
 
 if isRoot
@@ -185,8 +185,8 @@ EOFCHROOT
 fi
 
 if isRoot
-then log -1 "Image created: $(basename $IMG)"; basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
-else log -1 "Image created: $(sudo basename $IMG)"; sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+then log -1 "Image created: $(basename "$IMG")"; basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+else log -1 "Image created: $(sudo basename "$IMG")"; sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
 clean_build_sd_rpi
