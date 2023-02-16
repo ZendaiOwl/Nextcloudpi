@@ -97,7 +97,7 @@ function configure {
          then Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
               return 1
          fi
-    
+    fi
     if ! sudo -u www-data test -x "$BASEDIR"
     then Print "ERROR: www-data user does not have execute permissions in: $BASEDIR"
          return 1

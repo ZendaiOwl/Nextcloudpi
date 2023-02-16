@@ -515,8 +515,13 @@ then log 1 "Existing MySQL configuration will be changed"
      fi
 fi
 
-# Update apt list
-updatePKG
+if isSet APT_IS_UPDATED
+then if isEqual "$APT_IS_UPDATED" 1
+     then log -2 "Skipping apt update"
+     else updatePKG # Update apt list
+     fi
+else updatePKG # Update apt list
+fi
 
 # Install packages
 installPKG git \
