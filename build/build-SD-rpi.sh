@@ -126,7 +126,10 @@ apt-get update --allow-releaseinfo-change
 echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-cd /tmp/ncp-build || exit 1
+if ! cd /tmp/ncp-build
+then printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1
+fi
+
 systemctl daemon-reload
 CODE_DIR="$PWD" bash install.sh
 
@@ -143,7 +146,7 @@ sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 # cleanup
 source etc/library.sh && run_app_unsafe post-inst.sh
 rm /etc/resolv.conf
-rm -rf /tmp/ncp-build
+rm --recursive --force /tmp/ncp-build
 EOFCHROOT
 else PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
      sudo chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
@@ -165,7 +168,10 @@ apt-get update --allow-releaseinfo-change
 echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-cd /tmp/ncp-build || exit 1
+if ! cd /tmp/ncp-build
+then printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1
+fi
+
 systemctl daemon-reload
 CODE_DIR="$PWD" bash install.sh
 
@@ -182,7 +188,7 @@ sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 # cleanup
 source etc/library.sh && run_app_unsafe post-inst.sh
 rm /etc/resolv.conf
-rm -rf /tmp/ncp-build
+rm --recursive --force /tmp/ncp-build
 EOFCHROOT
 fi
 
