@@ -242,9 +242,11 @@ function configure
     then log 2 "Download failed: $URL"; return 1
     fi
 
+    log -1 "Checking for existing nextcloud directory"
     if isDirectory 'nextcloud'
     then rm --recursive --force 'nextcloud'
-    else log 2 "Directory not found: nextcloud"; exit 1
+         log -1 "Removed directory: nextcloud"
+    else log -1 "Directory not found: nextcloud"
     fi
     
     log -1 "Installing  Nextcloud: $NCLATESTVER"
