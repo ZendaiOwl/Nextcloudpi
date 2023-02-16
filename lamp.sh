@@ -422,7 +422,7 @@ function install {
     # Setup apt repository for php 8
     wget -O /etc/apt/trusted.gpg.d/php.gpg "$PHPREPO_GPGKEY"
     echo "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
-
+    updatePKG
     installPKG apt-utils cron curl apache2
 
     ls -l /var/lock || true
