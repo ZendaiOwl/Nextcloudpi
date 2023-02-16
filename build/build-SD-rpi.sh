@@ -144,9 +144,20 @@ systemctl enable haveged.service
 sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
 # cleanup
-source etc/library.sh && run_app_unsafe post-inst.sh
-rm /etc/resolv.conf
-rm --recursive --force /tmp/ncp-build
+if [[ -f 'etc/library.sh' ]]
+then source etc/library.sh && run_app_unsafe post-inst.sh
+     # Write library to the '.bash_aliases' file for root
+     cat 'etc/library.sh' > '/root/.bash_aliases'
+fi
+
+if [[ -f '/etc/resolv.conf' ]]
+then rm /etc/resolv.conf
+fi
+
+if [[ -d '/tmp/ncp-build' ]]
+then rm --recursive --force '/tmp/ncp-build'
+fi
+
 EOFCHROOT
 else PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
      sudo chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
@@ -165,7 +176,7 @@ apt-get update --allow-releaseinfo-change --assume-yes
 #echo -e "y\n" | PRUNE_MODULES=1 rpi-update
 
 # this image comes without resolv.conf ??
-echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
+printf '%s\n' 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
 if ! cd /tmp/ncp-build
@@ -186,9 +197,20 @@ systemctl enable haveged.service
 sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
 # cleanup
-source etc/library.sh && run_app_unsafe post-inst.sh
-rm /etc/resolv.conf
-rm --recursive --force /tmp/ncp-build
+if [[ -f 'etc/library.sh' ]]
+then source etc/library.sh && run_app_unsafe post-inst.sh
+     # Write library to the '.bash_aliases' file for root
+     cat 'etc/library.sh' > '/root/.bash_aliases'
+fi
+
+if [[ -f '/etc/resolv.conf' ]]
+then rm /etc/resolv.conf
+fi
+
+if [[ -d '/tmp/ncp-build' ]]
+then rm --recursive --force '/tmp/ncp-build'
+fi
+
 EOFCHROOT
 fi
 
