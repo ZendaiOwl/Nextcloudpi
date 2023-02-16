@@ -10,36 +10,44 @@
 #
 # More at https://ownyourbits.com
 #
-
-function open_summary()
-{
-  echo "
-<details>
-<summary>$*</summary>
-
-\`\`\`
-"
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
 }
 
-function close_summary()
-{
-  echo "
-\`\`\`
+function code_block () {
+    Print '
+```
+'
+}
+
+function open_summary () {
+    Print "
+<details>
+<summary>$*</summary>
+"
+    code_block
+}
+
+function close_summary () {
+    code_block
+    Print "
 </details>
 "
 }
 
-[[ ${EUID} -ne 0 ]] && {
-  printf "Must be run as root. Try 'sudo $0'\n"
-  exit 1
-}
+if [[ "$EUID" -ne 0 ]]
+then printf "Must be run as root. Try 'sudo $0'\n"
+     exit 1
+fi
 
-echo "<--! Paste this in GitHub report -->"
+Print "<!-- Paste this in GitHub report -->"
 
 ##
 
 open_summary "NextcloudPi diagnostics"
-bash /usr/local/bin/ncp-diag | sed -r 's=(IP|Certificates|Gateway|Public IPv4|Public IPv6).*=\1|***REMOVED SENSITIVE VALUE***=g' | column  -t -s'|'
+bash '/usr/local/bin/ncp-diag' | sed -r 's=(IP|Certificates|Gateway|Public IPv4|Public IPv6).*=\1|***REMOVED SENSITIVE VALUE***=g' | column  -t -s'|'
 close_summary
 
 ##
@@ -51,7 +59,7 @@ close_summary
 ##
 
 open_summary "HTTPd logs"
-tail -20 /var/log/apache2/error.log 2>&1 || true
+tail -20 '/var/log/apache2/error.log' 2>&1 || true
 close_summary
 
 ##
