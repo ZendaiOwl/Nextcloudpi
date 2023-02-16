@@ -318,22 +318,6 @@ function hasCMD {
     fi
 }
 
-# Checks for the ncc command
-# Return status codes
-# 0: ncc command found
-# 1: File exists
-# 2: Too many arguments
-function hasCMD_NCC {
-  declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
-  if notEqual "$#" 0
-  then return 2
-  elif hasCMD ncc
-  then return 0
-  elif isFile "$NCC_SCRIPTFILE"
-  then return 1
-  fi
-}
-
 # Checks if a package exists on the system
 # Return status codes
 # 0: Package is installed
@@ -408,6 +392,332 @@ function installPKG {
              else log 2 "Something went wrong during installation"; return 1
              fi
         fi
+    fi
+}
+
+################################
+# Bash - Permissions Functions #
+################################
+# Template
+# Return status codes
+# 0: Success
+# 1: 
+# 2: 
+# 3: 
+# 4: 
+
+# Changes permissions on a given file
+# Checks for which argument is a file & a positive integer digit
+# Return status codes
+# 0: Success
+# 1: Failed to change permissions on file: $1 or $2
+# 2: Command not found: sudo
+# 3: Not a file: $1 or $2
+# 4: Not a positive integer digit: $1 or $2
+# 5: Invalid number of arguments
+function change_permissions {
+    if notEqual "$#" 2
+    then return 5
+    else
+         if [[ ! "$1" =~ [0-9*] ]] && [[ ! "$2" =~ [0-9*] ]]
+         then return 4
+         elif ! isFile "$1" && ! isFile "$2"
+         then return 3
+         elif [[ "$1" =~ [0-9*] ]] && isFile "$2"
+         then if isRoot
+              then if chmod "$1" "$2"
+                   then return 0
+                   else return 1
+                   fi
+              else
+                   if hasCMD sudo
+                   then if sudo chmod "$1" "$2"
+                        then return 0
+                        else return 1
+                        fi
+                   else return 2
+                   fi
+              fi
+         elif [[ "$2" =~ [0-9*] ]] && isFile "$1"
+         then if isRoot
+              then if chmod "$2" "$1"
+                   then return 0
+                   else return 1
+                   fi
+              else
+                   if hasCMD sudo
+                   then if sudo chmod "$2" "$1"
+                        then return 0
+                        else return 1
+                        fi
+                   else return 2
+                   fi
+              fi
+         fi
+    fi
+}
+
+# Change permissions recursively on a given path
+# Checks for which argument is a file & a positive integer digit
+# Return status codes
+# 0: Success
+# 1: Failed to change permissions on file: $1 or $2
+# 2: Command not found: sudo
+# 3: Not a path: $1 or $2
+# 4: Not a positive integer digit: $1 or $2
+# 5: Invalid number of arguments
+function change_permissions_recursively {
+    if notEqual "$#" 2
+    then return 5
+    else
+         if [[ ! "$1" =~ [0-9*] ]] && [[ ! "$2" =~ [0-9*] ]]
+         then return 4
+         elif ! isPath "$1" && ! isPath "$2"
+         then return 3
+         elif [[ "$1" =~ [0-9*] ]] && isPath "$2"
+         then if isRoot
+              then if chmod "$1" "$2"
+                   then return 0
+                   else return 1
+                   fi
+              else
+                   if hasCMD sudo
+                   then if sudo chmod "$1" "$2"
+                        then return 0
+                        else return 1
+                        fi
+                   else return 2
+                   fi
+              fi
+         elif [[ "$2" =~ [0-9*] ]] && isFile "$1"
+         then if isRoot
+              then if chmod "$2" "$1"
+                   then return 0
+                   else return 1
+                   fi
+              else
+                   if hasCMD sudo
+                   then if sudo chmod "$2" "$1"
+                        then return 0
+                        else return 1
+                        fi
+                   else return 2
+                   fi
+              fi
+         fi
+    fi
+}
+
+# Changes owner of file
+# Return status codes
+# 0: Success
+# 1: Failed to change owner of the file
+# 2: Missing command: sudo
+# 3: Not a file: $2
+# 4: Not a user: $1
+# 5: Invalid number of arguments
+function change_owner {
+    if notEqual "$#" 2
+    then return 5
+    else
+         if ! isUser "$1"
+         then return 4
+         elif isFile "$2"
+         then if isRoot
+              then if chown "$1":"$1" "$2"
+                   then return 0
+                   else return 1
+                   fi
+              elif hasCMD sudo
+              then if sudo chown "$1":"$1" "$2"
+                   then return 0
+                   else return 1
+                   fi
+              else return 2
+              fi
+         else return 3
+         fi
+    fi
+}
+
+
+# Changes owner of file/directory recursively
+# Return status codes
+# 0: Success
+# 1: Failed to change owner of the file
+# 2: Missing command: sudo
+# 3: Not a file: $2
+# 4: Not a user: $1
+# 5: Invalid number of arguments
+function change_owner_recursive {
+    if notEqual "$#" 2
+    then return 5
+    else
+         if ! isUser "$1"
+         then return 4
+         elif isFile "$2"
+         then if isRoot
+              then if chown --recursive "$1":"$1" "$2"
+                   then return 0
+                   else return 1
+                   fi
+              elif hasCMD sudo
+              then if sudo chown --recursive "$1":"$1" "$2"
+                   then return 0
+                   else return 1
+                   fi
+              else return 2
+              fi
+         else return 3
+         fi
+    fi
+}
+
+# Makes a file executable
+# Return status codes
+# 0: Success
+# 1: Failed to make file executable
+# 2: Missing command: sudo
+# 3: Not a file: $1
+# 4: Invalid number of arguments
+function make_executable {
+    if notEqual "$#" 1
+    then return 4
+    else
+         if isFile "$1"
+         then if isRoot
+              then if chmod +x "$1"
+                   then return 0
+                   else return 1
+                   fi
+              elif hasCMD sudo
+              then if sudo chmod +x "$1"
+                   then return 0
+                   else return 1
+                   fi
+              else return 2
+              fi
+         else return 3
+         fi
+    fi
+}
+
+# Make files executable recursively
+# Return status codes
+# 0: Success
+# 1: Failed to make files executable
+# 2: Missing command: sudo
+# 3: Not a file: $1
+# 4: Invalid number of arguments
+function make_executable_recurisve {
+    if notEqual "$#" 1
+    then return 4
+    else
+         if isFile "$1" || isDirectory "$1"
+         then if isRoot
+              then if chmod --recursive +x "$1"
+                   then return 0
+                   else return 1
+                   fi
+              elif hasCMD sudo
+              then if sudo chmod --recursive +x "$1"
+                   then return 0
+                   else return 1
+                   fi
+              else return 2
+              fi
+         else return 3
+         fi
+    fi
+}
+
+# Checks for the ncc command
+# Return status codes
+# 0: ncc command found
+# 1: No command found while file exists
+# 2: Command & file not found: ncc & /usr/local/bin/ncc
+# 3: Too many arguments
+function has_ncc_command {
+    declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
+    if notEqual "$#" 0
+    then return 3
+    elif hasCMD ncc
+    then return 0
+    elif isFile "$NCC_SCRIPTFILE"
+    then return 1
+    else return 2
+    fi
+}
+
+# Checks if ncc exists as a function
+# Return status codes
+# 0: Found function: ncc
+# 1: No such function found: ncc
+# 2: Too many arguments
+function has_ncc_function {
+    if notEqual "$#" 0
+    then return 2
+    elif isFunction ncc
+    then return 0
+    else return 1
+    fi
+}
+
+# Checks for the ncc script file
+# Return status codes
+# 0: Found file: /usr/local/bin/ncc
+# 1: File not found: /usr/local/bin/ncc
+# 2: Too many arguments
+function has_local_ncc_script {
+    if notEqual "$#" 0
+    then return 2
+    elif isFile '/usr/local/bin/ncc'
+    then return 0
+    else return 1
+    fi
+}
+
+# Checks if the ncc script file is executable or not
+# Return status codes
+# 0: Is executable
+# 1: Not executable 
+# 2: File not found
+# 3: Invalid number of arguments
+function is_ncc_executable {
+    if isEqual "$#" 0
+    then  declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
+    elif isEqual "$#" 1
+    then declare -r NCC_SCRIPTFILE="$1"
+    else return 3
+    fi
+    if isFile "$NCC_SCRIPTFILE"
+    then if isExecutable "$NCC_SCRIPTFILE"
+         then return 0
+         else return 1
+         fi
+    else return 2
+    fi
+}
+
+# Makes the ncc script file executable
+# Return status codes
+# 0: Succes
+# 1: File not found: $1 or /usr/local/bin/ncc
+# 2: Invalid number of arguments
+# ?: Return code from attempting to change permissions on file
+function make_ncc_executable {
+    if isGreater "$#" 1
+    then return 2
+    elif isEqual "$#" 1
+    then declare -r NCC_SCRIPTFILE="$1"
+    else declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
+    fi
+    if has_ncc_script
+    then if make_executable "$NCC_SCRIPTFILE"
+         then return 0
+         else return "$?"
+         fi
+    else return 1
     fi
 }
 
