@@ -359,7 +359,9 @@ EOF
 EOF
 
     # for notify_push app in NC21
-    a2enmod proxy proxy_http proxy_wstunnel
+    a2enmod proxy \
+            proxy_http \
+            proxy_wstunnel
     
     arch="$(uname -m)"
     [[ "$arch" =~ "armv7" ]] && arch="armv7"
@@ -406,8 +408,8 @@ EOF
     then log -1 "Shutting down MariaDB [$DB_PID]"
          mysqladmin -u root shutdown
          wait "$DB_PID"
-    fi; log 0 "Completed: ${BASH_SOURCE[0]##*/}"
-    log -1 "Don't forget to run nc-init"
+    fi
+    log 0 "Completed: ${BASH_SOURCE[0]##*/}"; log -1 "Don't forget to run nc-init"
 }
 
 # License
