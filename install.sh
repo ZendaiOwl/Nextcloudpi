@@ -499,6 +499,7 @@ trap 'clean_install_script' EXIT SIGHUP SIGILL SIGABRT SIGINT
 # Add to PATH if needed
 if ! hasText '/usr/local/sbin:/usr/sbin:/sbin:' "$PATH"
 then PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
+else PATH="$PATH"
 fi; export PATH
 
 # Check for existing MariaDB/MySQL install
