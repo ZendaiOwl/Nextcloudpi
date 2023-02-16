@@ -291,7 +291,7 @@ EOF
     
     ## NCP USER FOR AUTHENTICATION
     if ! isUser "$WEBADMIN"
-    then useradd --home-dir /nonexistent "$WEBADMIN"
+    then useradd --home-dir '/nonexistent' "$WEBADMIN"
     fi
     Print "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
@@ -302,7 +302,7 @@ EOF
     chown "$HTTP_USER":"$HTTP_USER" "$HOME_HTTP_USER"
     chmod 700 "$HOME_HTTP_USER"
     
-    cat > /home/www/ncp-launcher.sh <<'EOF'
+    cat > '/home/www/ncp-launcher.sh' <<'EOF'
 #!/usr/bin/env bash
 grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
@@ -315,32 +315,40 @@ EOF
 ACTION="${1}"
 FILE="${2}"
 COMPRESSED="${3}"
+
 grep -q '[\\&#;`|*?~<>^()[{}$&]' <<< "$*" && exit 1
+
 [[ "$FILE" =~ ".." ]] && exit 1
-[[ "$ACTION" == "chksnp" ]] && {
-  btrfs subvolume show "$FILE" &>/dev/null || exit 1
-  exit
-}
-[[ "$ACTION" == "delsnp" ]] && {
-  btrfs subvolume delete "$FILE" || exit 1
-  exit
-}
-[[ -f "$FILE" ]] || exit 1
+
+if [[ "$ACTION" == "chksnp" ]]
+then btrfs subvolume show "$FILE" &>/dev/null || exit 1
+     exit
+fi
+
+if [[ "$ACTION" == "delsnp" ]]
+then btrfs subvolume delete "$FILE" || exit 1
+     exit
+fi
+
+if [[ ! -f "$FILE" ]]
+then printf '%s\n' "File not found: $FILE"; exit 1
+fi
+
 [[ "$FILE" =~ ".tar" ]] || exit 1
 [[ "$ACTION" == "del" ]] && {
-  [[ "$(file "$FILE")" =~ "tar archive" ]] || [[ "$(file "$FILE")" =~ "gzip compressed data" ]] || exit 1
-  rm "$FILE" || exit 1
-  exit
+    [[ "$(file "$FILE")" =~ "tar archive" ]] || [[ "$(file "$FILE")" =~ "gzip compressed data" ]] || exit 1
+    rm "$FILE" || exit 1
+    exit
 }
 [[ "$COMPRESSED" != "" ]] && PIGZ="-I pigz"
 tar $PIGZ -tf "$FILE" data &>/dev/null
 EOF
   chmod 700 "$BACKUP_LAUNCHER"
-  Print "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > /etc/sudoers.d/www-data
+  Print "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
 
   # NCP AUTO TRUSTED DOMAIN
-  mkdir --parents /usr/lib/systemd/system
-  cat > /usr/lib/systemd/system/nextcloud-domain.service <<'EOF'
+  mkdir --parents '/usr/lib/systemd/system'
+  cat > '/usr/lib/systemd/system/nextcloud-domain.service' <<'EOF'
 [Unit]
 Description=Register Current IP as Nextcloud trusted domain
 Requires=network.target
@@ -358,21 +366,21 @@ EOF
   [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nextcloud-domain
 
   # NEXTCLOUDPI UPDATES
-  cat > /etc/cron.daily/ncp-check-version <<EOF
+  cat > '/etc/cron.daily/ncp-check-version' <<EOF
 #!/bin/sh
 /usr/local/bin/ncp-check-version
 EOF
-  chmod a+x /etc/cron.daily/ncp-check-version
-  touch               /var/run/.ncp-latest-version
-  chown root:www-data /var/run/.ncp-latest-version
-  chmod g+w           /var/run/.ncp-latest-version
+  chmod a+x '/etc/cron.daily/ncp-check-version'
+  touch               '/var/run/.ncp-latest-version'
+  chown root:www-data '/var/run/.ncp-latest-version'
+  chmod g+w           '/var/run/.ncp-latest-version'
 
   # Install all ncp-apps
   ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || exit "$?"
 
   # LIMIT LOG SIZE
-  grep -q maxsize /etc/logrotate.d/apache2 || sed -i /weekly/amaxsize2M /etc/logrotate.d/apache2
-  cat > /etc/logrotate.d/ncp <<'EOF'
+  grep -q maxsize '/etc/logrotate.d/apache2' || sed -i /weekly/amaxsize2M '/etc/logrotate.d/apache2'
+  cat > '/etc/logrotate.d/ncp' <<'EOF'
 /var/log/ncp.log
 {
         rotate 4
@@ -382,24 +390,24 @@ EOF
         compress
 }
 EOF
-  chmod 0444 /etc/logrotate.d/ncp
+  chmod 0444 '/etc/logrotate.d/ncp'
 
   # ONLY FOR IMAGE BUILDS
   # If-statement closes at the end of the install function()
   if isFile '/.ncp-image'
-  then rm --recursive --force /var/log/ncp.log
+  then rm --recursive --force '/var/log/ncp.log'
        ## NEXTCLOUDPI MOTD
-       rm --recursive --force /etc/update-motd.d
-       mkdir /etc/update-motd.d
-       rm /etc/motd
-       ln -s /var/run/motd /etc/motd
-       cat > /etc/update-motd.d/10logo <<EOF
+       rm --recursive --force '/etc/update-motd.d'
+       mkdir '/etc/update-motd.d'
+       rm '/etc/motd'
+       ln -s '/var/run/motd' '/etc/motd'
+       cat > '/etc/update-motd.d/10logo' <<EOF
 #!/bin/sh
 echo
 cat /usr/local/etc/ncp-ascii.txt
 EOF
-       cat > /etc/update-motd.d/20updates <<'EOF'
-#!/usr/bin/env bash
+       cat > '/etc/update-motd.d/20updates' <<'EOF'
+#!/bin/sh
 /usr/local/bin/ncp-check-updates
 EOF
        chmod a+x /etc/update-motd.d/*
@@ -407,10 +415,10 @@ EOF
        ## HOSTNAME AND mDNS
        if ! isFile '/.docker-image'
        then installPKG avahi-daemon
-            sed -i '/^127.0.1.1/d'                        /etc/hosts
-            sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" /etc/hosts
+            sed -i '/^127.0.1.1/d'                        '/etc/hosts'
+            sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" '/etc/hosts'
        fi
-       Print 'nextcloudpi' > /etc/hostname
+       Print 'nextcloudpi' > '/etc/hostname'
        
        ## tag image
        is_docker && local DOCKER_TAG="_docker"
@@ -418,20 +426,20 @@ EOF
        Print "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
        
        ## SSH hardening
-       if [[ -f /etc/ssh/sshd_config ]]
-       then sed -i 's|^#AllowTcpForwarding .*|AllowTcpForwarding no|'     /etc/ssh/sshd_config
-            sed -i 's|^#ClientAliveCountMax .*|ClientAliveCountMax 2|'    /etc/ssh/sshd_config
-            sed -i 's|^MaxAuthTries .*|MaxAuthTries 1|'                   /etc/ssh/sshd_config
-            sed -i 's|^#MaxSessions .*|MaxSessions 2|'                    /etc/ssh/sshd_config
-            sed -i 's|^#TCPKeepAlive .*|TCPKeepAlive no|'                 /etc/ssh/sshd_config
-            sed -i 's|^X11Forwarding .*|X11Forwarding no|'                /etc/ssh/sshd_config
-            sed -i 's|^#LogLevel .*|LogLevel VERBOSE|'                    /etc/ssh/sshd_config
-            sed -i 's|^#Compression .*|Compression no|'                   /etc/ssh/sshd_config
-            sed -i 's|^#AllowAgentForwarding .*|AllowAgentForwarding no|' /etc/ssh/sshd_config
+       if [[ -f '/etc/ssh/sshd_config' ]]
+       then sed -i 's|^#AllowTcpForwarding .*|AllowTcpForwarding no|'     '/etc/ssh/sshd_config'
+            sed -i 's|^#ClientAliveCountMax .*|ClientAliveCountMax 2|'    '/etc/ssh/sshd_config'
+            sed -i 's|^MaxAuthTries .*|MaxAuthTries 1|'                   '/etc/ssh/sshd_config'
+            sed -i 's|^#MaxSessions .*|MaxSessions 2|'                    '/etc/ssh/sshd_config'
+            sed -i 's|^#TCPKeepAlive .*|TCPKeepAlive no|'                 '/etc/ssh/sshd_config'
+            sed -i 's|^X11Forwarding .*|X11Forwarding no|'                '/etc/ssh/sshd_config'
+            sed -i 's|^#LogLevel .*|LogLevel VERBOSE|'                    '/etc/ssh/sshd_config'
+            sed -i 's|^#Compression .*|Compression no|'                   '/etc/ssh/sshd_config'
+            sed -i 's|^#AllowAgentForwarding .*|AllowAgentForwarding no|' '/etc/ssh/sshd_config'
        fi
        
        ## kernel hardening
-       cat >> /etc/sysctl.conf <<EOF
+       cat >> '/etc/sysctl.conf' <<EOF
 fs.protected_hardlinks=1
 fs.protected_symlinks=1
 kernel.core_uses_pid=1
@@ -451,7 +459,7 @@ net.ipv6.conf.default.accept_redirects=0
 EOF
 
        ## other tweaks
-       sed -i "s|^UMASK.*|UMASK           027|" /etc/login.defs
+       sed -i "s|^UMASK.*|UMASK           027|" '/etc/login.defs'
   fi
 }
 
