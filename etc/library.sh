@@ -327,11 +327,10 @@ function hasCMD_NCC {
   declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
   if notEqual "$#" 0
   then return 2
-  else if hasCMD ncc
+  elif hasCMD ncc
   then return 0
-       elif isFile "$NCC_SCRIPTFILE"
-       then return 1
-       fi
+  elif isFile "$NCC_SCRIPTFILE"
+  then return 1
   fi
 }
 
@@ -580,8 +579,9 @@ function persistent_cfg {
 function cleanup_script {
     local SCRIPT="$1"
     log -1 "Cleanup script: $SCRIPT"; unset cleanup
+    log -1 "Source: $SCRIPT"
     # shellcheck disable=SC1090
-    log -1 "Source: $SCRIPT"; source "$SCRIPT"
+    source "$SCRIPT"
     if isMatch "$(type -t cleanup)" "function"
     then log -1 "Cleanup function found: $SCRIPT"; cleanup; return "$?"
     fi
@@ -955,7 +955,8 @@ function save_maintenance_mode
          then export NCP_MAINTENANCE_MODE="on" || true
          fi
          ncc maintenance:mode --on
-    else if grep -q enabled <("$ncc" maintenance:mode)
+    else
+         if grep -q enabled <("$ncc" maintenance:mode)
          then export NCP_MAINTENANCE_MODE="on" || true
          fi
          "$ncc" maintenance:mode --on
@@ -969,7 +970,8 @@ function restore_maintenance_mode
          then ncc maintenance:mode --on
          else ncc maintenance:mode --off
          fi
-    else if notZero "${NCP_MAINTENANCE_MODE:-}"
+    else
+         if notZero "${NCP_MAINTENANCE_MODE:-}"
          then ${ncc} maintenance:mode --on
          else ${ncc} maintenance:mode --off
          fi
@@ -1097,7 +1099,7 @@ fi
 NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
 PHPVER="$(     jq -r '.php_version'       "$NCPCFG")"
 RELEASE="$(    jq -r '.release'           "$NCPCFG")"
-CFGRELEASE="$RELEASE"
+CFG_RELEASE="$RELEASE"
 
 # The default security repository in bullseye is bullseye-security
 if grep -Eh '^deb ' /etc/apt/sources.list | grep "${RELEASE}-security" > /dev/null
@@ -1119,6 +1121,7 @@ log -2 "INIT_SYSTEM: $INIT_SYSTEM"; export INIT_SYSTEM
 log -2 "NCLATESTVER: $NCLATESTVER"; export NCLATESTVER
 log -2 "PHPVER: $PHPVER";           export PHPVER
 log -2 "RELEASE: $RELEASE";         export RELEASE
+log -2 "CFG_RELEASE: $CFG_RELEASE"; export CFG_RELEASE
 
 
 # License
