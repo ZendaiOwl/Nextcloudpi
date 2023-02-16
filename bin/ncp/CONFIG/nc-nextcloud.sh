@@ -117,10 +117,10 @@ function installPKG {
 }
 
 DBADMIN='ncadmin'
-REDIS_MEM=3gb
+REDIS_MEM='3gb'
 
 function tmpl_max_transfer_time {
-    find_app_param nc-nextcloud MAXTRANSFERTIME
+    find_app_param 'nc-nextcloud' 'MAXTRANSFERTIME'
 }
 
 function install {
@@ -136,6 +136,9 @@ function install {
     if isFile "$PROVISIONING_SERVICE"
     then return 0
     fi
+
+    # Update
+    updatePKG
 
     # Optional packets for Nextcloud and Apps
     # NOTE: php-smbclient in sury but not in Debian sources, we'll use the binary version
@@ -160,15 +163,15 @@ function install {
     #installPKG imagemagick php"$PHPVER"-imagick ghostscript
 
     # POSTFIX
-    installPKG postfix || {
-        # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
-        log -1 "[NCP]: Please ignore the previous postfix installation error"
-        mv /usr/bin/newaliases /
-        ln -s /bin/true /usr/bin/newaliases
-        installPKG postfix
-        rm /usr/bin/newaliases
-        mv /newaliases /usr/bin/newaliases
-    }
+    if ! installPKG 'postfix'
+    then # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
+         log -1 "[NCP]: Please ignore the previous postfix installation error"
+         mv '/usr/bin/newaliases' '/'
+         ln -s '/bin/true' '/usr/bin/newaliases'
+         installPKG 'postfix'
+         rm '/usr/bin/newaliases'
+         mv '/newaliases' '/usr/bin/newaliases'
+    fi
   
     sed -i "s|# unixsocket .*|unixsocket $REDIS_SOCKET|"              "$REDIS_CONF"
     sed -i "s|# unixsocketperm .*|unixsocketperm $SOCKET_PERMISSION|" "$REDIS_CONF"
@@ -176,12 +179,12 @@ function install {
     sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'    "$REDIS_CONF"
     sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'   "$REDIS_CONF"
     sed -i "s|^port.*|port $PORT_NR|"                                 "$REDIS_CONF"
-    echo "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
-    echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
+    Print "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
+    Print 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
 
     if is_lxc
-    then mkdir --parents /etc/systemd/system/redis-server.service.d
-         cat > /etc/systemd/system/redis-server.service.d/lxc_fix.conf <<'EOF'
+    then mkdir --parents '/etc/systemd/system/redis-server.service.d'
+         cat > '/etc/systemd/system/redis-server.service.d/lxc_fix.conf' <<'EOF'
 [Service]
 ReadOnlyDirectories=
 EOF
@@ -196,7 +199,7 @@ EOF
     clear_opcache
     
     # service to randomize passwords on first boot
-    mkdir --parents /usr/lib/systemd/system
+    mkdir --parents '/usr/lib/systemd/system'
     cat > "$PROVISIONING_SERVICE" <<'EOF'
 [Unit]
 Description=Randomize passwords on first boot
@@ -235,20 +238,24 @@ function configure
     fi
 
     log -1 "Downloading Nextcloud: $NCLATESTVER"
-    wget -q "$URL" -O nextcloud.tar.bz2 || {
-        log 2 "Couldn't download: $URL"; return 1
-    }
-    rm --recursive --force nextcloud
+    if ! wget -q "$URL" -O 'nextcloud.tar.bz2'
+    then log 2 "Download failed: $URL"; return 1
+    fi
+
+    if isDirectory 'nextcloud'
+    then rm --recursive --force 'nextcloud'
+    else log 2 "Directory not found: nextcloud"; exit 1
+    fi
     
     log -1 "Installing  Nextcloud: $NCLATESTVER"
-    tar -xf nextcloud.tar.bz2
-    rm nextcloud.tar.bz2
+    tar -xf 'nextcloud.tar.bz2'
+    rm 'nextcloud.tar.bz2'
     
     ## CONFIGURE FILE PERMISSIONS
     
     log -1 "Creating possible missing directories"
-    mkdir -p "$OCPATH"/data
-    mkdir -p "$OCPATH"/updater
+    mkdir --parents "$OCPATH"/data
+    mkdir --parents "$OCPATH"/updater
     
     log -1 "chmod: files (0640) & directories (0750)"
     find "$OCPATH"/ -type f -print0 | xargs -0 chmod 0640
@@ -266,11 +273,11 @@ function configure
     chmod +x "$OCPATH"/occ
     
     log -1 "chmod ($HTUSER) & chown (0644): .htaccess"
-    if [[ -f "$OCPATH"/.htaccess ]]
+    if isFile "$OCPATH"/.htaccess
     then chmod 0644 "$OCPATH"/.htaccess
          chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
     fi
-    if [[ -f "$OCPATH"/data/.htaccess ]]
+    if isFile "$OCPATH"/data/.htaccess
     then chmod 0644 "$OCPATH"/data/.htaccess
          chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
     fi
@@ -285,9 +292,9 @@ function configure
     } || true
     )"
     if [[ -z "${OPCACHEDIR}" ]]
-    then install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
+    then install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
     else mkdir --parents "$OPCACHEDIR"
-         chown -R "$HTUSER":"$HTUSER" "$OPCACHEDIR"
+         chown --recursive "$HTUSER":"$HTUSER" "$OPCACHEDIR"
          install_template "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
     fi
     
@@ -300,7 +307,7 @@ function configure
     fi
     
     while :
-    do [[ -S "$MYSQL_SOCKET" ]] && break
+    do isSocket "$MYSQL_SOCKET" && break
        sleep 1
     done
     
@@ -323,12 +330,13 @@ EOF
     ## SET APACHE VHOST
     log -1 "Setting up: Apache2 VirtualHost"
   
-    install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" --allow-fallback || {
-        log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"; exit 1
-    }
+    if ! install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" '--allow-fallback'
+    then log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"; exit 1
+    fi
+    
     a2ensite nextcloud
     
-    cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
+    cat > '/etc/apache2/sites-available/000-default.conf' <<'EOF'
 <VirtualHost _default_:80>
   DocumentRoot /var/www/nextcloud
   <IfModule mod_rewrite.c>
@@ -354,11 +362,14 @@ EOF
     arch="$(uname -m)"
     [[ "$arch" =~ "armv7" ]] && arch="armv7"
     install_template "$NOTIFYPUSH_TEMPLATE" "$NOTIFYPUSH_SERVICE"
-    [[ -f /.docker-image ]] || systemctl enable notify_push
+
+    if ! isFile '/.docker-image'
+    then systemctl enable notify_push
+    fi
     
     # some added security
-    sed -i 's|^ServerSignature .*|ServerSignature Off|' /etc/apache2/conf-enabled/security.conf
-    sed -i 's|^ServerTokens .*|ServerTokens Prod|'      /etc/apache2/conf-enabled/security.conf
+    sed -i 's|^ServerSignature .*|ServerSignature Off|' '/etc/apache2/conf-enabled/security.conf'
+    sed -i 's|^ServerTokens .*|ServerTokens Prod|'      '/etc/apache2/conf-enabled/security.conf'
     
     log -1 "Setting up: System"
     
@@ -382,9 +393,11 @@ max_input_time=$MAXTRANSFERTIME
 EOF
 
     ## SET CRON
-    echo "*/5  *  *  *  * php -f /var/www/nextcloud/cron.php" > /tmp/crontab_http
-    crontab -u "$HTUSER" /tmp/crontab_http
-    rm /tmp/crontab_http
+    echo "*/5  *  *  *  * php -f /var/www/nextcloud/cron.php" > '/tmp/crontab_http'
+    crontab -u "$HTUSER" '/tmp/crontab_http'
+    if ! rm '/tmp/crontab_http'
+    then log 2 "Failed to remove: /tmp/crontab_http"; exit 1
+    fi
     
     # dettach mysql during the build
     if [[ "$DB_PID" != "" ]]

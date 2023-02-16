@@ -13,57 +13,50 @@ function Print {
     printf '%s\n' "$@"
 }
 
-function is_active
-{
+function is_active {
   local SRCDIR
   SRCDIR="$( grep datadirectory /var/www/nextcloud/config/config.php | awk '{ print $3 }' | grep -oP "[^']*[^']" | head -1 )" || return 1
   [[ "$SRCDIR" != "/var/www/nextcloud/data" ]]
 }
 
-function install
-{
+function install {
   apt_install btrfs-progs
 }
 
-function tmpl_opcache_dir
-{
+function tmpl_opcache_dir {
     local DATADIR
     DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
     echo -n "${DATADIR}/.opcache"
     #[[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo "/tmp" || echo "${DATADIR}/.opcache"
 }
 
-function tmpl_tmp_upload_dir
-{
+function tmpl_tmp_upload_dir {
     local DATADIR
     DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
     echo -n "${DATADIR}/tmp"
 }
 
-function create_opcache_dir
-{
+function create_opcache_dir {
     local OPCACHE_DIR
     OPCACHE_DIR="$(tmpl_opcache_dir)"
     mkdir --parents "$OPCACHE_DIR"
-    chown -R www-data:www-data "$OPCACHE_DIR"
+    chown --recursive 'www-data':'www-data' "$OPCACHE_DIR"
     if [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]]
     then chattr -R +C "$OPCACHE_DIR"
     fi
 }
 
-function create_tmp_upload_dir
-{
+function create_tmp_upload_dir {
     local UPLOAD_DIR
     UPLOAD_DIR="$(tmpl_tmp_upload_dir)"
     mkdir --parents "$UPLOAD_DIR"
-    chown www-data:www-data "$UPLOAD_DIR"
+    chown 'www-data':'www-data' "$UPLOAD_DIR"
     if [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]]
     then chattr +C "$UPLOAD_DIR"
     fi
 }
 
-function configure
-{
+function configure {
     set -e -o pipefail
     shopt -s dotglob # includes dot files
     
@@ -98,14 +91,15 @@ function configure
     DATADIR="${BASEDIR}/data"
     ENCDIR="${BASEDIR}/ncdata_enc"
     
-    # checks
-    [[ "$DISABLE_FS_CHECK" == 1 ]] || grep -q -e ext -e btrfs <( stat -fc%T "$BASEDIR" ) || {
-        Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
-        return 1
-    }
+    # Checks
+    if [[ "$DISABLE_FS_CHECK" != 1 ]]
+    then if ! grep -q -e ext -e btrfs <( stat -fc%T "$BASEDIR" )
+         then Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
+              return 1
+         fi
     
     if ! sudo -u www-data test -x "$BASEDIR"
-    then Print "ERROR: www-data user does not have permissions to access: $BASEDIR"
+    then Print "ERROR: www-data user does not have execute permissions in: $BASEDIR"
          return 1
     fi
     
@@ -114,14 +108,16 @@ function configure
     then if ! rmdir "$BASEDIR" &>/dev/null
          then BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
               Print "INFO: $BASEDIR is not empty. Creating backup: ${BKP?}"
-              mv "$BASEDIR" "$BKP"
+              if ! mv "$BASEDIR" "$BKP"
+              then log 2 "Failed to create a backup"; return 1
+              fi
          fi
          mkdir --parents "$BASEDIR"
     fi
     
     ## COPY
-    if ! cd /var/www/nextcloud
-    then Print "Failed to cahnge directory to: /var/www/nextcloud"; return 1
+    if ! cd '/var/www/nextcloud'
+    then Print "Failed to change directory to: /var/www/nextcloud"; return 1
     fi
     [[ "$BUILD_MODE" == 1 ]] || save_maintenance_mode
     
@@ -130,8 +126,12 @@ function configure
     # use subvolumes, if BTRFS
     if [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]] && ! is_docker
     then Print "BTRFS filesystem detected"
-         rmdir "$BASEDIR"
-         btrfs subvolume create "$BASEDIR"
+         if ! rmdir "$BASEDIR"
+         then log 2 "Failed to remove directory: $BASEDIR"; return 1
+         fi
+         if ! btrfs subvolume create "$BASEDIR"
+         then log 2 "Failed to create BTRFS subvolume in: $BASEDIR"; return 1
+         fi 
     fi
     
     # use encryption, if selected
@@ -164,10 +164,13 @@ function configure
     install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini"
     
     # update fail2ban logpath
-    [[ -f /etc/fail2ban/jail.local ]] && \
-    sed -i "s|logpath  =.*nextcloud.log|logpath  = ${DATADIR}/nextcloud.log|" /etc/fail2ban/jail.local
+    if [[ -f '/etc/fail2ban/jail.local' ]]
+    then sed -i "s|logpath  =.*nextcloud.log|logpath  = ${DATADIR}/nextcloud.log|" '/etc/fail2ban/jail.local'
+    fi
     
-    [[ "$BUILD_MODE" == 1 ]] || restore_maintenance_mode
+    if [[ "$BUILD_MODE" != 1 ]]
+    then restore_maintenance_mode
+    fi
     
     (
         # shellcheck disable=SC1090

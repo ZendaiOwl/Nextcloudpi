@@ -655,7 +655,7 @@ df -h
 mkdir --parents '/opt/ncdata'
 
 if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg"
-then should_rm_datadir_cfg=true
+then REMOVE_DATADIR_CFG='true'
      if isFile 'etc/ncp-config.d/nc-datadir.cfg'
      then if ! cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
           then log 2 "Failed to copy file: nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
@@ -669,9 +669,11 @@ then DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/
 else log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
 fi
 
-if notZero "$should_rm_datadir_cfg"
+if isMatch "$REMOVE_DATADIR_CFG" 'true'
 then if isFile '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
-     then rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
+     then if ! rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
+          then log 2 "Failed to remove file: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
+          fi
      else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
      fi
 fi
