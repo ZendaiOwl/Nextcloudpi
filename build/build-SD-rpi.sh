@@ -111,7 +111,7 @@ then PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
 set -ex
 
 # allow oldstable
-apt-get update --allow-releaseinfo-change
+apt-get update --allow-releaseinfo-change --assume-yes 
 
 # As of 10-2018 this upgrades raspi-kernel and messes up wifi and BTRFS
 #apt-get upgrade -y
@@ -136,8 +136,8 @@ CODE_DIR="$PWD" bash install.sh
 # work around dhcpcd Raspbian bug
 # https://lb.raspberrypi.org/forums/viewtopic.php?t=230779
 # https://github.com/nextcloud/nextcloudpi/issues/938
-apt-get update
-apt-get install -y --no-install-recommends haveged
+apt-get update  --allow-releaseinfo-change --assume-yes
+apt-get install --assume-yes --no-install-recommends haveged
 systemctl enable haveged.service
 
 # harden SSH further for Raspbian
@@ -153,7 +153,7 @@ else PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
 set -ex
 
 # allow oldstable
-apt-get update --allow-releaseinfo-change
+apt-get update --allow-releaseinfo-change --assume-yes
 
 # As of 10-2018 this upgrades raspi-kernel and messes up wifi and BTRFS
 #apt-get upgrade -y
@@ -178,8 +178,8 @@ CODE_DIR="$PWD" bash install.sh
 # work around dhcpcd Raspbian bug
 # https://lb.raspberrypi.org/forums/viewtopic.php?t=230779
 # https://github.com/nextcloud/nextcloudpi/issues/938
-apt-get update
-apt-get install -y --no-install-recommends haveged
+apt-get update  --allow-releaseinfo-change --assume-yes
+apt-get install --no-install-recommends --assume-yes haveged
 systemctl enable haveged.service
 
 # harden SSH further for Raspbian
@@ -193,8 +193,10 @@ EOFCHROOT
 fi
 
 if isRoot
-then log -1 "Image created: $(basename "$IMG")"; basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
-else log -1 "Image created: $(sudo basename "$IMG")"; sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+then log -1 "Image created: $(basename "$IMG")"
+     basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+else log -1 "Image created: $(sudo basename "$IMG")"
+     sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
 clean_build_sd_rpi
