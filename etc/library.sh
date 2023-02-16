@@ -508,6 +508,62 @@ function change_permissions_recursively {
     fi
 }
 
+# Set ownership permissions on a file
+# Return status codes
+# 0: Success
+# 1: Failed to set ownership to file: $1:$2 $3
+# 2: Command not found: sudo
+# 3: Not a file: $3
+# 4: Invalid number of arguments
+function set_owner {
+    if notEqual "$#" 3
+    then return 4
+    elif ! isFile "$3"
+    then return 3
+    else
+         if isRoot
+         then if chown "$1":"$2" "$3"
+              then return 0
+              else return 1
+              fi
+         elif hasCMD sudo
+         then if sudo chown "$1":"$2" "$3"
+              then return 0
+              else return 1
+              fi
+         else return 2
+         fi
+    fi
+}
+
+# Set ownership permissions on a path recursively
+# Return status codes
+# 0: Success
+# 1: Failed to set ownership to file: $1:$2 $3
+# 2: Command not found: sudo
+# 3: Not a file: $3
+# 4: Invalid number of arguments
+function set_owner_recursive {
+    if notEqual "$#" 3
+    then return 4
+    elif ! isPath "$3"
+    then return 3
+    else
+         if isRoot
+         then if chown --recursive "$1":"$2" "$3"
+              then return 0
+              else return 1
+              fi
+         elif hasCMD sudo
+         then if sudo chown --recursive  "$1":"$2" "$3"
+              then return 0
+              else return 1
+              fi
+         else return 2
+         fi
+    fi
+}
+
 # Changes owner of file
 # Return status codes
 # 0: Success
@@ -784,7 +840,7 @@ function install_app {
     local NCP_APP="$1" SCRIPT 
     
     # $1 can be either an installed app name or an app script
-    if [[ -f "$NCP_APP" ]]
+    if isFile "$NCP_APP"
     then SCRIPT="$NCP_APP"; NCP_APP="$(basename "$SCRIPT" .sh)"
     else SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
     fi
@@ -828,13 +884,13 @@ function configure_app {
     fi
     
     # Read config parameters
-    for (( i = 0; i < "$LENGTH"; i++ )); do
-        VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
-        VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
-        VARIABLES+=("$VAR")
-        VALUES+=("$VAL")
-        IDX=$(("$i"+1))
-        PARAMETERS+=("$VAR" "$IDX" 1 "$VAL" "$IDX" 15 60 120)
+    for (( i = 0; i < "$LENGTH"; i++ ))
+    do VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
+       VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
+       VARIABLES+=("$VAR")
+       VALUES+=("$VAL")
+       IDX=$(("$i"+1))
+       PARAMETERS+=("$VAR" "$IDX" 1 "$VAL" "$IDX" 15 60 120)
     done
     
     while [[ "$RES" != 1 ]] && [[ "$RES" != 250 ]]
@@ -955,7 +1011,7 @@ function is_active_app {
     
     #shellcheck disable=SC1090
     source "$SCRIPT"
-    if isMatch "$( type -t is_active )" "function" # Read config parameters
+    if isFunction 'is_active' # Read config parameters
     then if isFile "$CFG_FILE"
          then LENGTH="$(jq '.params | length' "$CFG_FILE")"
               for (( i = 0; i < "$LENGTH"; i++ ))
@@ -1130,9 +1186,9 @@ function run_app_unsafe {
     then log 2 "File not found: $SCRIPT"; return 1
     fi
     
-    touch               "$LOG"
-    chmod 640           "$LOG"
-    chown root:www-data "$LOG"
+    touch                       "$LOG"
+    change_permissions 640      "$LOG"
+    set_owner 'root' 'www-data' "$LOG"
     
     log -1 "Running: $NCP_APP"
     echo " [ $NCP_APP ] ($(date))" >> "$LOG"
