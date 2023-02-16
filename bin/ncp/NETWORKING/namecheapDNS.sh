@@ -14,45 +14,54 @@
 # - https://www.namecheap.com/support/knowledgebase/article.aspx/595/11/how-do-i-enable-dynamic-dns-for-a-domain/
 # - https://www.namecheap.com/support/knowledgebase/article.aspx/43/11/how-do-i-set-up-a-host-for-dynamic-dns
 
-
-install()
-{
-  apt-get update
-  apt-get install --no-install-recommends -y dnsutils
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure() 
-{
-  local updateurl=https://dynamicdns.park-your-domain.com/update
-  local url="${updateurl}?host=${HOST}&domain=${DOMAIN}&password=${PASSWORD}"
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" dnsutils
+}
 
-  [[ $ACTIVE != "yes" ]] && { 
-    rm -f /etc/cron.d/namecheapDNS
-    service cron restart
-    echo "Namecheap DNS client is disabled"
-    return 0
-  }
-
-  cat > /usr/local/bin/namecheapdns.sh <<EOF
+function configure ()  {
+    local UPDATEURL='https://dynamicdns.park-your-domain.com/update'
+    local URL="${UPDATEURL}?host=${HOST}&domain=${DOMAIN}&password=${PASSWORD}"
+    
+    [[ "$ACTIVE" != "yes" ]] && { 
+        rm -f /etc/cron.d/namecheapDNS
+        service cron restart
+        Print "Disabled: Namecheap DNS client"
+        return 0
+    }
+    
+    cat > /usr/local/bin/namecheapdns.sh <<EOF
 #!/usr/bin/env bash
-echo "Namecheap DNS client started"
-registeredIP=\$(dig +short "$FULLDOMAIN"|tail -n1)
-currentIP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
-echo "${url}&ip=${currentIP}"
-    [ "\$currentIP" != "\$registeredIP" ] && {
-        wget -q -O /dev/null "${url}&ip=${currentIP}"
-  }
-echo "Registered IP: \$registeredIP | Current IP: \$currentIP"
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
+}
+Print "Start: Namecheap DNS client"
+REGISTERED_IP=\$(dig +short "$FULLDOMAIN"|tail -n1)
+CURRENT_IP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
+Print "${URL}&ip=${CURRENT_IP}"
+[[ "\$CURRENT_IP" != "\$REGISTERED_IP" ]] && {
+    wget -q -O /dev/null "${URL}&ip=$CURRENT_IP"
+}
+Print "Registered IP: \$REGISTERED_IP | Current IP: \$CURRENT_IP"
 EOF
-  chmod +744 /usr/local/bin/namecheapdns.sh
-
-  echo "*/${UPDATEINTERVAL}  *  *  *  *  root  /bin/bash /usr/local/bin/namecheapdns.sh" > /etc/cron.d/namecheapDNS
-  chmod 644 /etc/cron.d/namecheapDNS
-  service cron restart
-
-  set-nc-domain "$FULLDOMAIN"
-
-  echo "Namecheap DNS client is enabled"
+    chmod +744 /usr/local/bin/namecheapdns.sh
+    
+    echo "*/${UPDATEINTERVAL}  *  *  *  *  root  /bin/bash /usr/local/bin/namecheapdns.sh" > /etc/cron.d/namecheapDNS
+    chmod 644 /etc/cron.d/namecheapDNS
+    service cron restart
+    
+    set-nc-domain "$FULLDOMAIN"
+    
+    Print "Enabled: Namecheap DNS client"
 }
 
 # License

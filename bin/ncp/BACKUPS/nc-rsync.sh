@@ -8,25 +8,29 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-install()
-{
-  apt-get update
-  apt-get install --no-install-recommends -y rsync openssh-client
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure()
-{
-  save_maintenance_mode
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" rsync openssh-client
+}
 
-  local DATADIR
-  DATADIR=$( get_nc_config_value datadirectory ) || {
-    echo -e "Error reading data directory. Is NextCloud running and configured?";
-    return 1;
-  }
-
-  rsync -ax -e "ssh -p $PORTNUMBER" --delete "$DATADIR" "$DESTINATION"
-
-  restore_maintenance_mode
+function configure () {
+    save_maintenance_mode
+    
+    local DATADIR
+    DATADIR="$( get_nc_config_value datadirectory )" || {
+        Print "Error reading data directory. Is Nextcloud running and configured?"
+        return 1;
+    }
+    
+    rsync -ax -e "ssh -p $PORTNUMBER" --delete "$DATADIR" "$DESTINATION"
+    
+    restore_maintenance_mode
 }
 
 # License

@@ -8,39 +8,45 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-install()
-{
-  apt-get update
-  apt-get install --no-install-recommends -y rsync
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure()
-{
-  [[ $ACTIVE != "yes" ]] && {
-    rm -f /etc/cron.d/ncp-rsync-auto
-    echo "automatic rsync disabled"
-    return 0
-  }
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" rsync
+}
 
-  local DATADIR
-  DATADIR=$( get_nc_config_value datadirectory ) || {
-    echo -e "Error reading data directory. Is NextCloud running and configured?";
-    return 1;
-  }
-
-  # Check if the ssh access is properly configured. For this purpose the command : or echo is called remotely.
-  # If one of the commands works, the test is successful.
-  [[ "$DESTINATION" =~ : ]] && {
-    local NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
-    local SSH=( ssh -o "BatchMode=yes" -p "$PORTNUMBER" "$NET" )
-    ${SSH[@]} echo || { echo "SSH non-interactive not properly configured"; return 1; }
-  }
-
-  echo "0  5  */${SYNCDAYS}  *  *  root  /usr/bin/rsync -ax -e \"ssh -p $PORTNUMBER\" --delete \"$DATADIR\" \"$DESTINATION\"" > /etc/cron.d/ncp-rsync-auto
-  chmod 644 /etc/cron.d/ncp-rsync-auto
-  service cron restart
-
-  echo "automatic rsync enabled"
+function configure () {
+    [[ "$ACTIVE" != "yes" ]] && {
+        rm --force /etc/cron.d/ncp-rsync-auto
+        Print "Automatic rsync disabled"
+        return 0
+    }
+    
+    local DATADIR NET SSH
+    DATADIR="$( get_nc_config_value datadirectory )" || {
+        Print "Error reading data directory. Is Nextcloud running and configured?"
+        return 1
+    }
+    
+    # Check if the ssh access is properly configured. For this purpose the command : or echo is called remotely.
+    # If one of the commands works, the test is successful.
+    [[ "$DESTINATION" =~ : ]] && {
+        NET="${DESTINATION//:.*/}"
+        #NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
+        SSH=(ssh -o "BatchMode=yes" -p "$PORTNUMBER" "$NET")
+        "${SSH[@]}" echo || { Print "SSH non-interactive not properly configured"; return 1; }
+    }
+    
+    echo "0  5  */$SYNCDAYS  *  *  root  /usr/bin/rsync -ax -e \"ssh -p $PORTNUMBER\" --delete \"$DATADIR\" \"$DESTINATION\"" > /etc/cron.d/ncp-rsync-auto
+    chmod 644 /etc/cron.d/ncp-rsync-auto
+    service cron restart
+    
+    Print "Automatic rsync enabled"
 }
 
 # License

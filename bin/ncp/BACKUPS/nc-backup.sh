@@ -7,26 +7,27 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-tmpl_get_destination() {
-  (
-  . /usr/local/etc/library.sh
-  find_app_param nc-backup DESTDIR
-  )
+function tmpl_get_destination () {
+    (
+        # shellcheck disable=SC1091
+        . /usr/local/etc/library.sh
+        find_app_param nc-backup DESTDIR
+    )
 }
 
-install()
-{
-  apt-get update
-  apt-get install -y --no-install-recommends pigz
+function install () {
+    declare -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" pigz
 }
 
-configure()
-{
-  (
-    . "${BINDIR}/SYSTEM/metrics.sh"
-    reload_metrics_config
-  )
-  ncp-backup "$DESTDIR" "$INCLUDEDATA" "$COMPRESS" "$BACKUPLIMIT"
+function configure () {
+    (
+        # shellcheck disable=SC1090
+        . "${BINDIR}/SYSTEM/metrics.sh"
+        reload_metrics_config
+    )
+    ncp-backup "$DESTDIR" "$INCLUDEDATA" "$COMPRESS" "$BACKUPLIMIT"
 }
 
 # License

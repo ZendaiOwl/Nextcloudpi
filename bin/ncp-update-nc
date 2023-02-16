@@ -312,9 +312,9 @@ function hasText {
 VER="$1"
 BIN="${0##*/}"
 
-# shellcheck disable=SC1090
-if isFile '/usr/local/etc/library.sh'
-then source '/usr/local/etc/library.sh'
+# shellcheck disable=SC1091
+if isFile '/usr/local/etc/library.sh' 
+then source '/usr/local/etc/library.sh' 
 elif isFile 'etc/library.sh'
 then source '/usr/local/etc/library.sh'
 fi
@@ -415,7 +415,10 @@ RET="$?"
 sync
 set -eE
 
+# TODO Change this to use find instead of ls
+# shellcheck disable=SC2012
 BKP_="$( ls -1t "$BKPDIR"/nextcloud-bkp_*.tar.gz 2>/dev/null | head -1 )"
+
 [[ -f "$BKP_"  ]] || {                  set +eE; log 2 "Error backing up"; false || cleanup; }
 [[ "$RET" -ne 0  ]] && { rm -f "$BKP_"; set +eE; log 2 "Error backing up"; false || cleanup; }
 BKP="$(dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
@@ -506,7 +509,8 @@ ncc=(sudo -u www-data php nextcloud/occ)
 NCVER="$(ncc status | grep "version:" | awk '{ print $3 }')"
 if is_more_recent_than "21.0.0" "$NCVER"
 then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
-else if ! is_app_enabled notify_push # Install notify_push if not installed
+else
+     if ! is_app_enabled notify_push # Install notify_push if not installed
      then "${ncc[@]}" app:install notify_push
           "${ncc[@]}" app:enable  notify_push
           install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf
@@ -583,6 +587,7 @@ then (
         "${ncc[@]}" status
      )
      # Reload library.sh to reset PHPVER
+     # shellcheck disable=SC1091
      source /usr/local/etc/library.sh
 fi
 

@@ -7,38 +7,41 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
+function configure () {
+  [[ -f "$FILE" ]] || { Print "File to export not found: $FILE"; return 1; }
 
-
-configure()
-{
-  [[ -f "$FILE" ]] || { echo "export file $FILE does not exist"; return 1; }
-
-  cd "$CFGDIR"   || return 1
+  if ! cd "$CFGDIR"
+  then Print "Failed to change directory to: $CFGDIR"; return 1
+  fi
 
   # extract export
   tar -xf "$FILE" -C "$CFGDIR"
 
   # activate ncp-apps
-  find "${CFGDIR}/" -name '*.cfg' | while read -r cfg; do
-    app="$(basename "${cfg}" .cfg)"
-    if [[ "${app}" == "letsencrypt" ]] || [[ "${app}" == "dnsmasq" ]]; then
-      continue
-    fi
-    is_active_app "${app}" && run_app "${app}"
+  find "${CFGDIR}/" -name '*.cfg' | while read -r CFG
+  do APP="$(basename "$CFG" .cfg)"
+     if [[ "$APP" == "letsencrypt" ]] || [[ "$APP" == "dnsmasq" ]]
+     then continue
+     fi
+     is_active_app "$APP" && run_app "$APP"
   done
 
   # order is important for these
   is_active_app "dnsmasq"     && run_app "dnsmasq"
   is_active_app "letsencrypt" && run_app "letsencrypt"
 
-  echo -e "\nconfiguration restored"
+  Print "Configuration restored"
 
   # delayed in bg so it does not kill the connection, and we get AJAX response
   apachectl -k graceful
 }
 
-install() { :; }
+function install () { :; }
 
 # License
 #

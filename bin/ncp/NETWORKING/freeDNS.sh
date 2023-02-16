@@ -6,45 +6,54 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-
-install()
-{
-  apt-get update
-  apt-get install --no-install-recommends -y dnsutils
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure() 
-{
-  local updateurl=https://freedns.afraid.org/dynamic/update.php
-  local url="${updateurl}?${UPDATEHASH}"
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" dnsutils
+}
 
-  [[ $ACTIVE != "yes" ]] && { 
-    rm -f /etc/cron.d/freeDNS
-    service cron restart
-    echo "FreeDNS client is disabled"
-    return 0
-  }
-
-  cat > /usr/local/bin/freedns.sh <<EOF
+function configure () {
+    local UPDATEURL='https://freedns.afraid.org/dynamic/update.php'
+    local URL="${UPDATEURL}?${UPDATEHASH}"
+    
+    [[ "$ACTIVE" != "yes" ]] && {
+        rm --force /etc/cron.d/freeDNS
+        service cron restart
+        Print "Disabled: FreeDNS client"
+        return 0
+    }
+    
+    cat > /usr/local/bin/freedns.sh <<EOF
 #!/usr/bin/env bash
-echo "FreeDNS client started"
-echo "${url}"
-registeredIP=\$(dig +short "$DOMAIN"|tail -n1)
-currentIP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
-    [ "\$currentIP" != "\$registeredIP" ] && {
-        wget -q -O /dev/null ${url}
-  }
-echo "Registered IP: \$registeredIP | Current IP: \$currentIP"
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
+}
+Print "Started: FreeDNS client"
+Print "$URL"
+REGISTERED_IP=\$(dig +short "$DOMAIN"|tail -n1)
+CURRENT_IP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
+    [[ "\$CURRENT_IP" != "\$REGISTERED_IP" ]] && {
+        wget -q -O /dev/null $URL
+    }
+Print "Registered IP: \$REGISTERED_IP | Current IP: \$CURRENT_IP"
 EOF
-  chmod +744 /usr/local/bin/freedns.sh
-
-  echo "*/${UPDATEINTERVAL}  *  *  *  *  root  /bin/bash /usr/local/bin/freedns.sh" > /etc/cron.d/freeDNS
-  chmod 644 /etc/cron.d/freeDNS
-  service cron restart
-
-  set-nc-domain "$DOMAIN"
-
-  echo "FreeDNS client is enabled"
+    chmod +744 /usr/local/bin/freedns.sh
+    
+    echo "*/$UPDATEINTERVAL  *  *  *  *  root  /bin/bash /usr/local/bin/freedns.sh" > /etc/cron.d/freeDNS
+    chmod 644 /etc/cron.d/freeDNS
+    service cron restart
+    
+    set-nc-domain "$DOMAIN"
+    
+    Print "Enabled: FreeDNS client"
 }
 
 # License

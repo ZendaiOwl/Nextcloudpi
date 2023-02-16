@@ -8,22 +8,26 @@
 # More at: https://ownyourbits.com
 #
 
-
-install()
-{
-  apt-get update
-  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends miniupnpc
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure() 
-{
-  local ip
-  ip="$(get_ip)"
-  upnpc -d "$HTTPSPORT" TCP
-  upnpc -d "$HTTPPORT"  TCP
-  upnpc -a "$ip" 443 "$HTTPSPORT" TCP | tee >(cat - >&2) | grep -q "is redirected to internal" || \
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update "${ARGS[@]}"
+    DEBIAN_FRONTEND=noninteractive apt-get install "${ARGS[@]}" miniupnpc
+}
+
+function configure () {
+    local IP
+    IP="$(get_ip)"
+    upnpc -d "$HTTPSPORT" TCP
+    upnpc -d "$HTTPPORT"  TCP
+    upnpc -a "$IP" 443 "$HTTPSPORT" TCP | tee >(cat - >&2) | grep -q "is redirected to internal" || \
     { echo -e "\nCould not forward ports automatically.\nDo it manually, or activate UPnP in your router and try again"; return 1; }
-  upnpc -a "$ip" 80  "$HTTPPORT"  TCP | tee >(cat - >&2) | grep -q "is redirected to internal" || \
+    upnpc -a "$IP" 80  "$HTTPPORT"  TCP | tee >(cat - >&2) | grep -q "is redirected to internal" || \
     { echo -e "\nCould not forward ports automatically.\nDo it manually, or activate UPnP in your router and try again"; return 1; }
 }
 

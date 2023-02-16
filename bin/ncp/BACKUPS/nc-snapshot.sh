@@ -8,33 +8,36 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-
-install()
-{
-  wget https://raw.githubusercontent.com/nachoparker/btrfs-snp/master/btrfs-snp -O /usr/local/bin/btrfs-snp
-  chmod +x /usr/local/bin/btrfs-snp
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure()
-{
-  save_maintenance_mode
+function install () {
+    local -r URL='https://raw.githubusercontent.com/nachoparker/btrfs-snp/master/btrfs-snp'
+    local -r FILE='/usr/local/bin/btrfs-snp'
+    wget "$URL" -O "$FILE"
+    chmod +x       "$FILE"
+}
 
-  local DATADIR MOUNTPOINT
-  DATADIR=$( get_nc_config_value datadirectory ) || {
-    echo -e "Error reading data directory. Is NextCloud running?";
-    return 1;
-  }
-
-  # file system check
-  MOUNTPOINT="$( stat -c "%m" "$DATADIR" )" || return 1
-  [[ "$( stat -fc%T "$MOUNTPOINT" )" != "btrfs" ]] && {
-    echo "$MOUNTPOINT is not in a BTRFS filesystem"
-    return 1
-  }
-
-  btrfs-snp "${MOUNTPOINT}" manual "${LIMIT}" 0 ../ncp-snapshots
-
-  restore_maintenance_mode
+function configure () {
+    save_maintenance_mode
+    
+    local DATADIR MOUNTPOINT
+    DATADIR="$( get_nc_config_value datadirectory )" || {
+        Print "Error reading data directory. Is Nextcloud running?"
+        return 1
+    }
+    
+    # file system check
+    MOUNTPOINT="$( stat -c "%m" "$DATADIR" )" || return 1
+    [[ "$( stat -fc%T "$MOUNTPOINT" )" != "btrfs" ]] && {
+        Print "Not a BTRFS filesystem: $MOUNTPOINT"; return 1
+    }
+    
+    btrfs-snp "$MOUNTPOINT" manual "$LIMIT" 0 ../ncp-snapshots
+    
+    restore_maintenance_mode
 }
 
 # License

@@ -10,16 +10,15 @@
 #
 
 
-INSTALLDIR=spdnsupdater
-INSTALLPATH=/usr/local/etc/$INSTALLDIR
-CRONFILE=/etc/cron.d/spdnsupdater
+INSTALLDIR='spdnsupdater'
+INSTALLPATH="/usr/local/etc/$INSTALLDIR"
+CRONFILE='/etc/cron.d/spdnsupdater'
 
-install()
-{
-  # Create the spdnsUpdater.sh
-  mkdir -p "$INSTALLPATH"
-  # Write the script to file
-  cat > "$INSTALLPATH"/spdnsUpdater.sh <<'EOF' 
+function install () {
+    # Create the spdnsUpdater.sh
+    mkdir -p "$INSTALLPATH"
+    # Write the script to file
+    cat > "$INSTALLPATH"/spdnsUpdater.sh <<'EOF' 
 #!/usr/bin/env bash
 
 ### Usage
@@ -89,12 +88,11 @@ EOF
 
 }
 
-configure() 
-{
-  if [[ $ACTIVE == "yes" ]]; then
+function configure ()  {
+  if [[ "$ACTIVE" == "yes" ]]; then
     
     # Adds file to cron to run script for DNS record updates and change permissions
-    touch $CRONFILE
+    touch "$CRONFILE"
     echo "10 * * * * root $INSTALLPATH/spdnsUpdater.sh $DOMAIN $TOKEN >/dev/null 2>&1" > "$CRONFILE"
     chmod 644 "$CRONFILE"
 
@@ -104,9 +102,9 @@ configure()
 		echo -e "\nspdnsUpdater is now enabled"
 
     # Removes config files and cron job if ACTIVE_ is set to no
-  elif [[ $ACTIVE == "no" ]]; then
+  elif [[ "$ACTIVE" == "no" ]]; then
     echo "... removing cronfile: $CRONFILE"
-    rm -f "$CRONFILE"
+    rm --force "$CRONFILE"
     echo -e "\nspdnsUpdater is now disabled"
   fi
   service cron restart

@@ -219,7 +219,6 @@ function configure
              HTPATH='/var/www' \
              HTUSER='www-data' \
              HTGROUP='www-data' \
-             ROOTUSER='root' \
              MYSQL_PID='/run/mysqld/mysqld.pid' \
              MYSQL_SOCKET='/var/run/mysqld/mysqld.sock' \
              NEXTCLOUD_TEMPLATE='nextcloud.conf.sh' \
@@ -229,6 +228,7 @@ function configure
              NOTIFYPUSH_TEMPLATE='systemd/notify_push.service.sh' \
              NOTIFYPUSH_SERVICE='/etc/systemd/system/notify_push.service' \
              URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${NCLATESTVER}.tar.bz2"
+    local OPCACHEDIR DBPASSWD DB_PID
     ## DOWNLOAD AND (OVER)WRITE NEXTCLOUD
     if ! cd "$HTPATH"
     then log 2 "Unable to change directory to: $HTPATH"; exit 1
@@ -276,9 +276,13 @@ function configure
     fi
 
     # create and configure opcache dir
-    local OPCACHEDIR="$(
+    OPCACHEDIR="$(
     # shellcheck disable=SC2015
-    [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && { source "${BINDIR}/CONFIG/nc-datadir.sh"; tmpl_opcache_dir; } || true
+    [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && {
+        # shellcheck disable=SC1090
+        source "${BINDIR}/CONFIG/nc-datadir.sh"
+        tmpl_opcache_dir
+    } || true
     )"
     if [[ -z "${OPCACHEDIR}" ]]
     then install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" --defaults
@@ -292,7 +296,7 @@ function configure
     if [[ ! -f "$MYSQL_PID" ]]
     then log -1 "Starting: MariaDB"
          mysqld &
-         local DB_PID="$!"
+         DB_PID="$!"
     fi
     
     while :
@@ -303,7 +307,7 @@ function configure
     log -1 "Setting up: Database"
     
     # workaround to emulate DROP USER IF EXISTS ..;)
-    local DBPASSWD="$( grep password /root/.my.cnf | sed 's|password=||' )"
+    DBPASSWD="$(grep password /root/.my.cnf | sed 's|password=||')"
     mysql <<EOF
 DROP DATABASE IF EXISTS nextcloud;
 CREATE DATABASE nextcloud
@@ -348,7 +352,7 @@ EOF
     a2enmod proxy proxy_http proxy_wstunnel
     
     arch="$(uname -m)"
-    [[ "${arch}" =~ "armv7" ]] && arch="armv7"
+    [[ "$arch" =~ "armv7" ]] && arch="armv7"
     install_template "$NOTIFYPUSH_TEMPLATE" "$NOTIFYPUSH_SERVICE"
     [[ -f /.docker-image ]] || systemctl enable notify_push
     

@@ -8,70 +8,81 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-
-tmpl_get_destination() {
-  (
-  . /usr/local/etc/library.sh
-  find_app_param nc-snapshot-sync DESTINATION
-  )
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-tmpl_is_destination_local() {
-  (
-  . /usr/local/etc/library.sh
-  is_active_app nc-snapshot-sync || exit 1
-  ! [[ "$(find_app_param nc-snapshot-sync DESTINATION)" =~ .*"@".*":".* ]]
-  )
+function tmpl_get_destination () {
+    (
+        # shellcheck disable=SC1091
+        . /usr/local/etc/library.sh
+        find_app_param nc-snapshot-sync DESTINATION
+    )
 }
 
-is_active() {
-  [[ $ACTIVE == "yes" ]]
+function tmpl_is_destination_local () {
+    (
+        # shellcheck disable=SC1091
+        . /usr/local/etc/library.sh
+        is_active_app nc-snapshot-sync || exit 1
+        ! [[ "$(find_app_param nc-snapshot-sync DESTINATION)" =~ .*"@".*":".* ]]
+    )
 }
 
-install()
-{
-  apt-get update
-  apt-get install -y --no-install-recommends pv openssh-client
-  wget https://raw.githubusercontent.com/nachoparker/btrfs-sync/master/btrfs-sync -O /usr/local/bin/btrfs-sync
-  chmod +x /usr/local/bin/btrfs-sync
+function is_active () {
+    [[ "$ACTIVE" == "yes" ]]
 }
 
-configure()
-{
-  [[ $ACTIVE != "yes" ]] && {
-    rm -f /etc/cron.d/ncp-snapsync-auto
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    local -r URL='https://raw.githubusercontent.com/nachoparker/btrfs-sync/master/btrfs-sync'
+    local -r FILE='/usr/local/bin/btrfs-sync'
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" pv openssh-client
+    wget "$URL" -O "$FILE"
+    chmod +x       "$FILE"
+}
+
+function configure () {
+    [[ "$ACTIVE" != "yes" ]] && {
+        rm --force /etc/cron.d/ncp-snapsync-auto
+        service cron restart
+        Print "Snapshot sync disabled"
+        return 0
+    }
+    local NET DST SSH
+    # checks
+    [[ -d "$SNAPDIR" ]] || { Print "Directory not found: $SNAPDIR"; return 1; }
+    if ! [[ -f /root/.ssh/id_rsa ]]
+    then ssh-keygen -N "" -f /root/.ssh/id_rsa
+    fi
+    
+    [[ "$DESTINATION" =~ : ]] && {
+        NET="${DESTINATION//:.*/}"
+        DST="${DESTINATION//.*:/}"
+        #NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
+        #DST="$( sed 's|.*:||' <<<"$DESTINATION" )"
+        SSH=(ssh -o "BatchMode=yes" "$NET")
+        "${SSH[@]}" : || { Print "SSH non-interactive not properly configured"; return 1; }
+    } || DST="$DESTINATION"
+
+    [[ "$( "${SSH[@]}" stat -fc%T "$DST" )" != "btrfs" ]] && {
+        Print "Not a BTRFS filesystem: $DESTINATION"
+        return 1
+    }
+    
+    [[ "$COMPRESSION" == "yes" ]] && ZIP="-z"
+    
+    echo "30  4  */$SYNCDAYS  *  *  root  /usr/local/bin/btrfs-sync -qd $ZIP \"$SNAPDIR\" \"$DESTINATION\"" > /etc/cron.d/ncp-snapsync-auto
+    chmod 644 /etc/cron.d/ncp-snapsync-auto
     service cron restart
-    echo "snapshot sync disabled"
-    return 0
-  }
-
-  # checks
-  [[ -d "$SNAPDIR" ]] || { echo "$SNAPDIR does not exist"; return 1; }
-  if ! [[ -f /root/.ssh/id_rsa ]]; then ssh-keygen -N "" -f /root/.ssh/id_rsa; fi
-
-  [[ "$DESTINATION" =~ : ]] && {
-    local NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
-    local DST="$( sed 's|.*:||' <<<"$DESTINATION" )"
-    local SSH=( ssh -o "BatchMode=yes" "$NET" )
-    ${SSH[@]} : || { echo "SSH non-interactive not properly configured"; return 1; }
-  } || DST="$DESTINATION"
-  [[ "$( ${SSH[@]} stat -fc%T "$DST" )" != "btrfs" ]] && {
-    echo "$DESTINATION is not in a BTRFS filesystem"
-    return 1
-  }
-
-  [[ "$COMPRESSION" == "yes" ]] && ZIP="-z"
-
-  echo "30  4  */${SYNCDAYS}  *  *  root  /usr/local/bin/btrfs-sync -qd $ZIP \"$SNAPDIR\" \"$DESTINATION\"" > /etc/cron.d/ncp-snapsync-auto
-  chmod 644 /etc/cron.d/ncp-snapsync-auto
-  service cron restart
-
-  (
-    . "${BINDIR}/SYSTEM/metrics.sh"
-    reload_metrics_config
-  )
-
-  echo "snapshot sync enabled"
+    (
+        # shellcheck disable=SC1090
+        . "${BINDIR}/SYSTEM/metrics.sh"
+        reload_metrics_config
+    )
+    Print "Snapshot sync enabled"
 }
 
 # License

@@ -7,51 +7,63 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-
-INSTALLDIR=duckdns
-INSTALLPATH=/usr/local/etc/$INSTALLDIR
-CRONFILE=/etc/cron.d/duckdns
-
-configure() 
-{
-  local DOMAIN="$( sed 's|.duckdns.org||' <<<"$DOMAIN" )"
-  if [[ $ACTIVE == "yes" ]]; then
-    mkdir -p "$INSTALLPATH"
-
-    # Creates duck.sh script that checks for updates to DNS records
-    touch "$INSTALLPATH"/duck.sh
-    touch "$INSTALLPATH"/duck.log
-    echo -e "echo url=\"https://www.duckdns.org/update?domains=$DOMAIN&token=$TOKEN&ip=\" | curl -k -o "$INSTALLPATH"/duck.log -K -" > "$INSTALLPATH"/duck.sh
-
-    # Adds file to cron to run script for DNS record updates and change permissions 
-    touch $CRONFILE
-    echo "*/5 * * * * root $INSTALLPATH/duck.sh >/dev/null 2>&1" > "$CRONFILE"
-    chmod 700 "$INSTALLPATH"/duck.sh
-    chmod 644 "$CRONFILE"
-
-    # First-time execution of duck script
-    "$INSTALLPATH"/duck.sh > /dev/null 2>&1
-
-    SUCCESS="$( cat $INSTALLPATH/duck.log )"
-
-    # Checks for successful run of duck.sh
-    if [[ $SUCCESS == "OK" ]]; then
-      echo "DuckDNS is enabled"
-    elif [[ $SUCCESS == "KO" ]]; then
-      echo "DuckDNS install failed, is your information correct?"
-    fi
-
-    # Removes config files and cron job if ACTIVE_ is set to no
-  elif [[ $ACTIVE == "no" ]]; then
-    rm -f "$CRONFILE"
-    rm -f "$INSTALLPATH"/duck.sh
-    rm -f "$INSTALLPATH"/duck.log
-    rmdir "$INSTALLPATH"
-    echo "DuckDNS is now disabled"
-  fi
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-install() { :; }
+INSTALLDIR='duckdns'
+INSTALLPATH="/usr/local/etc/$INSTALLDIR"
+CRONFILE='/etc/cron.d/duckdns'
+
+function configure () {
+    local DOMAIN SUCCESS
+    DOMAIN="${DOMAIN//.duckdns.org/}"
+    #DOMAIN="$( sed 's|.duckdns.org||' <<<"$DOMAIN" )"
+    if [[ "$ACTIVE" == "yes" ]]
+    then mkdir --parents "$INSTALLPATH"
+    
+         # Creates duck.sh script that checks for updates to DNS records
+         if ! touch "$INSTALLPATH"/duck.sh
+         then Print "Failed to create file: $INSTALLPATH/duck.sh"; return 1
+         fi
+         if ! touch "$INSTALLPATH"/duck.log
+         then Print "Failed to create file: $INSTALLPATH/duck.log"; return 1
+         fi
+         
+         echo -e "echo url=\"https://www.duckdns.org/update?domains=${DOMAIN}&token=${TOKEN}&ip=\" | curl -k -o ${INSTALLPATH}/duck.log -K -" > "$INSTALLPATH"/duck.sh
+         
+         # Adds file to cron to run script for DNS record updates and change permissions
+         if ! touch "$CRONFILE"
+         then Print "Failed to create file: $CRONFILE"; return 1
+         fi
+         
+         echo "*/5 * * * * root $INSTALLPATH/duck.sh >/dev/null 2>&1" > "$CRONFILE"
+         chmod 700 "$INSTALLPATH"/duck.sh
+         chmod 644 "$CRONFILE"
+         
+         # First-time execution of duck script
+         "$INSTALLPATH"/duck.sh > /dev/null 2>&1
+         SUCCESS="$( cat "$INSTALLPATH"/duck.log )"
+         
+         # Checks for successful run of duck.sh
+         if [[ "$SUCCESS" == "OK" ]]
+         then Print "DuckDNS is enabled"
+         elif [[ "$SUCCESS" == "KO" ]]
+         then Print "Failed to install DuckDNS, is your information correct?"
+         fi
+         
+    elif [[ "$ACTIVE" == "no" ]]
+    then rm --force "$CRONFILE"
+         rm --force "$INSTALLPATH"/duck.sh
+         rm --force "$INSTALLPATH"/duck.log
+         rmdir "$INSTALLPATH"
+         Print "Disabled: DuckDNS"
+    fi
+}
+
+function install () { :; }
 
 # License
 #

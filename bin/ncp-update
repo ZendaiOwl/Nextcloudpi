@@ -44,7 +44,8 @@ function clean_ncp_update {
          if ! remove_tmp_directory
          then exit 1
          fi
-    else if ! remove_tmp_directory
+    else
+         if ! remove_tmp_directory
          then exit 1
          fi
     fi
@@ -107,7 +108,7 @@ fi
     grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || {
         git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
         cd "$TMPDIR"/temporary || exit 1
-        VER="$(git describe --tags `git rev-list --tags --max-count=1` | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; })"
+        VER="$(git describe --tags "$(git rev-list --tags --max-count=1)" | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; } )"
         Print "$VER" > "$TMPDIR"/version
         cd "$TMPDIR" || exit 1
         rm --recursive --force "$TMPDIR"/temporary

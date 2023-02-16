@@ -495,7 +495,7 @@ function install {
   if ! isFile "$DBPID_FILE"
   then log -1 "Starting MariaDB"
        mysqld &
-       DBPID="$!"
+       declare -x DBPID="$!"
   fi
 
   # Wait for MariaDB to start

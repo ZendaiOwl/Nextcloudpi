@@ -68,7 +68,7 @@ function configure
     shopt -s dotglob # includes dot files
     
     ## CHECKS
-    local SRCDIR BASEDIR ENCDIR DATADIR
+    local SRCDIR BASEDIR ENCDIR DATADIR BKP
     SRCDIR="$( get_nc_config_value datadirectory )" || {
         Print "Error reading data directory. Is Nextcloud running and configured?"; return 1;
     }
@@ -102,7 +102,7 @@ function configure
     # backup possibly existing datadir
     [[ -d "$BASEDIR" ]] && {
     rmdir "$BASEDIR" &>/dev/null || {
-        local BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
+        BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
         Print "INFO: $BASEDIR is not empty. Creating backup ${BKP?}"
         mv "$BASEDIR" "$BKP"
     }
@@ -160,6 +160,7 @@ function configure
     [[ "$BUILD_MODE" == 1 ]] || restore_maintenance_mode
     
     (
+        # shellcheck disable=SC1090
         . "${BINDIR?}/SYSTEM/metrics.sh"
         reload_metrics_config || {
             Print "WARNING: There was an issue reloading ncp metrics. This might not affect your installation, but keep it in mind if there is an issue with metrics."

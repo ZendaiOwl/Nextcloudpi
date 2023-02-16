@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC1091
 source /usr/local/etc/library.sh
 
 # wait until user decrypts the instance first

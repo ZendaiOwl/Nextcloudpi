@@ -9,36 +9,45 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-
-install()
-{
-  wget https://raw.githubusercontent.com/nachoparker/btrfs-snp/master/btrfs-snp -O /usr/local/bin/btrfs-snp
-  chmod +x /usr/local/bin/btrfs-snp
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure()
-{
-  [[ "$ACTIVE" != "yes" ]] && {
-    rm -f /etc/cron.hourly/btrfs-snp
-    echo "automatic snapshots disabled"
-    return 0
-  }
+function install () {
+    local -r URL='https://raw.githubusercontent.com/nachoparker/btrfs-snp/master/btrfs-snp'
+    local -r FILE='/usr/local/bin/btrfs-snp'
+    wget "$URL" -O "$FILE"
+    chmod +x       "$FILE"
+}
 
-  cat > /etc/cron.hourly/btrfs-snp <<EOF
+function configure () {
+    [[ "$ACTIVE" != "yes" ]] && {
+        rm --force /etc/cron.hourly/btrfs-snp
+        Print "Automatic snapshots disabled"
+        return 0
+    }
+    
+    cat > /etc/cron.hourly/btrfs-snp <<EOF
 #!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
+}
+
 DATADIR="\$(get_nc_config_value datadirectory)" || {
-  echo -e "Error reading data directory. Is NextCloud running and configured?";
-  exit 1;
+    Print "Error reading data directory. Is Nextcloud running and configured?"
+    exit 1
 }
 
 # file system check
 MOUNTPOINT="\$(stat -c "%m" "\$DATADIR")" || return 1
 [[ "\$( stat -fc%T "\$MOUNTPOINT" )" != "btrfs" ]] && {
-  echo "\$MOUNTPOINT is not in a BTRFS filesystem"
-  exit 1
+    Print "Not a BTRFS filesystem: \$MOUNTPOINT"
+    exit 1
 }
 
 /usr/local/bin/btrfs-snp \$MOUNTPOINT hourly  24 3600    ../ncp-snapshots
@@ -46,8 +55,8 @@ MOUNTPOINT="\$(stat -c "%m" "\$DATADIR")" || return 1
 /usr/local/bin/btrfs-snp \$MOUNTPOINT weekly   4 604800  ../ncp-snapshots
 /usr/local/bin/btrfs-snp \$MOUNTPOINT monthly 12 2592000 ../ncp-snapshots
 EOF
-  chmod 755 /etc/cron.hourly/btrfs-snp
-  echo "automatic snapshots enabled"
+    chmod 755 /etc/cron.hourly/btrfs-snp
+    Print "Automatic snapshots enabled"
 }
 
 

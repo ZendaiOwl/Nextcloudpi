@@ -26,7 +26,7 @@ tmpl_db_dir() {
 }
 
 configure() {
-    local SRCDIR
+    local SRCDIR BASEDIR
     SRCDIR="$(grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }')"
     [[ -d "$SRCDIR" ]] || { echo -e "database directory $SRCDIR not found"; return 1; }
     
@@ -37,7 +37,7 @@ configure() {
         rmdir "$DBDIR"
     }
     
-    local BASEDIR="$(dirname "$DBDIR")"
+    BASEDIR="$(dirname "$DBDIR")"
     mkdir --parents "$BASEDIR"
     
     grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR") || { Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "${BASEDIR}")"; return 1; }

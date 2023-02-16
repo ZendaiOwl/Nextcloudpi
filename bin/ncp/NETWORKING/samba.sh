@@ -7,81 +7,82 @@
 #
 # More at: https://ownyourbits.com
 #
-
-
-install()
-{
-  apt-get update
-  apt-get install --no-install-recommends -y samba
-  update-rc.d smbd disable
-  update-rc.d nmbd disable
-
-  # the directory needs to be recreated if we are using nc-ramlogs
-  grep -q mkdir /etc/init.d/smbd || sed -i "/\<start)/amkdir -p /var/log/samba" /etc/init.d/smbd
-
-  # disable SMB1 and SMB2
-  grep -q SMB3 /etc/samba/smb.conf || sed -i '/\[global\]/aprotocol = SMB3' /etc/samba/smb.conf
-
-  # disable the [homes] share by default
-  sed -i /\[homes\]/s/homes/homes_disabled_ncp/ /etc/samba/smb.conf
-
-  cat >> /etc/samba/smb.conf <<EOF
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
+}
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" samba
+    update-rc.d smbd disable
+    update-rc.d nmbd disable
+    
+    # the directory needs to be recreated if we are using nc-ramlogs
+    grep -q mkdir /etc/init.d/smbd || sed -i "/\<start)/amkdir -p /var/log/samba" /etc/init.d/smbd
+    
+    # disable SMB1 and SMB2
+    grep -q SMB3 /etc/samba/smb.conf || sed -i '/\[global\]/aprotocol = SMB3' /etc/samba/smb.conf
+    
+    # disable the [homes] share by default
+    sed -i /\[homes\]/s/homes/homes_disabled_ncp/ /etc/samba/smb.conf
+    
+    cat >> /etc/samba/smb.conf <<EOF
 
 # NextcloudPi automatically generated from here. Do not remove this comment
 EOF
 }
 
-configure()
-{
-  [[ $ACTIVE != "yes" ]] && {
-    service smbd stop
-    update-rc.d smbd disable
-    update-rc.d nmbd disable
-    echo "SMB disabled"
-    return
-  }
-
-  # CHECKS
-  ################################
-  local DATADIR
-  DATADIR=$( get_nc_config_value datadirectory ) || {
-    echo -e "Error reading data directory. Is NextCloud running and configured?";
-    return 1;
-  }
-  [ -d "$DATADIR" ] || { echo -e "data directory $DATADIR not found"   ; return 1; }
-
-  # CONFIG
-  ################################
-
-  # remove files from this line to the end
-  sed -i '/# NextcloudPi automatically/,/\$/d' /etc/samba/smb.conf
-
-  # restore this line
-  cat >> /etc/samba/smb.conf <<EOF
+function configure () {
+    [[ "$ACTIVE" != "yes" ]] && {
+        service smbd stop
+        update-rc.d smbd disable
+        update-rc.d nmbd disable
+        Print "Disabled: SMB"
+        return
+    }
+    
+    # CHECKS
+    ################################
+    local DATADIR USERS DIR
+    DATADIR="$( get_nc_config_value datadirectory )" || {
+        Print "Error reading data directory. Is Nextcloud running and configured?"
+        return 1
+    }
+    [[ -d "$DATADIR" ]] || { Print "Directory not found: $DATADIR"; return 1; }
+    
+    # CONFIG
+    ################################
+    
+    # remove files from this line to the end
+    sed -i '/# NextcloudPi automatically/,/\$/d' /etc/samba/smb.conf
+    
+    # restore this line
+    cat >> /etc/samba/smb.conf <<EOF
 # NextcloudPi automatically generated from here. Do not remove this comment
 EOF
 
-  # create a share per Nextcloud user
-  local USERS=()
-  while read -r path; do
-    USERS+=( "$( basename "$(dirname "$path")" )" )
-  done < <( ls -d "$DATADIR"/*/files )
-
-  for user in "${USERS[@]}"; do
-    # Exclude users not matching group filter (if enabled)
-    if [[ -n "$FILTER_BY_GROUP" ]] \
-    && [[ -z "$(ncc user:info "$user" --output=json | jq ".groups[] | select( . == \"${FILTER_BY_GROUP}\" )")" ]]
-    then
-      echo "Omitting user $user (not in group ${FILTER_BY_GROUP})...";
-      continue;
-    fi
-
-    echo "adding SAMBA share for user $user"
-    local DIR="$DATADIR/$user/files"
-    [ -d "$DIR" ] || { echo -e "INFO: directory $DIR does not exist."; return 1; }
-
+    # create a share per Nextcloud user
+    USERS=()
+    while read -r path
+    do USERS+=( "$( basename "$(dirname "$path")" )" )
+    done < <( ls -d "$DATADIR"/*/files )
+    
+    for user in "${USERS[@]}"
+    do # Exclude users not matching group filter (if enabled)
+        if [[ -n "$FILTER_BY_GROUP" ]] \
+        && [[ -z "$(ncc user:info "$user" --output=json | jq ".groups[] | select( . == \"${FILTER_BY_GROUP}\" )")" ]]
+        then Print "Omitting user $user (not in group ${FILTER_BY_GROUP})"
+             continue
+        fi
+    
+    Print "adding SAMBA share for user $user"
+    DIR="${DATADIR}/${user}/files"
+    [[ -d "$DIR" ]] || { Print "Directory not found: $DIR"; return 1; }
+    
     cat >> /etc/samba/smb.conf <<EOF
-
+    
 [ncp-$user]
     path = $DIR
     writeable = yes
@@ -98,10 +99,10 @@ EOF
 
     ## create user with no login if it doesn't exist
     id "$user" &>/dev/null || adduser --disabled-password --force-badname --gecos "" "$user" || return 1
-    echo -e "$PWD\n$PWD" | smbpasswd -s -a "${user}"
+    Print "$PWD" "$PWD" | smbpasswd -s -a "$user"
 
-    usermod -aG www-data "${user}"
-    sudo chmod g+w "${DIR}"
+    usermod -aG www-data "$user"
+    sudo chmod g+w "$DIR"
   done
 
   update-rc.d smbd defaults
@@ -111,7 +112,7 @@ EOF
   update-rc.d nmbd enable
   service nmbd restart
 
-  echo "SMB enabled"
+  Print "Enabled: SMB"
 }
 
 # License

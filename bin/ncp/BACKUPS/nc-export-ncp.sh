@@ -7,22 +7,23 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-
-
-configure() 
-{
-  [[ -d "$DIR" ]] || { echo "directory $DIR does not exist"; return 1; }
-
-  local destfile
-  destfile="$DIR"/ncp-config_$(date +"%Y%m%d").tar
-
-  tar -cf "$destfile" -C /usr/local/etc/ncp-config.d .
-  chmod 600 "$destfile"
-
-  echo -e "configuration exported to $destfile"
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
 }
 
-install() { :; }
+function configure () {
+  [[ -d "$DIR" ]] || { Print "Directory not found: $DIR"; return 1; }
+  local DESTFILE
+  DESTFILE="$DIR"/ncp-config_"$(date +"%Y%m%d")".tar
+
+  tar -cf "$DESTFILE" -C /usr/local/etc/ncp-config.d .
+  chmod 600 "$DESTFILE"
+
+  Print "Configuration exported to: $DESTFILE"
+}
+
+function install () { :; }
 
 # License
 #

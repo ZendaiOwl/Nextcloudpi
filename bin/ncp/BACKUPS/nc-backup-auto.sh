@@ -7,32 +7,35 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-tmpl_get_destination() {
-  (
-  . /usr/local/etc/library.sh
-  find_app_param nc-backup-auto DESTDIR
-  )
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
 }
 
-configure()
-{
-  [[ $ACTIVE != "yes" ]] && {
-    rm -f /etc/cron.d/ncp-backup-auto
-    service cron restart
-    echo "automatic backups disabled"
-    return 0
-  }
+function tmpl_get_destination () {
+    (
+        # shellcheck disable=SC1091
+        . /usr/local/etc/library.sh
+        find_app_param nc-backup-auto DESTDIR
+    )
+}
 
-  cat > /usr/local/bin/ncp-backup-auto <<EOF
+function configure () {
+    [[ "$ACTIVE" != "yes" ]] && {
+        rm -f /etc/cron.d/ncp-backup-auto
+        service cron restart
+        Print "Automatic backups disabled"
+        return 0
+    }
+
+    cat > /usr/local/bin/ncp-backup-auto <<EOF
 #!/usr/bin/env bash
 source /usr/local/etc/library.sh
 failed=
-run_script()
-{
-        if [ -x /usr/local/bin/ncp-backup-auto-\$1 ]
-        then
-                /usr/local/bin/ncp-backup-auto-\$1 || failed="\$failed\${failed:+, } \$1"
-        fi
+function run_script () {
+    if [ -x /usr/local/bin/ncp-backup-auto-\$1 ]
+    then /usr/local/bin/ncp-backup-auto-\$1 || failed="\$failed\${failed:+, } \$1"
+    fi
 }
 
 run_script before
@@ -41,25 +44,25 @@ save_maintenance_mode
 restore_maintenance_mode
 run_script after
 if [[ -n "\$failed" ]]
-then
-  notify_admin "Auto-backup failed" "The \$failed backup script(s) failed"
+then notify_admin "Auto-backup failed" "The \$failed backup script(s) failed"
 fi
 EOF
-  chmod +x /usr/local/bin/ncp-backup-auto
-
-  echo "0  3  */${BACKUPDAYS}  *  *  root  /usr/local/bin/ncp-backup-auto >> /var/log/ncp.log 2>&1" > /etc/cron.d/ncp-backup-auto
-  chmod 644 /etc/cron.d/ncp-backup-auto
-  service cron restart
-
-  (
-    . "${BINDIR}/SYSTEM/metrics.sh"
-    reload_metrics_config
-  )
-
-  echo "automatic backups enabled"
+    chmod +x /usr/local/bin/ncp-backup-auto
+    
+    echo "0  3  */$BACKUPDAYS  *  *  root  /usr/local/bin/ncp-backup-auto >> /var/log/ncp.log 2>&1" > /etc/cron.d/ncp-backup-auto
+    chmod 644 /etc/cron.d/ncp-backup-auto
+    service cron restart
+    
+    (
+        # shellcheck disable=SC1090
+        . "${BINDIR}/SYSTEM/metrics.sh"
+        reload_metrics_config
+    )
+    
+    Print "Automatic backups enabled"
 }
 
-install() { :; }
+function install () { :; }
 
 # License
 #

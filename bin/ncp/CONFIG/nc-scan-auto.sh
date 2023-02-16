@@ -8,57 +8,63 @@
 # More at: https://ownyourbits.com
 #
 
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
+function configure () {
+    [[ "$ACTIVE" != "yes" ]] && {
+        rm --force /etc/cron.d/ncp-scan-auto
+        service cron restart
+        Print "Automatic scans disabled"
+        return 0
+    }
 
-configure()
-{
-    [[ $ACTIVE != "yes" ]] && {
-    rm -f /etc/cron.d/ncp-scan-auto
-    service cron restart
-    echo "automatic scans disabled"
-    return 0
-  }
-
-  # set crontab
-  local days hour mins
-  days=$(( SCANINTERVAL / 1440 ))
-  if [[ "$days" != "0" ]]; then
-    days="*/$days" hour="1" mins="15"
-  else
-    days="*"
-    hour=$(( SCANINTERVAL / 60   ))
-    mins=$(( SCANINTERVAL % 60   ))
-    mins="*/$mins"
-    [[ $hour == 0 ]] && hour="*" || { hour="*/$hour" mins="15"; }
-  fi
-
-  [[ "$RECURSIVE"   == no  ]] && local recursive=--shallow
-  [[ "$NONEXTERNAL" == yes ]] && local non_external=--home-only
-
-  cat > /usr/local/bin/ncp-scan-auto <<EOF
+    # set crontab
+    local DAYS HOUR MINS RECURSIVE NON_EXTERNAL
+    DAYS="$(( "$SCANINTERVAL" / 1440 ))"
+    if [[ "$DAYS" != "0" ]]
+    then DAYS="*/$DAYS" HOUR="1" MINS="15"
+    else DAYS="*"
+         HOUR="$(( "$SCANINTERVAL" / 60 ))"
+         MINS="$(( "$SCANINTERVAL" % 60 ))"
+         MINS="*/$MINS"
+         if [[ "$HOUR" == 0 ]]
+         then HOUR="*"
+         else HOUR="*/$HOUR"
+              MINS="15"
+         fi
+    
+    [[ "$RECURSIVE"   == no  ]] && RECURSIVE=--shallow
+    # shellcheck disable=SC2153
+    [[ "$NONEXTERNAL" == yes ]] && NON_EXTERNAL=--home-only
+    
+    cat > /usr/local/bin/ncp-scan-auto <<EOF
 #!/usr/bin/env bash
 (
 
   echo -e "\n[ nc-scan-auto ]"
 
-  [[ "$PATH1" != "" ]] && /usr/local/bin/ncc files:scan $recursive $non_external -n -p "$PATH1"
-  [[ "$PATH2" != "" ]] && /usr/local/bin/ncc files:scan $recursive $non_external -n -p "$PATH2"
-  [[ "$PATH3" != "" ]] && /usr/local/bin/ncc files:scan $recursive $non_external -n -p "$PATH3"
+  [[ "$PATH1" != "" ]] && /usr/local/bin/ncc files:scan $RECURSIVE $NON_EXTERNAL -n -p "$PATH1"
+  [[ "$PATH2" != "" ]] && /usr/local/bin/ncc files:scan $RECURSIVE $NON_EXTERNAL -n -p "$PATH2"
+  [[ "$PATH3" != "" ]] && /usr/local/bin/ncc files:scan $RECURSIVE $NON_EXTERNAL -n -p "$PATH3"
 
-  [[ "${PATH1}${PATH2}${PATH3}" == "" ]] && /usr/local/bin/ncc files:scan $recursive $non_external -n --all
+  [[ "${PATH1}${PATH2}${PATH3}" == "" ]] && /usr/local/bin/ncc files:scan $RECURSIVE $NON_EXTERNAL -n --all
 
 ) 2>&1 >>/var/log/ncp.log
 EOF
 chmod +x /usr/local/bin/ncp-scan-auto
 
-  echo "${mins}  ${hour}  ${days}  *  *  root /usr/local/bin/ncp-scan-auto" > /etc/cron.d/ncp-scan-auto
-  chmod 644 /etc/cron.d/ncp-scan-auto
-  service cron restart
-
-  echo "automatic scans enabled"
+    echo "$MINS  $HOUR  $DAYS  *  *  root /usr/local/bin/ncp-scan-auto" > /etc/cron.d/ncp-scan-auto
+    chmod 644 /etc/cron.d/ncp-scan-auto
+    service cron restart
+    
+    Print "Automatic scans enabled"
+fi
 }
 
-install() { :; }
+function install () { :; }
 
 # License
 #

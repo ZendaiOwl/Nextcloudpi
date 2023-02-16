@@ -249,34 +249,39 @@ start_notify_push
 source "$LIBRARY"
 
 # check dist-upgrade
-check_distro "$NCPCFG" && check_distro "$NCP_CONFIG" || {
-  NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
-  NEW_RELEASE="$(jq -r '.release'         "$NCP_CONFIG")"
+if ! check_distro "$NCPCFG" \
+&& ! check_distro "$NCP_CONFIG"
+then NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
+     NEW_RELEASE="$(jq -r '.release'         "$NCP_CONFIG")"
 
-  CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
-  CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
-  Print "$CFG" > /usr/local/etc/ncp-recommended.cfg
+     CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
+     CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
+     Print "$CFG" > /usr/local/etc/ncp-recommended.cfg
 
-  [[ -f /.dockerenv ]] && \
-    MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
-    MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
-  Print "$MSG"
-  notify_admin "New distribution available" "$MSG"
-  wall "$MSG"
-  cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
+     [[ -f /.dockerenv ]] && \
+        MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
+        MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
+        Print "$MSG"
+        notify_admin "New distribution available" "$MSG"
+        wall "$MSG"
+        cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
 #!/usr/bin/env bash
 NEW_CFG=/usr/local/etc/ncp-recommended.cfg
 [[ -f "\$NEW_CFG" ]] || exit 0
 echo -e "$MSG"
 EOF
-chmod +x /etc/update-motd.d/30ncp-dist-upgrade
-}
+        chmod +x /etc/update-motd.d/30ncp-dist-upgrade
+fi
 
+# TODO: Change this to use find instead of ls
 # Remove redundant opcache configuration.
 # Related to https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=815968
 # Bug #416 reappeared after we moved to php7.3 and debian buster packages.
-[[ "$( ls -l /etc/php/"${PHPVER}"/fpm/conf.d/*-opcache.ini 2> /dev/null |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/"${PHPVER}"/fpm/conf.d/*-opcache.ini | tail -1 )"
-[[ "$( ls -l /etc/php/"${PHPVER}"/cli/conf.d/*-opcache.ini 2> /dev/null |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/"${PHPVER}"/cli/conf.d/*-opcache.ini | tail -1 )"
+[[ "$( ls -l /etc/php/"$PHPVER"/fpm/conf.d/*-opcache.ini 2>/dev/null |  wc -l )" -gt 1 ]] \
+&& rm "$( ls /etc/php/"$PHPVER"/fpm/conf.d/*-opcache.ini | tail -1 )"
+
+[[ "$( ls -l /etc/php/"$PHPVER"/cli/conf.d/*-opcache.ini 2>/dev/null |  wc -l )" -gt 1 ]] \
+&& rm "$( ls /etc/php/"$PHPVER"/cli/conf.d/*-opcache.ini | tail -1 )"
 
 exit 0
 

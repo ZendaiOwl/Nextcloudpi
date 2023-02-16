@@ -8,42 +8,46 @@
 # More at: https://ownyourbits.com
 #
 
-
-install()
-{
-  apt-get update
-  apt-get install --no-install-recommends -y nfs-kernel-server 
-  systemctl disable nfs-kernel-server
-  systemctl mask nfs-blkmap
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
 }
 
-configure()
-{
-  [[ $ACTIVE != "yes" ]] && { 
-    service nfs-kernel-server stop
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" nfs-kernel-server 
     systemctl disable nfs-kernel-server
-    echo -e "NFS disabled"
-    return
-  } 
+    systemctl mask nfs-blkmap
+}
 
-  # CHECKS
-  ################################
-  id    "$USER"  &>/dev/null || { echo "user $USER does not exist"  ; return 1; }
-  id -g "$GROUP" &>/dev/null || { echo "group $GROUP does not exist"; return 1; }
-  [ -d "$DIR" ] || { echo -e "INFO: directory $DIR does not exist. Creating"; mkdir -p "$DIR"; }
-  [[ $( stat -fc%d / ) == $( stat -fc%d $DIR ) ]] && \
-    echo -e "INFO: mounting a in the SD card\nIf you want to use an external mount, make sure it is properly set up"
-
-  # CONFIG
-  ################################
-  cat > /etc/exports <<EOF
-$DIR $SUBNET(rw,sync,all_squash,anonuid=$(id -u $USER),anongid=$(id -g $GROUP),no_subtree_check)
+function configure () {
+    if [[ "$ACTIVE" != "yes" ]]
+    then service nfs-kernel-server stop
+         systemctl disable nfs-kernel-server
+         Print "NFS disabled"
+         return
+    fi
+    
+    # CHECKS
+    ################################
+    id    "$USER"  &>/dev/null || { echo "user $USER does not exist"  ; return 1; }
+    id -g "$GROUP" &>/dev/null || { echo "group $GROUP does not exist"; return 1; }
+    [[ -d "$DIR" ]] || { Print "Directory not found: $DIR. Creating"; mkdir --parents "$DIR"; }
+    if [[ "$( stat -fc%d / )" == "$( stat -fc%d "$DIR" )" ]]
+    then Print "INFO: mounting a in the SD card" "If you want to use an external mount, make sure it is properly set up"
+    fi
+    # CONFIG
+    ################################
+    cat > /etc/exports <<EOF
+"$DIR" "$SUBNET"(rw,sync,all_squash,anonuid="$(id -u "$USER")",anongid="$(id -g "$GROUP")",no_subtree_check)
 EOF
 
-  systemctl enable rpcbind
-  systemctl enable nfs-kernel-server
-  service nfs-kernel-server restart
-  echo -e "NFS enabled"
+    systemctl enable rpcbind
+    systemctl enable nfs-kernel-server
+    service nfs-kernel-server restart
+    Print "Enabled: NFS"
 }
 
 # License

@@ -8,41 +8,34 @@
 
 
 
-install() { :; }
+function install () { :; }
 
-isactive()
-{
+function is_active () {
   local REWRITEBASE
-  REWRITEBASE="$( grep RewriteBase /var/www/nextcloud/.htaccess )" || return 1
-  [[ $REWRITEBASE != 1 ]]
+  REWRITEBASE="$(grep RewriteBase /var/www/nextcloud/.htaccess)" || return 1
+  [[ "$REWRITEBASE" != 1 ]]
 }
 
-configure()
-{
-  # make sure overwrite.cli.url end with a '/'
-  local URL
-  URL="$(ncc config:system:get overwrite.cli.url)"
-  [[ "${URL: -1}" != "/" ]] && ncc config:system:set overwrite.cli.url --value="${URL}/"
-
-  if [[ $ACTIVE != "yes" ]]; then
-    ncc config:system:set htaccess.RewriteBase --value=""
-    ncc maintenance:update:htaccess
-    [[ $? -ne 0 ]] && {
-      echo "There has been an error."
-      return 1
-    }
-    echo "Your cloud does no longer have a pretty domain name."
-  else
-    ncc config:system:set htaccess.RewriteBase --value="/"
-    ncc maintenance:update:htaccess
-    [[ $? -ne 0 ]] && {
-      echo "There has been an error."
-      return 1
-    }
-    echo "Your cloud now has a pretty domain name."
-  fi
-  apachectl -k graceful
-  return 0
+function configure () {
+    # make sure overwrite.cli.url end with a '/'
+    local URL
+    URL="$(ncc config:system:get overwrite.cli.url)"
+    [[ "${URL: -1}" != "/" ]] && ncc config:system:set overwrite.cli.url --value="${URL}/"
+    
+    if [[ "$ACTIVE" != "yes" ]]
+    then ncc config:system:set htaccess.RewriteBase --value=""
+         if ! ncc maintenance:update:htaccess
+         then echo "There has been an error."; return 1
+         fi
+         echo "Your cloud does no longer have a pretty domain name."
+    else ncc config:system:set htaccess.RewriteBase --value="/"
+         if ! ncc maintenance:update:htaccess
+         then echo "There has been an error."; return 1
+         fi
+         echo "Your cloud now has a pretty domain name."
+    fi
+    apachectl -k graceful
+    return 0
 }
 
 # License

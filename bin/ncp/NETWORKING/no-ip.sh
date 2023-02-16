@@ -8,22 +8,39 @@
 # More at https://ownyourbits.com/2017/03/05/dynamic-dns-for-raspbian-with-no-ip-org-installer/
 #
 
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
+}
 
-install()
-{
-  apt-get update
-  apt-get install --no-install-recommends -y make gcc libc-dev
-
-  local TMPDIR="$( mktemp -d /tmp/noip.XXXXXX )"
-  cd "$TMPDIR"
-  wget -O- --content-disposition https://github.com/nachoparker/noip-DDNS/archive/master/latest.tar.gz \
-  | tar -xz \
-  || return 1
-  cd -; cd "$OLDPWD"/noip-DDNS-master/
-  make
-  cp noip2 /usr/local/bin/
-
-  cat > /etc/init.d/noip2 <<'EOF'
+function install () {
+    local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    local -r URL='https://github.com/nachoparker/noip-DDNS/archive/master/latest.tar.gz'
+    local TMPDIR 
+    apt-get update  "${ARGS[@]}"
+    apt-get install "${ARGS[@]}" make gcc libc-dev
+    
+    TMPDIR="$( mktemp -d /tmp/noip.XXXXXX )"
+    if ! cd "$TMPDIR"
+    then Print "Failed to change directory to: $TMPDIR"; return 1
+    fi
+    if ! wget -O- --content-disposition "$URL" | tar -xz
+    then Print "Failed to download: $URL"; return 1
+    fi
+    if ! cd -
+    then Print "Failed to change directory to: -"; return 1
+    else
+         if ! cd "$OLDPWD"/noip-DDNS-master/
+         then Print "Failed to change directory to: $OLDPWD/noip-DDNS-master/"; return 1
+         fi
+    fi
+    make
+    if ! cp noip2 /usr/local/bin/
+    then Print "Failed to copy file: noip2"; return 1
+    fi
+    
+    cat > /etc/init.d/noip2 <<'EOF'
 #! /bin/sh
 # /etc/init.d/noip2
 
@@ -37,62 +54,68 @@ install()
 ### END INIT INFO
 EOF
 
-  cat debian.noip2.sh >> /etc/init.d/noip2
-
-  chmod +x /etc/init.d/noip2
-  cd -
-  rm -r "$TMPDIR"
-
-  update-rc.d noip2 defaults
-  update-rc.d noip2 disable
-
-  mkdir -p /usr/local/etc/noip2
-
-  [[ "$DOCKERBUILD" == 1 ]] && {
+    cat debian.noip2.sh >> /etc/init.d/noip2
+    
+    chmod +x /etc/init.d/noip2
+    if ! cd -
+    then Print "Failed to change directory to: -"; return 1
+    fi
+    if ! rm --recursive "$TMPDIR"
+    then Print "Failed to remove directory: $TMPDIR"; return 1
+    fi
+    
+    update-rc.d noip2 defaults
+    update-rc.d noip2 disable
+    
+    mkdir --parents /usr/local/etc/noip2
+    
+    [[ "$DOCKERBUILD" == 1 ]] && {
     cat > /etc/services-available.d/100noip <<EOF
 #!/usr/bin/env bash
-
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print () {
+    printf '%s\n' "$@"
+}
 source /usr/local/etc/library.sh
 
 [[ "\$1" == "stop" ]] && {
-  echo "stopping noip..."
-  service noip2 stop
-  exit 0
+    Print "Stopping: noip"
+    service noip2 stop
+    exit 0
 }
 
 persistent_cfg /usr/local/etc/noip2 /data/etc/noip2
 
-echo "Starting noip..."
+Print "Starting: noip"
 service noip2 start
 
 exit 0
 EOF
     chmod +x /etc/services-available.d/100noip
-  }
-  return 0
+    }
+    return 0
 }
 
-configure()
-{
-  service noip2 stop
-  [[ $ACTIVE != "yes" ]] && { update-rc.d noip2 disable; return 0; }
-
-  local IF=$( ip -br l | awk '{ if ( $2 == "UP" ) print $1 }' | head -1 )
-  [[ "$IF" != "" ]] && IF="-I $IF"
-
-  /usr/local/bin/noip2 -C -c /usr/local/etc/no-ip2.conf $IF -U "$TIME" -u "$USER" -p "$PASS" 2>&1 | tee >(cat - >&2) \
-    | grep -q "New configuration file .* created" || return 1
-
-  update-rc.d noip2 enable
-  service noip2 restart
-  set-nc-domain "$DOMAIN"
-  echo "noip DDNS enabled"
-
+function configure () {
+    local IF 
+    service noip2 stop
+    [[ "$ACTIVE" != "yes" ]] && { update-rc.d noip2 disable; return 0; }
+    
+    IF="$( ip -br l | awk '{ if ( $2 == "UP" ) print $1 }' | head -1 )"
+    [[ "$IF" != "" ]] && IF="-I $IF"
+    
+    /usr/local/bin/noip2 -C -c /usr/local/etc/no-ip2.conf "$IF" -U "$TIME" -u "$USER" -p "$PASS" 2>&1 \
+    | tee >(cat - >&2) | grep -q "New configuration file .* created" || return 1
+    
+    update-rc.d noip2 enable
+    service noip2 restart
+    set-nc-domain "$DOMAIN"
+    Print "Enabled: noip DDNS"
 }
 
-cleanup()
-{
-  apt-get purge -y make gcc libc-dev
+function cleanup () {
+    apt-get purge -y make gcc libc-dev
 }
 
 # License

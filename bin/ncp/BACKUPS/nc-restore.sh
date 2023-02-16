@@ -9,10 +9,9 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-install() { :; }
+function install () { :; }
 
-configure()
-{
+function configure () {
   ncp-restore "$BACKUPFILE"
 }
 

@@ -9,40 +9,41 @@
 # More at nextcloudpi.com
 #
 
-install() { :; }
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
-configure()
-{
-  [[ -d "$SNAPSHOT" ]] || { echo "$SNAPSHOT doesn't exist"; return 1; }
+function install () { :; }
 
-  local datadir mountpoint
-  datadir=$( get_nc_config_value datadirectory ) || {
-    echo -e "Error reading data directory. Is NextCloud running?";
-    return 1;
-  }
-
-  # file system check
-  mountpoint="$( stat -c "%m" "$datadir" )" || return 1
-  [[ "$( stat -fc%T "$mountpoint" )" != "btrfs" ]] && {
-    echo "$datadir is not in a BTRFS filesystem"
-    return 1
-  }
-
-  # file system check
-  btrfs subvolume show "$SNAPSHOT" &>/dev/null || {
-    echo "$SNAPSHOT is not a BTRFS snapshot"
-    return 1
-  }
-
-  btrfs-snp $mountpoint autobackup 0 0 ../ncp-snapshots || return 1
-
-  save_maintenance_mode
-  btrfs subvolume delete   "$datadir" || return 1
-  btrfs subvolume snapshot "$SNAPSHOT" "$datadir"
-  restore_maintenance_mode
-  ncp-scan
-
-  echo "snapshot $SNAPSHOT restored"
+function configure () {
+    [[ -d "$SNAPSHOT" ]] || { Print "Directory not found: $SNAPSHOT"; return 1; }
+    
+    local DATADIR MOUNTPOINT
+    DATADIR="$( get_nc_config_value datadirectory )" || {
+        Print "Error reading data directory. Is Nextcloud running?"; return 1
+    }
+    
+    # file system check
+    MOUNTPOINT="$( stat -c "%m" "$DATADIR" )" || return 1
+    [[ "$( stat -fc%T "$MOUNTPOINT" )" != "btrfs" ]] && {
+        Print "Data directory is not in a BTRFS filesystem: $DATADIR"; return 1
+    }
+    
+    # file system check
+    btrfs subvolume show "$SNAPSHOT" &>/dev/null || {
+        Print "Not a BTRFS snapshot: $SNAPSHOT"; return 1
+    }
+    
+    btrfs-snp "$MOUNTPOINT" autobackup 0 0 ../ncp-snapshots || return 1
+    
+    save_maintenance_mode
+    btrfs subvolume delete   "$DATADIR" || return 1
+    btrfs subvolume snapshot "$SNAPSHOT" "$DATADIR"
+    restore_maintenance_mode
+    ncp-scan
+    
+    Print "Snapshot restored: $SNAPSHOT"
 }
 
 # License

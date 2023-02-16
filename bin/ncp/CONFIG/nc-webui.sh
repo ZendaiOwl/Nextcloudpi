@@ -8,27 +8,28 @@
 # More at: https://ownyourbits.com
 #
 
-
-is_active()
-{
-  a2query -s ncp &>/dev/null
+# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
 }
 
-configure() 
-{
-  if [[ $ACTIVE != "yes" ]]; then
-    a2dissite ncp
-    echo "ncp-web disabled"
-  else
-    a2ensite ncp
-    echo "ncp-web enabled"
-  fi
-
-  # delayed in bg so it does not kill the connection, and we get AJAX response
-  bash -c "sleep 2 && service apache2 reload" &>/dev/null &
+function is_active () {
+    a2query -s ncp &>/dev/null
 }
 
-install() { :; }
+function configure ()  {
+    if [[ "$ACTIVE" != "yes" ]]
+    then a2dissite ncp
+         Print "Disabled: ncp-web"
+    else a2ensite ncp
+         Print "Enabled: ncp-web"
+    fi
+    
+    # delayed in bg so it does not kill the connection, and we get AJAX response
+    bash -c "sleep 2 && service apache2 reload" &>/dev/null &
+}
+
+function install () { :; }
 
 # License
 #

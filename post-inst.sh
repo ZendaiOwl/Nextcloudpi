@@ -23,7 +23,7 @@ function configure {
     
     # cleanup all NCP extras
     find /usr/local/bin/ncp -name '*.sh' | \
-      while read SCRIPT
+      while read -r SCRIPT
       do cleanup_script "$SCRIPT"
       done
     
