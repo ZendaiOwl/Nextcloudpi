@@ -69,19 +69,29 @@ function configure
     
     ## CHECKS
     local SRCDIR BASEDIR ENCDIR BKP
-    SRCDIR="$( get_nc_config_value datadirectory )" || {
-        Print "Error reading data directory. Is Nextcloud running and configured?"; return 1;
-    }
-    [[ -d "${SRCDIR?}" ]] || { Print "Data directory not found: $SRCDIR"; return 1; }
+    if ! SRCDIR="$( get_nc_config_value datadirectory )"
+    then Print "Error reading data directory. Is Nextcloud running and configured?"
+         return 1
+    fi
     
-    [[ "$SRCDIR" == "${DATADIR?}"      ]] && { Print "INFO: Data exists"; return 0; }
-    [[ "$SRCDIR" == "$DATADIR"/data ]]    && { Print "INFO: Data exists"; return 0; }
+    if [[ ! -d "${SRCDIR?}" ]]
+    then Print "Directory not found: $SRCDIR"
+         return 1
+    fi
+    
+    if [[ "$SRCDIR" == "${DATADIR?}" ]]
+    then Print "Data exists: $SRCDIR"
+         return 0
+    elif [[ "$SRCDIR" == "$DATADIR"/data ]]
+    then Print "Data exists: $SRCDIR"
+         return 0
+    fi
     
     BASEDIR="$DATADIR"
     # If the user chooses the root of the mountpoint, force a folder
-    mountpoint -q "${BASEDIR?}" && {
-        BASEDIR="${BASEDIR}/ncdata"
-    }
+    if mountpoint -q "${BASEDIR?}"
+    then BASEDIR="${BASEDIR}/ncdata"
+    fi
     
     mkdir --parents "$BASEDIR"
     BASEDIR="$(cd "$BASEDIR" && pwd -P)" # resolve symlinks and use the real path
@@ -94,20 +104,20 @@ function configure
         return 1
     }
     
-    sudo -u www-data test -x "$BASEDIR" || {
-        Print "ERROR: www-data user does not have permissions to access: $BASEDIR"
-        return 1
-    }
+    if ! sudo -u www-data test -x "$BASEDIR"
+    then Print "ERROR: www-data user does not have permissions to access: $BASEDIR"
+         return 1
+    fi
     
     # backup possibly existing datadir
-    [[ -d "$BASEDIR" ]] && {
-    rmdir "$BASEDIR" &>/dev/null || {
-        BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
-        Print "INFO: $BASEDIR is not empty. Creating backup ${BKP?}"
-        mv "$BASEDIR" "$BKP"
-    }
-    mkdir --parents "$BASEDIR"
-    }
+    if [[ -d "$BASEDIR" ]]
+    then if ! rmdir "$BASEDIR" &>/dev/null
+         then BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
+              Print "INFO: $BASEDIR is not empty. Creating backup: ${BKP?}"
+              mv "$BASEDIR" "$BKP"
+         fi
+         mkdir --parents "$BASEDIR"
+    fi
     
     ## COPY
     if ! cd /var/www/nextcloud
@@ -118,11 +128,11 @@ function configure
     Print "Moving data directory from $SRCDIR to $BASEDIR"
     
     # use subvolumes, if BTRFS
-    [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]] && ! is_docker && {
-        Print "BTRFS filesystem detected"
-        rmdir "$BASEDIR"
-        btrfs subvolume create "$BASEDIR"
-    }
+    if [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]] && ! is_docker
+    then Print "BTRFS filesystem detected"
+         rmdir "$BASEDIR"
+         btrfs subvolume create "$BASEDIR"
+    fi
     
     # use encryption, if selected
     if is_active_app nc-encrypt # if we have encryption AND BTRFS, then store ncdata_enc in the subvolume
@@ -162,10 +172,10 @@ function configure
     (
         # shellcheck disable=SC1090
         . "${BINDIR?}/SYSTEM/metrics.sh"
-        reload_metrics_config || {
-            Print "WARNING: There was an issue reloading ncp metrics. This might not affect your installation, but keep it in mind if there is an issue with metrics."
-            true
-        }
+        if ! reload_metrics_config
+        then Print "WARNING: There was an issue reloading ncp metrics. This might not affect your installation, but keep it in mind if there is an issue with metrics."
+             true
+        fi
     )
     
     Print "The NC data directory has been moved successfully."

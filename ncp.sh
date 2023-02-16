@@ -169,41 +169,41 @@ CONFDIR='/usr/local/etc/ncp-config.d'
 BRANCH="${BRANCH:-master}"
 
 function install {
-  local -r NCC_SCRIPTFILE='/usr/local/bin/ncc' \
-           ACTIVATION_CONFIG='/etc/apache2/sites-available/ncp-activation.conf' \
-           NCP_CONFIG='/etc/apache2/sites-available/ncp.conf' \
-           RASPI_CONFIG='/usr/bin/raspi-config' \
-           NOLOGIN_SHELL='/usr/sbin/nologin' \
-           HTTP_USER='www-data' \
-           HOME_HTTP_USER='/home/www'
-
-  local NCP_LAUNCHER="${HOME_HTTP_USER}/ncp-launcher.sh" \
-        BACKUP_LAUNCHER="${HOME_HTTP_USER}/ncp-backup-launcher.sh"
-  # NCP-CONFIG
-  installPKG git dialog whiptail jq file lsb-release
-  mkdir --parents "$CONFDIR" "$BINDIR"
-
-  # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
-  # The raspi-config layout and options have also changed
-  # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-  if isFile "$RASPI_CONFIG"
-  then # shellcheck disable=SC1003
-       sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' "$RASPI_CONFIG"
-       sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             "$RASPI_CONFIG"
-  fi
-
-  # Add 'ncc' script shortcut
-  cat > "$NCC_SCRIPTFILE" <<'EOF'
+    local -r NCC_SCRIPTFILE='/usr/local/bin/ncc' \
+             ACTIVATION_CONFIG='/etc/apache2/sites-available/ncp-activation.conf' \
+             NCP_CONFIG='/etc/apache2/sites-available/ncp.conf' \
+             RASPI_CONFIG='/usr/bin/raspi-config' \
+             NOLOGIN_SHELL='/usr/sbin/nologin' \
+             HTTP_USER='www-data' \
+             HOME_HTTP_USER='/home/www'
+    
+    local NCP_LAUNCHER="${HOME_HTTP_USER}/ncp-launcher.sh" \
+          BACKUP_LAUNCHER="${HOME_HTTP_USER}/ncp-backup-launcher.sh"
+    # NCP-CONFIG
+    installPKG git dialog whiptail jq file lsb-release
+    mkdir --parents "$CONFDIR" "$BINDIR"
+    
+    # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
+    # The raspi-config layout and options have also changed
+    # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
+    if isFile "$RASPI_CONFIG"
+    then # shellcheck disable=SC1003
+        sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' "$RASPI_CONFIG"
+        sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             "$RASPI_CONFIG"
+    fi
+    
+    # Add 'ncc' script shortcut
+    cat > "$NCC_SCRIPTFILE" <<'EOF'
 #!/usr/bin/env bash
 SUDO=(sudo -E -u www-data)
 "${SUDO[@]}" php /var/www/nextcloud/occ "$@"
 EOF
 
-  chmod +x "$NCC_SCRIPTFILE"
-
-  # NCP-WEB
-  ## Apache2 VirtualHost
-  cat > "$ACTIVATION_CONFIG" <<EOF
+    chmod +x "$NCC_SCRIPTFILE"
+    
+    # NCP-WEB
+    ## Apache2 VirtualHost
+    cat > "$ACTIVATION_CONFIG" <<EOF
 <VirtualHost _default_:443>
   DocumentRoot /var/www/ncp-web/
   SSLEngine on
@@ -228,7 +228,7 @@ EOF
 </Directory>
 EOF
 
-  cat > "$NCP_CONFIG" <<EOF
+    cat > "$NCP_CONFIG" <<EOF
 Listen 4443
 <VirtualHost _default_:4443>
   DocumentRoot /var/www/ncp-web
@@ -282,27 +282,27 @@ Listen 4443
 </Directory>
 EOF
 
-  installPKG libapache2-mod-authnz-external pwauth
-  a2enmod authnz_external \
-          authn_core \
-          auth_basic
-  a2dissite nextcloud
-  a2ensite ncp-activation
-
-  ## NCP USER FOR AUTHENTICATION
-  if ! isUser "$WEBADMIN"
-  then useradd --home-dir /nonexistent "$WEBADMIN"
-  fi
-  Print "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
-  chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
-  chsh -s "$NOLOGIN_SHELL" root
-
-  ## NCP LAUNCHER
-  mkdir --parents "$HOME_HTTP_USER"
-  chown "$HTTP_USER":"$HTTP_USER" "$HOME_HTTP_USER"
-  chmod 700 "$HOME_HTTP_USER"
-
-  cat > /home/www/ncp-launcher.sh <<'EOF'
+    installPKG libapache2-mod-authnz-external pwauth
+    a2enmod authnz_external \
+            authn_core \
+            auth_basic
+    a2dissite nextcloud
+    a2ensite ncp-activation
+    
+    ## NCP USER FOR AUTHENTICATION
+    if ! isUser "$WEBADMIN"
+    then useradd --home-dir /nonexistent "$WEBADMIN"
+    fi
+    Print "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
+    chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
+    chsh -s "$NOLOGIN_SHELL" root
+    
+    ## NCP LAUNCHER
+    mkdir --parents "$HOME_HTTP_USER"
+    chown "$HTTP_USER":"$HTTP_USER" "$HOME_HTTP_USER"
+    chmod 700 "$HOME_HTTP_USER"
+    
+    cat > /home/www/ncp-launcher.sh <<'EOF'
 #!/usr/bin/env bash
 grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
