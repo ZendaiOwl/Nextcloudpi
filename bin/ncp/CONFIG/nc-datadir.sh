@@ -27,7 +27,7 @@ function install
 
 function tmpl_opcache_dir
 {
-    local -r DATADIR
+    local DATADIR
     DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
     echo -n "${DATADIR}/.opcache"
     #[[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo "/tmp" || echo "${DATADIR}/.opcache"
@@ -35,7 +35,7 @@ function tmpl_opcache_dir
 
 function tmpl_tmp_upload_dir
 {
-    local -r DATADIR
+    local DATADIR
     DATADIR="$(get_nc_config_value datadirectory || find_app_param nc-datadir DATADIR)"
     echo -n "${DATADIR}/tmp"
 }
@@ -68,7 +68,7 @@ function configure
     shopt -s dotglob # includes dot files
     
     ## CHECKS
-    local SRCDIR BASEDIR ENCDIR DATADIR BKP
+    local SRCDIR BASEDIR ENCDIR BKP
     SRCDIR="$( get_nc_config_value datadirectory )" || {
         Print "Error reading data directory. Is Nextcloud running and configured?"; return 1;
     }
