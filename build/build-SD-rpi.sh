@@ -195,7 +195,7 @@ clean_build_sd_rpi
 
 trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
 
-pack_image "$IMG" "$TAR"
+# pack_image "$IMG" "$TAR"
 
 ## Pack IMG
 [[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; pack_image "$IMG" "$TAR"; }
