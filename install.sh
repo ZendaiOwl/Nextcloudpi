@@ -596,7 +596,7 @@ then if ! cp "$LIBRARY" '/usr/local/etc/library.sh'
      then log 2 "Failed to copy file: $LIBRARY"; exit 1
      fi
      LIBRARY='/usr/local/etc/library.sh'
-     declare -x -g LIBRARY; log -2 "LIBRARY: $LIBRARY"
+     declare -x -g LIBRARY
 fi
 
 if isFile "$NCPCFG"
@@ -604,7 +604,7 @@ then if ! cp "$NCPCFG" '/usr/local/etc/ncp.cfg'
      then log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1
      fi
      NCPCFG='/usr/local/etc/ncp.cfg'
-     declare -x -g NCPCFG; log -2 "NCPCFG: $NCPCFG"
+     declare -x -g NCPCFG
 fi
 
 if isDirectory "$NCP_TEMPLATES_DIR"
@@ -612,7 +612,7 @@ then if ! cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/'
      then log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1
      fi
      NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
-     declare -x -g NCP_TEMPLATES_DIR; log -2 "NCP_TEMPLATES_DIR: $NCP_TEMPLATES_DIR"
+     declare -x -g NCP_TEMPLATES_DIR
 else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1
 fi
 
