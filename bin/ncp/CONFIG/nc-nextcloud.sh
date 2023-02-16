@@ -249,7 +249,7 @@ function configure
     else log -1 "Directory not found: nextcloud"
     fi
     
-    log -1 "Installing  Nextcloud: $NCLATESTVER"
+    log -1 "Installing Nextcloud: $NCLATESTVER"
     tar -xf 'nextcloud.tar.bz2'
     rm 'nextcloud.tar.bz2'
     
@@ -293,7 +293,7 @@ function configure
         tmpl_opcache_dir
     } || true
     )"
-    if [[ -z "${OPCACHEDIR}" ]]
+    if [[ -z "$OPCACHEDIR" ]]
     then install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
     else mkdir --parents "$OPCACHEDIR"
          chown --recursive "$HTUSER":"$HTUSER" "$OPCACHEDIR"
