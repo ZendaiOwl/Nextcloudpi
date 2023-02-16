@@ -1007,55 +1007,33 @@ function upload_images {
 function upload_docker {
     export DOCKER_CLI_EXPERIMENTAL='enabled'
     local -r OWNER='ownyourbits'
-    
-    docker push "$OWNER"/nextcloudpi-x86:latest
-    docker push "$OWNER"/nextcloudpi-x86:"$VERSION"
-    docker push "$OWNER"/nextcloud-x86:latest
-    docker push "$OWNER"/nextcloud-x86:"$VERSION"
-    docker push "$OWNER"/lamp-x86:latest
-    docker push "$OWNER"/lamp-x86:"$VERSION"
-    docker push "$OWNER"/debian-ncp-x86:latest
-    docker push "$OWNER"/debian-ncp-x86:"$VERSION"
-    
-    docker push "$OWNER"/nextcloudpi-armhf:latest
-    docker push "$OWNER"/nextcloudpi-armhf:"$VERSION"
-    docker push "$OWNER"/nextcloud-armhf:latest
-    docker push "$OWNER"/nextcloud-armhf:"$VERSION"
-    docker push "$OWNER"/lamp-armhf:latest
-    docker push "$OWNER"/lamp-armhf:"$VERSION"
-    docker push "$OWNER"/debian-ncp-armhf:latest
-    docker push "$OWNER"/debian-ncp-armhf:"$VERSION"
-    
-    docker push "$OWNER"/nextcloudpi-arm64:latest
-    docker push "$OWNER"/nextcloudpi-arm64:"$VERSION"
-    docker push "$OWNER"/nextcloud-arm64:latest
-    docker push "$OWNER"/nextcloud-arm64:"$VERSION"
-    docker push "$OWNER"/lamp-arm64:latest
-    docker push "$OWNER"/lamp-arm64:"$VERSION"
-    docker push "$OWNER"/debian-ncp-arm64:latest
-    docker push "$OWNER"/debian-ncp-arm64:"$VERSION"
-    
+    declare -r -a REPOS=('nextcloudpi' 'nextcloud' 'lamp' 'debian-ncp')
+    declare -r -a ARCHS=('x86' 'armhf' 'arm64')
+    declare -r -a DARCHS=('amd64' 'arm' 'arm64')
+
+    for (( i = 0; i < "${#ARCHS[@]}"; i++ ))
+    do for (( x = 0; x < "${#REPOS[@]}"; x++ ))
+       do docker push "$OWNER"/"$${REPOS[$x]}"-"${ARCHS[$i]}":"$VERSION"
+          docker push "$OWNER"/"${REPOS[$x]}"-"${ARCHS[$i]}":latest
+       done
+    done
+
     # Docker multi-arch
-    docker manifest create --amend "$OWNER"/nextcloudpi:"$VERSION" \
-                           --amend "$OWNER"/nextcloudpi-x86:"$VERSION" \
-                           --amend "$OWNER"/nextcloudpi-armhf:"$VERSION" \
-                           --amend "$OWNER"/nextcloudpi-arm64:"$VERSION"
-    
-    docker manifest create --amend "$OWNER"/nextcloudpi:latest \
-                           --amend "$OWNER"/nextcloudpi-x86:latest \
-                           --amend "$OWNER"/nextcloudpi-armhf:latest \
-                           --amend "$OWNER"/nextcloudpi-arm64:latest
-    
-    docker manifest annotate "$OWNER"/nextcloudpi:"$VERSION" "$OWNER"/nextcloudpi-x86:"$VERSION"   --os linux --arch amd64
-    docker manifest annotate "$OWNER"/nextcloudpi:"$VERSION" "$OWNER"/nextcloudpi-armhf:"$VERSION" --os linux --arch arm
-    docker manifest annotate "$OWNER"/nextcloudpi:"$VERSION" "$OWNER"/nextcloudpi-arm64:"$VERSION" --os linux --arch arm64
-    
-    docker manifest annotate "$OWNER"/nextcloudpi:latest "$OWNER"/nextcloudpi-x86:latest   --os linux --arch amd64
-    docker manifest annotate "$OWNER"/nextcloudpi:latest "$OWNER"/nextcloudpi-armhf:latest --os linux --arch arm
-    docker manifest annotate "$OWNER"/nextcloudpi:latest "$OWNER"/nextcloudpi-arm64:latest --os linux --arch arm64
-    
-    docker manifest push -p "$OWNER"/nextcloudpi:"$VERSION"
-    docker manifest push -p "$OWNER"/nextcloudpi:latest
+    docker manifest create --amend "$OWNER"/nextcloudpi:"$VERSION"
+    for (( i = 0; i < "${#ARCHS[@]}"; i++ ))
+    do docker manifest create --amend "$OWNER"/"${REPOS[0]}"-"${ARCHS[$i]}":"$VERSION"
+       docker manifest create --amend "$OWNER"/"${REPOS[0]}"-"${ARCHS[$i]}":latest
+    done
+    for (( i = 0; i < "${#ARCHS[@]}"; i++ ))
+    do docker manifest annotate "$OWNER"/"${REPOS[0]}":"$VERSION" \
+                                "$OWNER"/"${REPOS[0]}"-"${ARCHS[$i]}":"$VERSION" \
+                                --os linux --arch "${DARCHS[$i]}"
+       docker manifest annotate "$OWNER"/"${REPOS[0]}":latest \
+                                "$OWNER"/"${REPOS[0]}"-"${ARCHS[$i]}":latest \
+                                --os linux --arch "${DARCHS[$i]}"
+    done
+    docker manifest push -p "$OWNER"/"${REPOS[0]}":"$VERSION"
+    docker manifest push -p "$OWNER"/"${REPOS[0]}":latest
 }
 
 function is_docker {
