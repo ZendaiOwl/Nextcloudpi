@@ -99,8 +99,8 @@ else sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
 fi
 
 if isRoot
-then rsync -Aax --exclude-from .gitignore --exclude -- *.img --exclude -- *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
-else sudo rsync -Aax --exclude-from .gitignore --exclude -- *.img --exclude -- *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+then rsync -Aax --exclude-from .gitignore --exclude ./*.img --exclude ./*.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+else sudo rsync -Aax --exclude-from .gitignore --exclude ./*.img --exclude ./*.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 fi
 
 if isRoot
