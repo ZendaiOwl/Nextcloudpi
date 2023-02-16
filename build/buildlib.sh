@@ -531,7 +531,8 @@ function mount_raspbian {
     then if ! mount "$IMG" -o offset="$OFFSET" "$MP"
          then log 2 "Failed to mount IMG at: $MP"; return 4
          fi
-    else if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"
+    else
+         if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"
          then log 2 "Failed to mount IMG at: $MP"; return 4
          fi
     fi; log 0 "IMG is mounted at: $MP"
@@ -561,7 +562,8 @@ function mount_raspbian_boot {
     then if ! mount "$IMG" -o offset="$OFFSET" "$MP"
          then log 2 "Failed to mount IMG at: $MP"; return 4
     fi
-    else if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"
+    else
+         if ! sudo mount "$IMG" -o offset="$OFFSET" "$MP"
          then log 2 "Failed to mount IMG at: $MP"; return 4
          fi
     fi; log 0 "IMG is mounted at: $MP"
@@ -588,7 +590,8 @@ function umount_raspbian {
               if ! rmdir "$ROOTDIR"
               then log 2 "Could not remove: $ROOTDIR"; return 2
               fi
-         else if ! sudo umount --lazy "$ROOTDIR"
+         else
+              if ! sudo umount --lazy "$ROOTDIR"
               then log 2 "Could not unmount: $ROOTDIR"; return 1
               fi
               if ! sudo rmdir "$ROOTDIR"
@@ -602,7 +605,8 @@ function umount_raspbian {
               then log 2 "Could not unmount: $BOOTDIR"; return 3
               fi
               if ! rmdir "$BOOTDIR"; then log 2 "Could not remove: $BOOTDIR"; return 4; fi
-         else if ! sudo umount --lazy "$BOOTDIR"
+         else
+              if ! sudo umount --lazy "$BOOTDIR"
               then log 2 "Could not unmount: $BOOTDIR"; return 3
               fi
               if ! sudo rmdir "$BOOTDIR"
@@ -638,7 +642,8 @@ function prepare_chroot_raspbian {
          then cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
          else sudo cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
          fi
-    else if isFile '/usr/bin/qemu-aarch64-static'
+    else
+         if isFile '/usr/bin/qemu-aarch64-static'
          then if isRoot
               then cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
               else sudo cp /usr/bin/qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
@@ -756,7 +761,8 @@ function prepare_sshd_raspbian {
     then if ! touch "$BOOTDIR"/ssh
          then log 2 "Failed to create SSH file in IMG boot"; return 3;
          fi
-    else if ! sudo touch "$BOOTDIR"/ssh
+    else
+         if ! sudo touch "$BOOTDIR"/ssh
          then log 2 "Failed to create SSH file in IMG boot"; return 3
          fi
     fi; umount_raspbian
@@ -809,7 +815,8 @@ function copy_to_image {
     then if ! cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"
          then log 2 "Copy to image failed"; return 2
          fi
-    else if ! sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"
+    else
+         if ! sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"
          then log 2 "Copy to image failed"; return 2
          fi
     fi; sync; umount_raspbian
@@ -826,7 +833,8 @@ function deactivate_unattended_upgrades {
     fi
     if ! isFile "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
     then log 1 "Directory not found: ${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
-    else if isRoot
+    else
+         if isRoot
          then rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
          else sudo rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
          fi
@@ -853,7 +861,8 @@ function download_raspbian {
          fi; return 0
     elif isFile "$ZIP_CACHE"
     then log -1 "File exists: $ZIP_CACHE"; log -1 "Skipping download"
-    else if ! wget "$URL" -nv -O "$ZIP_CACHE"
+    else
+         if ! wget "$URL" -nv -O "$ZIP_CACHE"
          then log 2 "Download failed from: $URL"; return 3
          fi
     fi
@@ -883,7 +892,8 @@ function pack_image {
          then log 0 "$TAR packed successfully"; return 0
          else log 2 "Failed packing IMG: $TAR"; return 2
          fi
-    else if sudo tar -C "$DIR" -cavf "$TAR" "$IMGNAME"
+    else
+         if sudo tar -C "$DIR" -cavf "$TAR" "$IMGNAME"
          then log 0 "$TAR packed successfully"; return 0
          else log 2 "Failed packing IMG: $TAR"; return 2
          fi
