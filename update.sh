@@ -194,31 +194,31 @@ CFG="$(jq ".params[0].value = \"$NC_VERSION\"" "$NEXTCLOUD_CONFIG")"
 Print "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
-cp -rT etc/ncp-config.d/l10n "$CONFDIR"/l10n
+cp -rT 'etc/ncp-config.d/l10n' "$CONFDIR"/l10n
 
 # these files can contain sensitive information, such as passwords
-chown -R root:www-data "$CONFDIR"
+chown -R 'root':'www-data' "$CONFDIR"
 chmod 660 "$CONFDIR"/*
 chmod 750 "$CONFDIR"/l10n
 
 # install web interface
-cp --recursive ncp-web            '/var/www/'
-chown -R www-data:www-data        '/var/www/ncp-web'
-chmod 770                         '/var/www/ncp-web'
+cp --recursive ncp-web              '/var/www/'
+chown -R 'www-data':'www-data'      '/var/www/ncp-web'
+chmod 770                           '/var/www/ncp-web'
 
 # install NC app
-rm --recursive --force            '/var/www/ncp-app'
-cp --recursive ncp-app            '/var/www/'
+rm --recursive --force              '/var/www/ncp-app'
+cp --recursive ncp-app              '/var/www/'
 
 # install ncp-previewgenerator
-rm --recursive --force            '/var/www/ncp-previewgenerator'
-cp -r ncp-previewgenerator        '/var/www/'
-chown -R www-data:                '/var/www/ncp-previewgenerator'
+rm --recursive --force              '/var/www/ncp-previewgenerator'
+cp --recursive ncp-previewgenerator '/var/www/'
+chown -R 'www-data':                '/var/www/ncp-previewgenerator'
 
 # copy NC app to nextcloud directory and enable it
-rm --recursive --force            '/var/www/nextcloud/apps/nextcloudpi'
-cp --recursive '/var/www/ncp-app' '/var/www/nextcloud/apps/nextcloudpi'
-chown -R www-data:                '/var/www/nextcloud/apps/nextcloudpi'
+rm --recursive --force              '/var/www/nextcloud/apps/nextcloudpi'
+cp --recursive '/var/www/ncp-app'   '/var/www/nextcloud/apps/nextcloudpi'
+chown -R 'www-data':                '/var/www/nextcloud/apps/nextcloudpi'
 
 # remove unwanted ncp-apps for containerized versions
 if is_docker || is_lxc

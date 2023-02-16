@@ -801,17 +801,17 @@ function install_with_shadow_workaround {
     # Subshell to trap trap :P
     (
         RESTORE_SHADOW=true
-        [[ -L /etc/shadow ]] || RESTORE_SHADOW=false
+        [[ -L '/etc/shadow' ]] || RESTORE_SHADOW=false
         [[ "$RESTORE_SHADOW" == "false" ]] || {
             trap "mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow" EXIT SIGINT SIGABRT SIGHUP
-            rm /etc/shadow; cp /data/etc/shadow /etc/shadow
+            rm '/etc/shadow'; cp '/data/etc/shadow' '/etc/shadow'
         }
         if isRoot
         then DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes "$@"
         else DEBIAN_FRONTEND=noninteractive sudo apt-get install --assume-yes "$@"
         fi
         [[ "$RESTORE_SHADOW" == "false" ]] || {
-            mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow
+            mv '/etc/shadow' '/data/etc/shadow'; ln -s '/data/etc/shadow' '/etc/shadow'
         }
         trap - EXIT SIGINT SIGABRT SIGHUP
     )
@@ -1094,7 +1094,7 @@ function get_ip {
 }
 
 function is_docker {
-    isFile /.dockerenv || isFile /.docker-image || isEqual "$DOCKERBUILD" 1
+    isFile '/.dockerenv' || isFile '/.docker-image' || isEqual "$DOCKERBUILD" 1
 }
 
 function is_lxc {
@@ -1155,7 +1155,7 @@ function set-nc-domain {
 function start_notify_push {
     pgrep notify_push &>/dev/null && return
     if isFile /.docker-image
-    then NEXTCLOUD_URL=https://localhost sudo -E -u www-data "/var/www/nextcloud/apps/notify_push/bin/${ARCH}/notify_push" --allow-self-signed /var/www/nextcloud/config/config.php &>/dev/null &
+    then NEXTCLOUD_URL='https://localhost' sudo -E -u www-data "/var/www/nextcloud/apps/notify_push/bin/${ARCH}/notify_push" --allow-self-signed '/var/www/nextcloud/config/config.php' &>/dev/null &
     else systemctl enable --now notify_push
     fi
     sleep 5 # apparently we need to make sure we wait until the database is written or something
@@ -1474,7 +1474,7 @@ RELEASE="$(    jq -r '.release'           "$NCPCFG")"
 CFG_RELEASE="$RELEASE"
 
 # The default security repository in bullseye is bullseye-security
-if grep -Eh '^deb ' /etc/apt/sources.list | grep "${RELEASE}-security" > /dev/null
+if grep -Eh '^deb ' '/etc/apt/sources.list' | grep "${RELEASE}-security" > /dev/null
 then RELEASE="${RELEASE}-security"
 fi
 
