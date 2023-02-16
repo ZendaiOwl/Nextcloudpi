@@ -1374,8 +1374,8 @@ function get_nc_config_value
 
 function clear_opcache
 {
-    # shellcheck disable=SC2155
-    local DATA_DIR="$(get_nc_config_value datadirectory)"
+    local DATA_DIR
+    DATA_DIR="$(get_nc_config_value datadirectory)"
     if isDirectory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"
     then log -1 "Clearing opcache"
          log -1 "This can take some time, please don't interrupt by closing or refreshing your browser tab"
@@ -1389,11 +1389,6 @@ function clear_opcache
 ###### VARIABLES #######
 ########################
 
-LIBRARY="$(Print "${BASH_SOURCE[0]}")"
-if isSet LIBRARY
-then log -2 "LIBRARY: $LIBRARY"
-fi
-
 CFGDIR="${CFGDIR:-etc/ncp-config.d}"
 if isDirectory "$CFGDIR"
 then CFGDIR="$CFGDIR"
@@ -1402,16 +1397,16 @@ then CFGDIR='/usr/local/etc/ncp-config.d'
 else log 2 "Directory not found: ncp-config.d"; return 1
 fi
 
-log -2 "CFGDIR: $CFGDIR"; export CFGDIR
+export CFGDIR
 
 BINDIR="${BINDIR:-/usr/local/bin/ncp}"
-log -2 "BINDIR: $BINDIR"; export BINDIR
+export BINDIR
 
 NCDIR="${NCDIR:-/var/www/nextcloud}"
-log -2 "NCDIR: $NCDIR"; export NCDIR
+export NCDIR
 
 ncc="${ncc:-/usr/local/bin/ncc}"
-log -2 "ncc: $ncc"; export ncc
+export ncc
 
 # if isFile "$ncc"; then
 #   ncc="$ncc"
@@ -1427,7 +1422,7 @@ then NCPCFG='ncp.cfg'
 else log 2 "File not found: ncp.cfg"; return 1
 fi
 
-log -2 "NCPCFG: $NCPCFG"; export NCPCFG
+export NCPCFG
 
 if ! hasCMD dpkg
 then log 2 "Missing command: dpkg"; return 1
@@ -1474,21 +1469,30 @@ fi
 
 if hasCMD ncc
 then NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-     log -2 "Found command: ncc"; log -2 "NCVER: $NCVER"
      export NCVER
-elif isSet NCVER
-then log -2 "NCVER: $NCVER"
 fi
 
 # Prevent systemd pager from blocking script execution
 export SYSTEMD_PAGER=
-log -2 "ARCH: $ARCH";               export ARCH
-log -2 "INIT_SYSTEM: $INIT_SYSTEM"; export INIT_SYSTEM
-log -2 "NCLATESTVER: $NCLATESTVER"; export NCLATESTVER
-log -2 "PHPVER: $PHPVER";           export PHPVER
-log -2 "RELEASE: $RELEASE";         export RELEASE
-log -2 "CFG_RELEASE: $CFG_RELEASE"; export CFG_RELEASE
+export ARCH
+export INIT_SYSTEM
+export NCLATESTVER
+export PHPVER
+export RELEASE
+export CFG_RELEASE
 
+# log -2 "INIT_SYSTEM: $INIT_SYSTEM"
+# log -2 "NCC: $ncc"
+# log -2 "NCVER: $NCVER"
+# log -2 "CFGDIR: $CFGDIR"
+# log -2 "NCDIR: $NCDIR"
+# log -2 "BINDIR: $BINDIR"
+# log -2 "NCPCFG: $NCPCFG"
+# log -2 "ARCH: $ARCH"
+# log -2 "NCLATESTVER: $NCLATESTVER"
+# log -2 "PHPVER: $PHPVER"
+# log -2 "RELEASE: $RELEASE"
+# log -2 "CFG_RELEASE: $CFG_RELEASE"
 
 # License
 #
