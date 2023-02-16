@@ -154,13 +154,13 @@ function installPKG {
 
 if isFile 'etc/library.sh'
 then LIBRARY='etc/library.sh'
-     # shellcheck disable=SC1090
-     source "$LIBRARY"
 elif isFile '/usr/local/etc/library.sh'
 then LIBRARY='/usr/local/etc/library.sh'
-     # shellcheck disable=SC1090
-     source "$LIBRARY"
+else log 2 "File not found: library.sh"; return 1
 fi
+
+# shellcheck disable=SC1090
+source "$LIBRARY"
 
 WEBADMIN='ncp'
 WEBPASSWD='ownyourbits'
