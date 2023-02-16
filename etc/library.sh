@@ -612,8 +612,8 @@ function clear_password_fields {
        VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
        if isMatch "$TYPE" "password"
        then VAL=""
-        fi
-        CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
+       fi
+       CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
     done
     Print "$CFG" > "$CFG_FILE"
 }
@@ -912,7 +912,7 @@ function set_app_param {
     do if isMatch "$(jq -r ".params[$i].id" "$CFG_FILE")" "$PARAM_ID"
        then PARAM_FOUND=true
             CFG="$(jq ".params[$i].value = \"$PARAM_VALUE\"" "$CFG_FILE")"
-        fi
+       fi
     done
     if notMatch "$PARAM_FOUND" "true"
     then log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"; return 1
