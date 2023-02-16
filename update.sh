@@ -132,10 +132,10 @@ then for OPT in $EXCL_DOCKER
 fi
 
 # copy all files in bin and etc
-cp --recursive bin/* /usr/local/bin/
-find etc -maxdepth 1 -type f ! -path etc/ncp.cfg -exec cp '{}' /usr/local/etc \;
-cp --no-clobber etc/ncp.cfg /usr/local/etc/ncp.cfg
-cp --recursive  etc/ncp-templates /usr/local/etc/
+cp --recursive bin/* '/usr/local/bin/'
+find 'etc' -maxdepth 1 -type f ! -path 'etc/ncp.cfg' -exec cp '{}' '/usr/local/etc' \;
+cp --no-clobber 'etc/ncp.cfg' '/usr/local/etc/ncp.cfg'
+cp --recursive  'etc/ncp-templates' '/usr/local/etc/'
 
 # install new entries of ncp-config and update others
 for FILE in etc/ncp-config.d/* # Skip directories
@@ -202,39 +202,39 @@ chmod 660 "$CONFDIR"/*
 chmod 750 "$CONFDIR"/l10n
 
 # install web interface
-cp --recursive ncp-web     /var/www/
-chown -R www-data:www-data /var/www/ncp-web
-chmod 770                  /var/www/ncp-web
+cp --recursive ncp-web            '/var/www/'
+chown -R www-data:www-data        '/var/www/ncp-web'
+chmod 770                         '/var/www/ncp-web'
 
 # install NC app
-rm --recursive --force /var/www/ncp-app
-cp --recursive ncp-app /var/www/
+rm --recursive --force            '/var/www/ncp-app'
+cp --recursive ncp-app            '/var/www/'
 
 # install ncp-previewgenerator
-rm --recursive --force     /var/www/ncp-previewgenerator
-cp -r ncp-previewgenerator /var/www/
-chown -R www-data:         /var/www/ncp-previewgenerator
+rm --recursive --force            '/var/www/ncp-previewgenerator'
+cp -r ncp-previewgenerator        '/var/www/'
+chown -R www-data:                '/var/www/ncp-previewgenerator'
 
 # copy NC app to nextcloud directory and enable it
-rm --recursive --force          /var/www/nextcloud/apps/nextcloudpi
-cp --recursive /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
-chown -R www-data:              /var/www/nextcloud/apps/nextcloudpi
+rm --recursive --force            '/var/www/nextcloud/apps/nextcloudpi'
+cp --recursive '/var/www/ncp-app' '/var/www/nextcloud/apps/nextcloudpi'
+chown -R www-data:                '/var/www/nextcloud/apps/nextcloudpi'
 
 # remove unwanted ncp-apps for containerized versions
 if is_docker || is_lxc
 then for OPT in $EXCL_DOCKER
      do rm "$CONFDIR"/"$OPT".cfg
-        find /usr/local/bin/ncp -name "${OPT}.sh" -exec rm '{}' \;
+        find '/usr/local/bin/ncp' -name "${OPT}.sh" -exec rm '{}' \;
      done
 fi
 
 # update services for docker
 if is_docker
-then cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} /etc/services-enabled.d
+then cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} '/etc/services-enabled.d'
 fi
 
 # only live updates from here
-[[ -f /.ncp-image ]] && exit 0
+[[ -f '/.ncp-image' ]] && exit 0
 
 # update old images
 ./run_update_history.sh "$UPDATESDIR"
@@ -256,21 +256,21 @@ then NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
 
      CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
      CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
-     Print "$CFG" > /usr/local/etc/ncp-recommended.cfg
+     Print "$CFG" > '/usr/local/etc/ncp-recommended.cfg'
 
-     [[ -f /.dockerenv ]] && \
+     [[ -f '/.dockerenv' ]] && \
         MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
         MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
         Print "$MSG"
         notify_admin "New distribution available" "$MSG"
         wall "$MSG"
-        cat > /etc/update-motd.d/30ncp-dist-upgrade <<EOF
+        cat > '/etc/update-motd.d/30ncp-dist-upgrade' <<EOF
 #!/usr/bin/env bash
 NEW_CFG=/usr/local/etc/ncp-recommended.cfg
 [[ -f "\$NEW_CFG" ]] || exit 0
 echo -e "$MSG"
 EOF
-        chmod +x /etc/update-motd.d/30ncp-dist-upgrade
+        chmod +x '/etc/update-motd.d/30ncp-dist-upgrade'
 fi
 
 # TODO: Change this to use find instead of ls

@@ -617,23 +617,23 @@ else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1
 fi
 
 if isFile 'lamp.sh'
-then install_app lamp.sh
+then install_app 'lamp.sh'
 else log 2 "File not found: lamp.sh"; exit 1
 fi
 
 if isFile 'bin/ncp/CONFIG/nc-nextcloud.sh'
-then install_app bin/ncp/CONFIG/nc-nextcloud.sh
+then install_app 'bin/ncp/CONFIG/nc-nextcloud.sh'
 else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1
 fi
 
 if isFile 'bin/ncp/CONFIG/nc-nextcloud.sh'
-then run_app_unsafe bin/ncp/CONFIG/nc-nextcloud.sh
+then run_app_unsafe 'bin/ncp/CONFIG/nc-nextcloud.sh'
 else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1
 fi
 
 # armbian overlay is ro
 if isFile '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
-then rm /usr/local/etc/ncp-config.d/nc-nextcloud.cfg
+then rm '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
 else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-nextcloud.cfg"; exit 1
 fi
 
@@ -641,18 +641,18 @@ fi
 systemctl restart mysqld
 
 if isFile 'ncp.sh'
-then install_app ncp.sh
+then install_app 'ncp.sh'
 else log 2 "File not found: ncp.sh"; exit 1
 fi
 
 if isFile 'bin/ncp/CONFIG/nc-init.sh'
-then run_app_unsafe bin/ncp/CONFIG/nc-init.sh
+then run_app_unsafe 'bin/ncp/CONFIG/nc-init.sh'
 else log 2 "File not found: bin/ncp/CONFIG/nc-init.sh"; exit 1
 fi
 
 log -1 "Moving data directory to: /opt/ncdata"
 df -h
-mkdir --parents /opt/ncdata
+mkdir --parents '/opt/ncdata'
 
 if ! isFile "/usr/local/etc/ncp-config.d/nc-datadir.cfg"
 then should_rm_datadir_cfg=true
@@ -683,7 +683,7 @@ fi
 # Skip on Armbian / Vagrant / LXD
 if notZero "$CODE_DIR"
 then if isFile '/usr/local/bin/ncp-provisioning.sh'
-     then bash /usr/local/bin/ncp-provisioning.sh
+     then bash '/usr/local/bin/ncp-provisioning.sh'
      else log 2 "File not found: /usr/local/bin/ncp-provisioning.sh"; exit 1
      fi
 fi

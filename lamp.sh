@@ -420,14 +420,14 @@ function install {
     local DBPASSWD="default" DBPID
     
     # Setup apt repository for php 8
-    wget -O /etc/apt/trusted.gpg.d/php.gpg "$PHPREPO_GPGKEY"
+    wget -O '/etc/apt/trusted.gpg.d/php.gpg' "$PHPREPO_GPGKEY"
     echo "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
     updatePKG
     installPKG apt-utils cron curl apache2
 
-    ls -l /var/lock || true
+    ls -l '/var/lock' || true
     # Fix missing lock directory
-    mkdir --parents /run/lock
+    mkdir --parents '/run/lock'
     apache2ctl -V || true
 
     # Create systemd users to keep uids persistent between containers
@@ -478,7 +478,7 @@ function install {
     a2enmod mime
     a2enmod ssl
 
-    Print "ServerName localhost" >> /etc/apache2/apache2.conf
+    Print "ServerName localhost" >> '/etc/apache2/apache2.conf'
 
 
     ################################
