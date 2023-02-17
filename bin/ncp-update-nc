@@ -321,7 +321,8 @@ fi
 # pre-checks
 ####################
 if isZero "$VER"
-then log 2 "Usage: $BIN <version>"; exit 1
+then log 2 "Usage: $BIN <version>"
+     exit 1
 fi
 
 if isFile '/.docker-image'
@@ -332,14 +333,34 @@ fi
 log -2 "BASEDIR: $BASEDIR"
 
 if ! cd "$BASEDIR"
-then log 2 "Failed to change directory to: $BASEDIR"; exit 1
+then log 2 "Failed to change directory to: $BASEDIR"
+     exit 1
 fi
 
 DATADIR="$(get_nc_config_value datadirectory)"
-ncc status &>/dev/null          || { [[ "$DBG" == "x" ]] && ncc status; log 2 "Nextcloud is currently down"; exit 1; }
-[[ -d /var/www/nextcloud-old ]] && { log 2 "Nextcloud backup directory found. Interrupted or already running installation?"; exit 1; }
-[[ -d /var/www/nextcloud     ]] || { log 2 "Nextcloud directory not found"; exit 1; }
-[[ -d "$DATADIR"             ]] || { log 2 "Nextcloud data directory not found"; exit 1; }
+
+if ! ncc status &>/dev/null
+then if [[ "$DBG" == "x" ]]
+     then ncc status
+          log 2 "Nextcloud is currently down"
+          exit 1
+     fi
+fi
+
+if [[ -d '/var/www/nextcloud-old' ]]
+then log 2 "Nextcloud backup directory found. Interrupted or already running installation?"
+     exit 1
+fi
+
+if [[ ! -d '/var/www/nextcloud' ]]
+then log 2 "Directory not found: /var/www/nextcloud"
+     exit 1
+fi
+
+if [[ ! -d "$DATADIR" ]]
+then log 2 "Directory not found: $DATADIR"
+     exit 1
+fi
 
 # check version
 ####################
@@ -360,13 +381,20 @@ if [[ "$MAJOR_NEW" -ge 24 ]] && [[ "$(lsb_release -r)" =~ .*10 ]]
 then log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 10 (Buster). Please run ncp-dist-upgrade."; exit 1
 fi
 
-grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT" || { echo "Malformed version $CURRENT"; exit 1; }
-grep -qP "\d+\.\d+\.\d+" <<<"$VER"     || { echo "Malformed version $VER"    ; exit 1; }
+if ! grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT"
+then Print "Invalid version: $CURRENT"; exit 1
+fi
+
+if ! grep -qP "\d+\.\d+\.\d+" <<<"$VER"
+then Print "Invalid version: $VER"; exit 1
+fi
 
 log -1 "Current Nextcloud version: $CURRENT"
 log -1 "Available Nextcloud version: $VER"
 
-is_more_recent_than "$VER" "$CURRENT" || { log -1 "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
+if ! is_more_recent_than "$VER" "$CURRENT" 
+then log -1 "Nothing to update"; exit 1 # we want `exit 1` so the autoupdate doesn't notify success in this case
+fi
 
 
 if ! is_more_recent_than '25.0.0' "$VER" \
@@ -387,7 +415,9 @@ function cleanup {
     local RET="$?"
     set +eE
     Print "Cleanup"
-    rm --recursive --force "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
+    if ! rm --recursive --force "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
+    then log 2 "Failed to remove: $BASEDIR/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
+    fi
     trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
     exit "$RET"
 }
@@ -398,16 +428,19 @@ trap 'cleanup' EXIT SIGHUP SIGILL SIGABRT SIGINT
 ####################
 URL="https://download.nextcloud.com/server/releases/nextcloud-$VER.tar.bz2"
 log -1 "Downloading Nextcloud: $VER"
-wget -q "$URL" -O nextcloud.tar.bz2 || { log 2 "Error downloading"; exit 1; }
+if ! wget -q "$URL" -O 'nextcloud.tar.bz2'
+then log 2 "Failed to download: Nextcloud $VER"
+     exit 1
+fi
 
 # backup
 ####################
 BKPDIR="$BASEDIR"
-WITH_DATA=no
-COMPRESSED=yes
+WITH_DATA='no'
+COMPRESSED='yes'
 LIMIT=0
 
-Print "Backup current instance"
+Print "Creating backup"
 set +eE
 ncp-backup "$BKPDIR" "$WITH_DATA" "$COMPRESSED" "$LIMIT" # && false # test point
 RET="$?"
@@ -418,21 +451,36 @@ set -eE
 # shellcheck disable=SC2012
 BKP_="$( ls -1t "$BKPDIR"/nextcloud-bkp_*.tar.gz 2>/dev/null | head -1 )"
 
-[[ -f "$BKP_"  ]] || {                  set +eE; log 2 "Error backing up"; false || cleanup; }
-[[ "$RET" -ne 0  ]] && { rm -f "$BKP_"; set +eE; log 2 "Error backing up"; false || cleanup; }
+if [[ ! -f "$BKP_"  ]]
+then set +eE
+     log 2 "Error backing up"
+     false || cleanup
+fi
+
+if [[ "$RET" -ne 0  ]]
+then rm --force "$BKP_"
+     set +eE
+     log 2 "Error backing up"
+     false || cleanup
+fi
+
 BKP="$(dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
 Print "Storing backup at: $BKP"
 mv "$BKP_" "$BKP"
 
 # simple restore if anything fails from here
 ####################
-rollback_simple() {
+function rollback_simple () {
     set +eE
     trap "" INT TERM HUP ERR
     Print "Abort" "Simple rollback"
-    rm --recursive --force "$BASEDIR"/nextcloud
-    mv "$BASEDIR"/nextcloud-old "$BASEDIR"/nextcloud
-    false || cleanup                 # so cleanup exits with 1
+    if ! rm --recursive --force "$BASEDIR"/nextcloud
+    then log 2 "Failed to remove: $BASEDIR/nextcloud"
+    fi
+    if ! mv "$BASEDIR"/nextcloud-old "$BASEDIR"/nextcloud
+    then log 2 "Failed to move $BASEDIR/nextcloud-old to $BASEDIR/nextcloud"
+    fi
+    false || cleanup # so cleanup exits with 1
 }
 
 trap 'rollback_simple' INT TERM HUP ERR
@@ -440,23 +488,23 @@ trap 'rollback_simple' INT TERM HUP ERR
 # replace code
 ####################
 Print "Installing Nextcloud: $VER"
-mv -T nextcloud nextcloud-old
-tar -xf nextcloud.tar.bz2             # && false # test point
-rm --recursive --force /var/www/nextcloud.tar.bz2
+mv -T                  'nextcloud nextcloud-old'
+tar -xf                'nextcloud.tar.bz2'     # && false # test point
+rm --recursive --force '/var/www/nextcloud.tar.bz2'
 
 # copy old config
 ####################
-cp nextcloud-old/config/config.php nextcloud/config/
+cp 'nextcloud-old/config/config.php' 'nextcloud/config/'
 
 # copy old themes
 ####################
-cp -raT nextcloud-old/themes/ nextcloud/themes/
+cp -raT 'nextcloud-old/themes/' 'nextcloud/themes/'
 
 # copy old NCP apps
 ####################
 for APP in nextcloudpi previewgenerator
 do if [[ -d nextcloud-old/apps/"$APP" ]]
-   then cp -r -L nextcloud-old/apps/"$APP" /var/www/nextcloud/apps/
+   then cp -r -L nextcloud-old/apps/"$APP" '/var/www/nextcloud/apps/'
    fi
 done
 
@@ -466,31 +514,65 @@ done
 ####################
 if [[ "$DATADIR" == "/var/www/nextcloud/data" ]] || [[ "$DATADIR" == "/data/nextcloud/data" ]]
 then Print "Restoring data"
-     mv -T nextcloud-old/data nextcloud/data
+     if ! mv -T 'nextcloud-old/data' 'nextcloud/data'
+     then log 2 "Failed to move nextcloud-old/data to nextcloud/data"
+          exit 1
+     fi
 fi
 
 # nc-restore if anything fails from here
 ####################
-rollback() {
+function rollback () {
     set +eE
     trap "" INT TERM HUP ERR EXIT
     Print "Abort" "Doing cleanup"
-    rm -rf /var/www/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
-    log -1 "Rollback to backup: $BKP"
+    
+    if ! rm --recursive --force '/var/www/nextcloud.tar.bz2' "$BASEDIR"/nextcloud-old
+    then log 2 "Failed to remove: /var/www/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
+         exit 1
+    fi
+
     local TMPDATA
+    log -1 "Rollback to backup: $BKP"
     mkdir --parents "${BASEDIR}/recovery/"
-    TMPDATA="$(mktemp -d "$BASEDIR/recovery/ncp-data.XXXXXX")" || { log 2 "Failed to create temp dir" >&2; exit 1; }
-    [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && mv -T "$DATADIR" "$TMPDATA"
-    ncp-restore "$BKP" || { log 2 "Rollback failed! Data left at: $TMPDATA"; exit 1; }
-    [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]] && { rm --recursive --force "$DATADIR"; mv -T "$TMPDATA" "$DATADIR"; }
-    rm "$BKP"; log 0 "Rollback successful. Nothing was updated"; exit 1
+    
+    if ! TMPDATA="$(mktemp -d "$BASEDIR/recovery/ncp-data.XXXXXX")"
+    then log 2 "Failed to create temp dir" >&2
+         exit 1
+    fi
+    
+    if [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]]
+    then mv -T "$DATADIR" "$TMPDATA"
+    fi
+    
+    if ! ncp-restore "$BKP"
+    then log 2 "Rollback failed! Data left at: $TMPDATA"
+         exit 1
+    fi
+    
+    if [[ "$DATADIR" == "$BASEDIR/nextcloud/data" ]]
+    then if ! rm --recursive --force "$DATADIR"
+         then log 2 "Failed to remove: $DATADIR"
+              exit 1
+         fi
+         if ! mv -T "$TMPDATA" "$DATADIR"
+         then log 2 "Failed to move $TMPDATA to $DATADIR"
+              exit 1
+         fi
+    fi
+    
+    if ! rm "$BKP"
+    then log 2 "Failed to remove: $BKP"
+         exit 1
+    fi
+    log 0 "Rollback successful. Nothing was updated"; exit 1
 }
 trap 'rollback' INT TERM HUP ERR
 
 # fix permissions
 ####################
 log -1 "Fix permissions"
-chown -R www-data:www-data nextcloud
+chown -R 'www-data':'www-data' nextcloud
 find nextcloud/ -type d -exec chmod 750 {} \;
 find nextcloud/ -type f -exec chmod 640 {} \;
 
@@ -499,37 +581,46 @@ find nextcloud/ -type f -exec chmod 640 {} \;
 log -1 "Upgrade"
 ncc=(sudo -u www-data php nextcloud/occ)
 "${ncc[@]}" upgrade      # && false # test point
-"${ncc[@]}" | grep -q db:add-missing-indices && "${ncc[@]}" db:add-missing-indices -n
-"${ncc[@]}" | grep -q db:add-missing-columns && "${ncc[@]}" db:add-missing-columns -n
+"${ncc[@]}" | grep -q db:add-missing-indices      && "${ncc[@]}" db:add-missing-indices -n
+"${ncc[@]}" | grep -q db:add-missing-columns      && "${ncc[@]}" db:add-missing-columns -n
 "${ncc[@]}" | grep -q db:add-missing-primary-keys && "${ncc[@]}" db:add-missing-primary-keys -n
 "${ncc[@]}" | grep -q db:convert-filecache-bigint && "${ncc[@]}" db:convert-filecache-bigint -n
 
 # use the correct version for custom apps
 NCVER="$(ncc status | grep "version:" | awk '{ print $3 }')"
-if is_more_recent_than "21.0.0" "$NCVER"
+if is_more_recent_than '21.0.0' "$NCVER"
 then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
 else
      if ! is_app_enabled notify_push # Install notify_push if not installed
      then "${ncc[@]}" app:install notify_push
           "${ncc[@]}" app:enable  notify_push
-          install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf
-          a2enmod proxy proxy_http proxy_wstunnel
+          install_template 'nextcloud.conf.sh' '/etc/apache2/sites-available/nextcloud.conf'
+
+          a2enmod proxy \
+                  proxy_http \
+                  proxy_wstunnel
           apachectl -k graceful
+          
           ## make sure the notify_push daemon is runnnig
-          install_template systemd/notify_push.service.sh /etc/systemd/system/notify_push.service
+          install_template 'systemd/notify_push.service.sh' '/etc/systemd/system/notify_push.service'
           start_notify_push
+
           NC_DOMAIN="$(ncc config:system:get overwrite.cli.url)"
-          set-nc-domain "$NC_DOMAIN" || {
-              log 2 "notify_push setup failed. Are you behind a proxy?"
-              log -1 "Run: 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
-              log -1 "Check https://help.nextcloud.com/tags/ncp for support"
-          }
+          if ! set-nc-domain "$NC_DOMAIN"
+          then log 2 "notify_push setup failed. Are you behind a proxy?"
+               log -1 "Run: 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
+               log -1 "Check https://help.nextcloud.com/tags/ncp for support"
+          fi
      fi
-     NCPREV=/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21
+     NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
 fi
 
-rm --recursive --force /var/www/nextcloud/apps/previewgenerator
-ln -snf "$NCPREV" /var/www/nextcloud/apps/previewgenerator
+if ! rm --recursive --force '/var/www/nextcloud/apps/previewgenerator'
+then log 2 "Failed to remove: /var/www/nextcloud/apps/previewgenerator"
+     exit 1
+fi
+
+ln -snf "$NCPREV"      '/var/www/nextcloud/apps/previewgenerator'
 
 if ! is_docker \
 && ! is_more_recent_than "24.0.0" "$NCVER" \
@@ -548,38 +639,54 @@ then (
             set +e
             service "php${PHPVER_NEW}-fpm" stop
             a2disconf php"$PHPVER_NEW"-fpm
-            rm /etc/apt/sources.list.d/php.list
-            apt-get update
-            apt-get remove --purge -y "${PHP_PACKAGES_NEW[@]}"
-            apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_OLD[@]}"
-            set_ncpcfg "php_version" "$PHPVER_OLD"
-            install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
-            run_app nc-limits
+            rm '/etc/apt/sources.list.d/php.list'
+
+            apt-get update  --assume-yes
+            apt-get remove  --assume-yes --purge "${PHP_PACKAGES_NEW[@]}"
+            apt-get install --assume-yes --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_OLD[@]}"
+
+            set_ncpcfg 'php_version' "$PHPVER_OLD"
+            install_template 'php/opcache.ini.sh' "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
+            run_app 'nc-limits'
             a2enconf php"$PHPVER_OLD"-fpm
             service php"$PHPVER_OLD"-fpm start
             service apache2 restart
             log 0 "PHP upgrade has successfully been reverted"
             set -e
         }
-        trap php_restore INT TERM HUP ERR
+
+        trap 'php_restore' INT TERM HUP ERR
+
         # Setup apt repository for php 8
-        wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-        Print "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > /etc/apt/sources.list.d/php.list
-        apt-get update
+        wget -O '/etc/apt/trusted.gpg.d/php.gpg' 'https://packages.sury.org/php/apt.gpg'
+        Print "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > '/etc/apt/sources.list.d/php.list'
+        apt-get update --assume-yes
         clear_opcache
+
         log -1 "Stopping apache and php-fpm..."
         service php"$PHPVER_OLD"-fpm stop
         service apache2 stop
+
         log -1 "Remove old PHP ($PHPVER_OLD)..."
         a2disconf php"$PHPVER_OLD"-fpm
-        apt-get remove --purge -y "${PHP_PACKAGES_OLD[@]}"
+        apt-get remove --purge --assume-yes "${PHP_PACKAGES_OLD[@]}"
+
         log -1 "Installing PHP: $PHPVER_NEW"
         install_with_shadow_workaround --no-install-recommends systemd
-        apt-get install -y --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_NEW[@]}"
-        set_ncpcfg "php_version" "$PHPVER_NEW"
-        install_template "php/opcache.ini.sh" "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
-        ( set -e; export PHPVER="$PHPVER_NEW"; run_app nc-limits )
+        apt-get install --assume-yes --no-install-recommends -t "$RELEASE" "${PHP_PACKAGES_NEW[@]}"
+
+        set_ncpcfg 'php_version' "$PHPVER_NEW"
+
+        install_template 'php/opcache.ini.sh' "/etc/php/${PHPVER_NEW}/mods-available/opcache.ini"
+
+        (
+            set -e
+            export PHPVER="$PHPVER_NEW"
+            run_app 'nc-limits'
+        )
+
         a2enconf php"$PHPVER_NEW"-fpm
+        
         Print "Starting apache and php-fpm"
         service php"$PHPVER_NEW"-fpm start
         service apache2 start
@@ -587,18 +694,18 @@ then (
      )
      # Reload library.sh to reset PHPVER
      # shellcheck disable=SC1091
-     source /usr/local/etc/library.sh
+     source '/usr/local/etc/library.sh'
 fi
 
 # refresh completions
-ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
+ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > '/usr/share/bash-completion/completions/ncp'
 
 log 0 "Update complete"
 
 ####################
-mkdir --parents            "$DATADIR"/ncp-update-backups
-mv                  "$BKP" "$DATADIR"/ncp-update-backups
-chown -R www-data:www-data "$DATADIR"/ncp-update-backups
+mkdir --parents                "$DATADIR"/ncp-update-backups
+mv                      "$BKP" "$DATADIR"/ncp-update-backups
+chown -R 'www-data':'www-data' "$DATADIR"/ncp-update-backups
 BKP="${DATADIR}/ncp-update-backups/$(basename "$BKP")"
 log -1 "Backup stored at: $BKP"
 

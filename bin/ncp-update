@@ -50,16 +50,20 @@ function clean_ncp_update {
     fi
 }
 
-[[ -z "$DBG" ]] || set -"$DBG"
+if [[ -n "$DBG" ]]
+then set -"$DBG"
+fi
 
-if [[ -f /.dockerenv ]] \
-|| [[ -f /.docker-image ]] \
+if [[ -f '/.dockerenv' ]] \
+|| [[ -f '/.docker-image' ]] \
 || [[ "$DOCKERBUILD" == 1 ]]
 then log 1 "Docker images should be updated by replacing the container from the latest docker image.
 Refer to the documentation for instructions: https://docs.nextcloudpi.com
 If you are sure that you know what you are doing, you can still execute the update script by running it like this:
 ALLOW_UPDATE_SCRIPT=1 ncp-update"
-     [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
+     if [[ "$ALLOW_UPDATE_SCRIPT" != "1" ]]
+     then exit 1
+     fi
 fi
 
 {
@@ -72,49 +76,69 @@ fi
     REPO="${REPO:-nextcloudpi}"
     BRANCH="${1:-master}"
     
-    [[ "$BRANCH" != "master" ]] && log -1 "Updating to development branch: $BRANCH"
+    if [[ "$BRANCH" != "master" ]]
+    then log -1 "Updating to development branch: $BRANCH"
+    fi
     
     TMPDIR="$(mktemp -d /tmp/ncp-update.XXXXXX || {( log 2 "Failed to create temp dir. Exiting"; exit 1; )})"
     trap 'clean_ncp_update' EXIT SIGHUP SIGILL SIGABRT SIGINT
     
     log -1 "Downloading updates"
-    git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR" || {
-        log 2 "No internet connectivity"; exit 1
-    }
+    if ! git clone --depth 20 -b "$BRANCH" -q https://github.com/"$OWNER"/"$REPO".git "$TMPDIR"
+    then log 2 "Failed to download updates from repository"; exit 1
+    fi
     
     # shellcheck disable=SC2164
-    [[ -f /.ncp-image ]] || {
-        # Update locally during build
-        if ! cd "$TMPDIR"
-        then log 2 "Failed to change directory to: $TMPDIR"; exit 1
+    if [[ ! -f '/.ncp-image' ]]
+    then # Update locally during build
+         if ! cd "$TMPDIR"
+         then log 2 "Failed to change directory to: $TMPDIR"; exit 1
+         fi
+         if [[ -n "$2" ]]
+         then if ! git fetch origin "$2"
+              then log 2 "Could not fetch: $2"; exit 1
+              fi
+              if ! git checkout FETCH_HEAD
+              then log 2 "Failed to git checkout: FETCH_HEAD"; exit 1
+              fi
         fi
-        [[ -z "$2" ]] || {
-            git fetch origin "$2" || {
-                log 2 "Could not fetch: $2"; exit 1
-            }
-        git checkout FETCH_HEAD
-        }
-    }
+    fi
     
     log -1 "Performing updates"
-    ./update.sh || exit "$?"
+    if ! ./update.sh
+    then log 2 "Update failed"; exit "$?"
+    fi
     
-    cd "$TMPDIR" || exit 1
+    if ! cd "$TMPDIR"
+    then log 2 "Failed to change directory to: $TMPDIR"; exit 1
+    fi
     git describe --always --tags --abbrev=0 2>/dev/null | grep -qoP "v\d+\.\d+\.\d+" || git fetch --unshallow --tags -q
     VER="$(git describe --always --tags --abbrev=0 | grep -oP "v\d+\.\d+\.\d+")"
     
     # check format
     grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || {
-        git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
-        cd "$TMPDIR"/temporary || exit 1
+        if ! git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
+        then log 2 "Failed to clone repository to: $TMPDIR/temporary"; exit 1
+        fi
+        
+        if ! cd "$TMPDIR"/temporary
+        then log 2 "Failed to change directory to: $TMPDIR/temporary"; exit 1
+        fi
+        
         VER="$(git describe --tags "$(git rev-list --tags --max-count=1)" | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; } )"
         Print "$VER" > "$TMPDIR"/version
-        cd "$TMPDIR" || exit 1
-        rm --recursive --force "$TMPDIR"/temporary
+
+        if ! cd "$TMPDIR"
+        then log 2 "FAiled to change directory to: $TMPDIR"; exit 1
+        fi
+        
+        if ! rm --recursive --force "$TMPDIR"/temporary
+        then log 2 "Failed to remove directory: $TMPDIR/temporary"; exit 1
+        fi
     }
     
-    cat "$TMPDIR"/version > /usr/local/etc/ncp-version
-    cat "$TMPDIR"/version > /var/run/.ncp-latest-version
+    cat "$TMPDIR"/version > '/usr/local/etc/ncp-version'
+    cat "$TMPDIR"/version > '/var/run/.ncp-latest-version'
     rm "$TMPDIR"/version
     
     VER="$(cat /usr/local/etc/ncp-version)"
@@ -124,7 +148,7 @@ fi
             --pretty=format:"[%D] %s" --date=short | \
             grep 'tag: v' | \
             sed '/HEAD ->\|origin/s|\[.*\(tag: v[0-9]\+\.[0-9]\+\.[0-9]\+\).*\]|[\1]|' | \
-            sed 's|* \[tag: |[|' > /usr/local/etc/ncp-changelog
+            sed 's|* \[tag: |[|' > '/usr/local/etc/ncp-changelog'
     
     log 0 "NextcloudPi updated to: $VER"; exit 0
 

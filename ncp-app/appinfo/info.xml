@@ -5,7 +5,7 @@
     <name>NextcloudPi</name>
     <summary>Nextcloud management tools</summary>
     <description><![CDATA[NextcloudPi features a preconfigured Nextcloud instance and a complete set of tools around it for easy management.]]></description>
-    <version>0.0.1</version>
+    <version>0.2.1</version>
     <licence>agpl</licence>
     <author mail="nachoparker@ownyourbits.com" homepage="https://ownyourbits.com">nachoparker</author>
     <namespace>NextcloudPi</namespace>

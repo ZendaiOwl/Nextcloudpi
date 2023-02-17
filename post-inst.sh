@@ -28,9 +28,9 @@ function configure {
             done
         
         # clean packages and installation logs
-        apt-get autoremove -y
+        apt-get autoremove --assume-yes
         apt-get clean
-        rm /var/lib/apt/lists/* -r
+        rm --recursive /var/lib/apt/lists/*
         find '/var/log' -type f -exec rm {} \;
         
         # clean build flags
