@@ -8,48 +8,56 @@
 # More at https://ownyourbits.com/
 #
 
-
-is_active()
-{
-  local DIR=$( swapon -s | sed -n 2p | awk '{ print $1 }' )
-  [[ "$DIR" != "" ]] && [[ "$DIR" != "/var/swap" ]]
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
 }
 
-configure()
-{
-  local ORIG="$( swapon | tail -1 | awk '{ print $1 }' )"
-  local DSTDIR="$(dirname "$SWAPFILE")"
-  [[ "$ORIG" == "$SWAPFILE" ]] && { echo "nothing to do";                    return 0; }
-  [[ -d "$SWAPFILE"         ]] && { echo "$SWAPFILE is a directory. Abort"; return 1; }
-  [[ -d "$DSTDIR"            ]] || { echo "$DSTDIR Doesn't exist. Abort";     return 1; }
+function is_active () {
+    local DIR
+    DIR="$( swapon -s | sed -n 2p | awk '{ print $1 }' )"
+    [[ "$DIR" != "" ]] && [[ "$DIR" != '/var/swap' ]]
+}
 
-  [[ "$( stat -fc%T "$DSTDIR" )" == "btrfs" ]] && {
-    echo "BTRFS doesn't support swapfiles. You can still use nc-zram"
+function configure () {
+    local ORIG DSTDIR
+    ORIG="$(swapon | tail -1 | awk '{ print $1 }')"
+    DSTDIR="$(dirname "$SWAPFILE")"
+    [[ "$ORIG" == "$SWAPFILE" ]] && { Print "Nothing to do";                return 0; }
+    [[ -d "$SWAPFILE"         ]] && { Print "Is a directory: $SWAPFILE";    return 1; }
+    [[ -d "$DSTDIR"           ]] || { Print "Directory not found: $DSTDIR"; return 1; }
+    
+    [[ "$( stat -fc%T "$DSTDIR" )" == "btrfs" ]] && {
+        Print "BTRFS doesn't support swapfiles. You can still use nc-zram"
+        return 1
+    }
+
+    if [[ "$(stat -fc%d /)" == "$(stat -fc%d "$DSTDIR")" ]]
+    then Print "Moving swapfile to another place in the same SD card" \
+               "If you want to use an external mount, make sure it is properly set up"
+    fi
+    
+    sed -i "s|#\?CONF_SWAPFILE=.*|CONF_SWAPFILE=$SWAPFILE|" '/etc/dphys-swapfile'
+    sed -i "s|#\?CONF_SWAPSIZE=.*|CONF_SWAPSIZE=$SWAPSIZE|" '/etc/dphys-swapfile'
+    grep -q vm.swappiness '/etc/sysctl.conf' || Print "vm.swappiness = 10" >> '/etc/sysctl.conf' && sysctl --load &>/dev/null
+
+    if dphys-swapfile setup && dphys-swapfile swapon
+    then if [[ -f "$ORIG" ]] && swapoff "$ORIG"
+         then rm --force "$ORIG"
+              Print "Successfully moved: swapfile"
+              return 0
+         fi
+    fi
+
+    Print "Failed to move: swapfile"
     return 1
-  }
-
-  [[ $( stat -fc%d / ) == $( stat -fc%d "$DSTDIR" ) ]] && \
-    echo -e "INFO: moving swapfile to another place in the same SD card\nIf you want to use an external mount, make sure it is properly set up"
-
-  sed -i "s|#\?CONF_SWAPFILE=.*|CONF_SWAPFILE=$SWAPFILE|" /etc/dphys-swapfile
-  sed -i "s|#\?CONF_SWAPSIZE=.*|CONF_SWAPSIZE=$SWAPSIZE|" /etc/dphys-swapfile
-  grep -q vm.swappiness /etc/sysctl.conf || echo "vm.swappiness = 10" >> /etc/sysctl.conf && sysctl --load &>/dev/null
-
-  dphys-swapfile setup && dphys-swapfile swapon && {
-    [[ -f "$ORIG" ]] && swapoff "$ORIG" && rm -f "$ORIG"
-    echo "swapfile moved successfully"
-    return 0
-  }
-
-  echo "moving swapfile failed"
-  return 1
 }
 
-install()
-{
-  if [[ "$(stat -fc%T /var)" != "btrfs" ]]; then
-    apt_install dphys-swapfile
-  fi
+function install () {
+    if [[ "$(stat -fc%T /var)" != "btrfs" ]]
+    then apt_install dphys-swapfile
+    fi
 }
 
 

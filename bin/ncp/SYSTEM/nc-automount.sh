@@ -9,16 +9,15 @@
 #
 
 
-install()
-{
-  apt-get update
-  apt-get install -y --no-install-recommends udiskie inotify-tools
-
-  cat > /etc/udev/rules.d/99-udisks2.rules <<'EOF'
+function install () {
+    apt-get update
+    apt-get install -y --no-install-recommends udiskie inotify-tools
+    
+    cat > '/etc/udev/rules.d/99-udisks2.rules' <<'EOF'
 ENV{ID_FS_USAGE}=="filesystem|other|crypto", ENV{UDISKS_FILESYSTEM_SHARED}="1"
 EOF
 
-  cat > /usr/lib/systemd/system/nc-automount.service <<'EOF'
+    cat > '/usr/lib/systemd/system/nc-automount.service' <<'EOF'
 [Unit]
 Description=Automount USB drives
 Before=mysqld.service dphys-swapfile.service fail2ban.service smbd.service nfs-server.service
@@ -32,7 +31,7 @@ ExecStart=/usr/bin/udiskie -NTFv
 WantedBy=multi-user.target
 EOF
 
-  cat > /usr/lib/systemd/system/nc-automount-links.service <<'EOF'
+    cat > '/usr/lib/systemd/system/nc-automount-links.service' <<'EOF'
 [Unit]
 Description=Monitor /media for mountpoints and create USBdrive* symlinks
 Before=nc-automount.service
@@ -45,79 +44,75 @@ ExecStart=/usr/local/etc/nc-automount-links-mon
 WantedBy=multi-user.target
 EOF
 
-  cat > /usr/local/etc/nc-automount-links <<'EOF'
+    cat > '/usr/local/etc/nc-automount-links' <<'EOF'
 #!/usr/bin/env bash
 
-ls -d /media/* &>/dev/null && {
-
-  # remove old links
-  for l in $( ls /media/ ); do
-    test -L /media/"$l" && rm /media/"$l"
-  done
-
-  # create links
-  i=0
-  for d in $( ls -d /media/* 2>/dev/null ); do
-    if [ $i -eq 0 ]; then
-      test -e /media/USBdrive   || test -d "$d" && ln -sT "$d" /media/USBdrive
-    else
-      test -e /media/USBdrive$i || test -d "$d" && ln -sT "$d" /media/USBdrive$i
-    fi
-    i=$(( i + 1 ))
-  done
-
-}
+if ls -d /media/* &>/dev/null
+then # remove old links
+     for l in $(ls /media/)
+     do [[ -L /media/"$l" ]] && rm /media/"$l"
+     done
+     
+     # create links
+     i=0
+     for d in $(ls -d /media/* 2>/dev/null)
+     do if [[ $i -eq 0 ]]
+        then [[ -e '/media/USBdrive' ]] || [[ -d "$d" ]] && ln -sT "$d" "/media/USBdrive"
+        else [[ -e /media/USBdrive$i ]] || [[ -d "$d" ]] && ln -sT "$d" "/media/USBdrive$i"
+        fi
+        i="$(("$i" + 1))"
+     done
+fi
 EOF
-  chmod +x /usr/local/etc/nc-automount-links
+    chmod +x '/usr/local/etc/nc-automount-links'
 
-  cat > /usr/local/etc/nc-automount-links-mon <<'EOF'
+    cat > '/usr/local/etc/nc-automount-links-mon' <<'EOF'
 #!/usr/bin/env bash
 inotifywait --monitor --event create --event delete --format '%f %e' /media/ | \
-  grep --line-buffered ISDIR | while read f; do
-    echo $f
-    sleep 0.5
-    /usr/local/etc/nc-automount-links
+  grep --line-buffered ISDIR | while read f
+  do echo "$f"
+     sleep 0.5
+     /usr/local/etc/nc-automount-links
 done
 EOF
-  chmod +x /usr/local/etc/nc-automount-links-mon
+    chmod +x '/usr/local/etc/nc-automount-links-mon'
 }
 
-configure()
-{
-  [[ $ACTIVE != "yes" ]] && {
-    systemctl disable --now nc-automount
-    systemctl disable --now nc-automount-links
-    rm -rf /etc/systemd/system/{mariadb,nfs-server,dphys-swapfile,fail2ban}.service.d
-    systemctl daemon-reload
-    echo "automount disabled"
-    return 0
-  }
-  systemctl enable  --now nc-automount
-  systemctl enable  --now nc-automount-links
-
-  # create delays in some units
-  mkdir -p /etc/systemd/system/mariadb.service.d
-  cat > /etc/systemd/system/mariadb.service.d/ncp-delay-automount.conf <<'EOF'
+function configure () {
+    if [[ "$ACTIVE" != "yes" ]]
+    then systemctl disable --now nc-automount
+         systemctl disable --now nc-automount-links
+         rm --recursive --force /etc/systemd/system/{mariadb,nfs-server,dphys-swapfile,fail2ban}.service.d
+         systemctl daemon-reload
+         echo "automount disabled"
+         return 0
+    fi
+    systemctl enable  --now nc-automount
+    systemctl enable  --now nc-automount-links
+    
+    # create delays in some units
+    mkdir --parents '/etc/systemd/system/mariadb.service.d'
+    cat > '/etc/systemd/system/mariadb.service.d/ncp-delay-automount.conf' <<'EOF'
 [Service]
 ExecStartPre=/bin/sleep 20
 Restart=on-failure
 EOF
 
-  mkdir -p /etc/systemd/system/nfs-server.service.d
-  cat > /etc/systemd/system/nfs-server.service.d/ncp-delay-automount.conf <<'EOF'
+  mkdir --parents '/etc/systemd/system/nfs-server.service.d'
+  cat > '/etc/systemd/system/nfs-server.service.d/ncp-delay-automount.conf' <<'EOF'
 [Service]
 ExecStartPre=
 ExecStartPre=/bin/bash -c "/bin/sleep 30; /usr/sbin/exportfs -r"
 EOF
 
-  mkdir -p /etc/systemd/system/dphys-swapfile.service.d
-  cat > /etc/systemd/system/dphys-swapfile.service.d/ncp-delay-automount.conf <<'EOF'
+  mkdir --parents '/etc/systemd/system/dphys-swapfile.service.d'
+  cat > '/etc/systemd/system/dphys-swapfile.service.d/ncp-delay-automount.conf' <<'EOF'
 [Service]
 ExecStartPre=/bin/sleep 30
 EOF
 
-  mkdir -p /etc/systemd/system/fail2ban.service.d
-  cat > /etc/systemd/system/fail2ban.service.d/ncp-delay-automount.conf <<'EOF'
+  mkdir --parents '/etc/systemd/system/fail2ban.service.d'
+  cat > '/etc/systemd/system/fail2ban.service.d/ncp-delay-automount.conf' <<'EOF'
 [Service]
 ExecStartPre=/bin/sleep 10
 EOF

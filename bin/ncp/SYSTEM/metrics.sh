@@ -1,82 +1,84 @@
 #!/usr/bin/env bash
 
-is_supported() {
-  [[ "${DOCKERBUILD:-0}" == 1 ]] && [[ "$(lsb_release -r)" =~ .*10 ]] && return 1
-  return 0
+function is_supported () {
+    [[ "${DOCKERBUILD:-0}" == 1 ]] && [[ "$(lsb_release -r)" =~ .*10 ]] && return 1
+    return 0
 }
 
-is_active() {
-  is_supported || return 1
-
-  metrics_services status > /dev/null 2>&1 || return 1
-  # systemctl is-active -q prometheus-node-exporter || return 1
-  return 0
+function is_active () {
+    is_supported || return 1
+    
+    metrics_services status > /dev/null 2>&1 || return 1
+    # systemctl is-active -q prometheus-node-exporter || return 1
+    return 0
 }
 
-tmpl_metrics_enabled() {
-  (
-  . /usr/local/etc/library.sh
-  local param_active="$(find_app_param metrics.sh ACTIVE)"
-  [[ "$param_active" == yes ]] || exit 1
-  )
+function tmpl_metrics_enabled () {
+    (
+        # shellcheck disable=SC1090
+        . '/usr/local/etc/library.sh'
+        local param_active
+        param_active="$(find_app_param 'metrics.sh' 'ACTIVE')"
+        [[ "$param_active" == yes ]] || exit 1
+    )
 }
 
-reload_metrics_config() {
-  is_supported || return 0
-
-  install_template ncp-metrics.cfg.sh "/usr/local/etc/ncp-metrics.cfg" || {
-    echo -e "ERROR while generating ncp-metrics.conf!"
-    return 1
-  }
-  service ncp-metrics-exporter status > /dev/null && {
+function reload_metrics_config () {
+    is_supported || return 0
+    
+    install_template ncp-metrics.cfg.sh "/usr/local/etc/ncp-metrics.cfg" || {
+        echo -e "ERROR while generating ncp-metrics.conf!"
+        return 1
+    }
+    service ncp-metrics-exporter status > /dev/null && {
     service ncp-metrics-exporter restart
     service ncp-metrics-exporter status > /dev/null 2>&1 || {
-      rc=$?
-      echo -e "WARNING: ncp-metrics-exporter failed to start (exit-code $rc)!"
-      return $rc
+        rc="$?"
+        echo -e "WARNING: ncp-metrics-exporter failed to start (exit-code $rc)!"
+        return "$rc"
     }
-  } || return 0
+    } || return 0
 }
 
-metrics_services() {
-  cmd="${1?}"
-
-  if [[ "$cmd" =~ (start|stop|restart|reload|status) ]]
-  then
-    if ! is_docker && [[ "$INIT_SYSTEM" != "systemd" ]]
+function metrics_services () {
+    cmd="${1?}"
+    
+    if [[ "$cmd" =~ (start|stop|restart|reload|status) ]]
     then
-      echo "Probably running in chroot. Ignoring 'metrics_services $cmd'..."
-      return 0
+        if ! is_docker && [[ "$INIT_SYSTEM" != "systemd" ]]
+        then
+            echo "Probably running in chroot. Ignoring 'metrics_services $cmd'..."
+            return 0
+        fi
+        rc1=0
+        rc2=0
+        service prometheus-node-exporter "$cmd" || rc1="$?"
+        service ncp-metrics-exporter "$cmd" || rc2="$?"
+        [[ "$rc1" > "$rc2" ]] && return "$rc1"
+        return "$rc2"
     fi
-    rc1=0
-    rc2=0
-    service prometheus-node-exporter "$cmd" || rc1=$?
-    service ncp-metrics-exporter "$cmd" || rc2=$?
-    [[ $rc1 > $rc2 ]] && return $rc1
-    return $rc2
-  fi
-
-  if ! [[ "$cmd" =~ (en|dis)able ]]
-  then
-    echo -e "ERROR: Invalid command: metrics_services ${cmd}!"
-    exit 1
-  fi
-
-  if is_docker
-  then
-    rc1=0
-    rc2=0
-    update-rc.d ncp-metrics-exporter "$cmd" || rc1=$?
-    update-rc.d prometheus-node-exporter "$cmd" || rc2=$?
-    [[ $rc1 > $rc2 ]] && return $rc1
-    return $rc2
-  else
-    systemctl "$cmd" prometheus-node-exporter ncp-metrics-exporter
-    return $?
-  fi
+    
+    if ! [[ "$cmd" =~ (en|dis)able ]]
+    then
+        echo -e "ERROR: Invalid command: metrics_services ${cmd}!"
+        exit 1
+    fi
+    
+    if is_docker
+    then
+        rc1=0
+        rc2=0
+        update-rc.d ncp-metrics-exporter "$cmd" || rc1="$?"
+        update-rc.d prometheus-node-exporter "$cmd" || rc2="$?"
+        [[ "$rc1" > "$rc2" ]] && return "$rc1"
+        return "$rc2"
+    else
+        systemctl "$cmd" prometheus-node-exporter ncp-metrics-exporter
+        return "$?"
+    fi
 }
 
-install() {
+function install () {
 
   # Subshell to return on failure  instead of exiting (due to set -e)
   (
@@ -190,7 +192,7 @@ EOF
   )
 }
 
-configure() {
+function configure () {
   set +u
 
   if [[ "$ACTIVE" != yes ]]
@@ -224,7 +226,7 @@ configure() {
         return 1
       }
 
-      [[ ${#PASSWORD} -ge 10 ]] || {
+      [[ "${#PASSWORD}" -ge 10 ]] || {
         echo -e "ERROR: Password must be at least 10 characters long!" >&2
         return 1
       }

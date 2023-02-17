@@ -8,57 +8,92 @@
 # More at https://ownyourbits.com/
 #
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
 function Print {
     printf '%s\n' "$@"
 }
 
-is_active() {
-    local SRCDIR
-    SRCDIR="$(grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }')"
-    [[ "$SRCDIR" != "/var/lib/mysql" ]]
+# Checks if given path is a directory 
+# Return codes
+# 0: Is a directory
+# 1: Not a directory
+# 2: Invalid number of arguments
+function isDirectory {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -d "$1" ]]
 }
 
-tmpl_db_dir() {
-    if is_active_app nc-database
-    then find_app_param nc-database DBDIR
+# Checks if 2 given String variables match
+# Return codes
+# 0: Is a match
+# 1: Not a match
+# 2: Invalid number of arguments
+function isMatch {
+    [[ "$#" -ne 2 ]] && return 2
+    [[ "$1" == "$2" ]]
+}
+
+function is_active () {
+    local SRCDIR
+    SRCDIR="$(grep 'datadir' '/etc/mysql/mariadb.conf.d/90-ncp.cnf' | awk -F "= " '{ print $2 }')"
+    [[ "$SRCDIR" != '/var/lib/mysql' ]]
+}
+
+function tmpl_db_dir () {
+    if is_active_app 'nc-database'
+    then find_app_param 'nc-database' 'DBDIR'
     fi
 }
 
-configure() {
+function configure () {
     local SRCDIR BASEDIR
-    SRCDIR="$(grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }')"
-    [[ -d "$SRCDIR" ]] || { echo -e "database directory $SRCDIR not found"; return 1; }
-    
-    [[ -d "$DBDIR" ]] && {
-        [[ "$( find "$DBDIR" -maxdepth 0 -empty | wc -l )" == 0 ]] && {
-            Print "$DBDIR is not empty"; return 1
-        }
-        rmdir "$DBDIR"
-    }
+    SRCDIR="$(grep 'datadir' '/etc/mysql/mariadb.conf.d/90-ncp.cnf' | awk -F "= " '{ print $2 }')"
+    if ! isDirectory "$SRCDIR"
+    then Print "Database directory not found: $SRCDIR"
+         return 1
+    fi
+
+    if isDirectory "$DBDIR"
+    then if isEqual "$( find "$DBDIR" -maxdepth 0 -empty | wc -l )" 0
+         then Print "Directory is not empty: $DBDIR"
+              return 1
+         fi
+         if ! rmdir "$DBDIR"
+         then Print "Failed to remove database directory: $DBDIR"
+              return 1
+         fi
+    fi
     
     BASEDIR="$(dirname "$DBDIR")"
     mkdir --parents "$BASEDIR"
     
-    grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR") || { Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "${BASEDIR}")"; return 1; }
-    
-    sudo -u mysql test -x "$BASEDIR" || { Print "ERROR: MySQL user does not have permission to access: $BASEDIR"; return 1; }
-    
-    [[ "$(stat -fc%d /)" == "$(stat -fc%d "$BASEDIR")" ]] && \
-    Print "INFO: moving database to the SD card" "If you want to use an external mount make sure to set it up properly"
+    if ! grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR")
+    then Print "Only ext/btrfs filesystems can hold the data directory. (Found: '$(stat -fc%T "${BASEDIR}")"
+         return 1
+    fi
+    if ! sudo -u mysql test -x "$BASEDIR"
+    then Print "ERROR: MySQL user does not have permissions to execute in: $BASEDIR"
+         return 1
+    fi
+
+    if isMatch "$(stat -fc%d /)" "$(stat -fc%d "$BASEDIR")"
+    then Print "Moving database to the SD card"
+         Print "If you want to use an external mount make sure to set it up properly"
+    fi
     
     save_maintenance_mode
     
     Print "Moving database to: $DBDIR"
     service mysql stop
     mv "$SRCDIR" "$DBDIR"
-    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf"
+    install_template 'mysql/90-ncp.cnf.sh' '/etc/mysql/mariadb.conf.d/90-ncp.cnf'
     service mysql start
     
     restore_maintenance_mode
 }
 
-install(){ :; }
+function install () { :; }
 
 # License
 #

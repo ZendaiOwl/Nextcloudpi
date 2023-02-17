@@ -37,7 +37,7 @@ function install () {
     then service systemd-resolved start
     else true
     fi
-    update-rc.d dnsmasq disable || rm /etc/systemd/system/multi-user.target.wants/dnsmasq.service
+    update-rc.d dnsmasq disable || rm '/etc/systemd/system/multi-user.target.wants/dnsmasq.service'
     
     [[ "$DOCKERBUILD" == 1 ]] && {
         cat > /etc/services-available.d/100dnsmasq <<EOF
@@ -57,34 +57,39 @@ function Print () {
     exit 0
 }
 
-persistent_cfg /etc/dnsmasq.conf
+persistent_cfg '/etc/dnsmasq.conf'
 
 Print "Starting: dnsmasq"
 service dnsmasq start
 
 exit 0
 EOF
-        chmod +x /etc/services-available.d/100dnsmasq
+        chmod +x '/etc/services-available.d/100dnsmasq'
     }
     return 0
 }
 
 function configure () {
-    [[ "$ACTIVE" != "yes" ]] && {
-        service dnsmasq stop
-        update-rc.d dnsmasq disable
-        Print "Disabled: dnmasq"
-        return
-    }
+    if [[ "$ACTIVE" != "yes" ]]
+    then service dnsmasq stop
+         update-rc.d dnsmasq disable
+         Print "Disabled: dnmasq"
+         return
+    fi
     
     local IFACE IP
     IFACE="$( ip r | grep "default via"   | awk '{ print $5 }' | head -1 )"
     IP="$( ncc config:system:get trusted_domains 6 | grep -oP '\d{1,3}(.\d{1,3}){3}' )"
-    [[ "$IP" == "" ]] && IP="$(get_ip)"
+    if [[ "$IP" == "" ]]
+    then IP="$(get_ip)"
+    fi
     
-    [[ "$IP" == "" ]] && { Print "Failed to detect IP-address"; return 1; }
+    if [[ "$IP" == "" ]]
+    then Print "Failed to detect IP-address"
+         return 1
+    fi
     
-    cat > /etc/dnsmasq.conf <<EOF
+    cat > '/etc/dnsmasq.conf' <<EOF
 interface=$IFACE
 domain-needed         # Never forward plain names (without a dot or domain part)
 bogus-priv            # Never forward addresses in the non-routed address spaces.
@@ -96,9 +101,11 @@ address=/$DOMAIN/$IP  # This is optional if we add it to /etc/hosts
 EOF
 
     # required to run in container
-    [[ -d '/data' ]] && echo "user=root" >> /etc/dnsmasq.conf
-    
-    sed -i 's|#\?IGNORE_RESOLVCONF=.*|IGNORE_RESOLVCONF=yes|' /etc/default/dnsmasq
+    if [[ -d '/data' ]]
+    then Print "user=root" >> '/etc/dnsmasq.conf'
+    fi
+
+    sed -i 's|#\?IGNORE_RESOLVCONF=.*|IGNORE_RESOLVCONF=yes|' '/etc/default/dnsmasq'
     
     update-rc.d dnsmasq defaults
     update-rc.d dnsmasq enable

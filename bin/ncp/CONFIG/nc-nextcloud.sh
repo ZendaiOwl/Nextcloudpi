@@ -22,14 +22,13 @@ function Print {
 #  2: Error   | RED='\e[1;31m'
 function log {
     if [[ "$#" -gt 0 ]]
-    then declare -r LOGLEVEL="$1" TEXT="${*:2}"
-         if [[ "$LOGLEVEL" =~ [(-2)-2] ]]
-         then case "$LOGLEVEL" in
-                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "$TEXT" >&2 ;;
-                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "$TEXT"     ;;
-                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "$TEXT"     ;;
-                   1) printf '\e[1;33mWARNING\e[0m %s\n' "$TEXT"     ;;
-                   2) printf '\e[1;31mERROR\e[0m %s\n'   "$TEXT" >&2 ;;
+    then if [[ "$1" =~ [(-2)-2] ]]
+         then case "$1" in
+                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
+                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
+                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
+                   1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
+                   2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
          else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
          fi
@@ -212,8 +211,9 @@ ExecStart=/bin/bash /usr/local/bin/ncp-provisioning.sh
 [Install]
 WantedBy=multi-user.target
 EOF
-    [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nc-provisioning
-    return 0
+    if [[ "$DOCKERBUILD" != 1 ]]
+    then systemctl enable nc-provisioning
+    fi; return 0
 }
 
 function configure
@@ -287,17 +287,18 @@ function configure
     # create and configure opcache dir
     OPCACHEDIR="$(
     # shellcheck disable=SC2015
-    [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]] && {
-        # shellcheck disable=SC1090
-        source "${BINDIR}/CONFIG/nc-datadir.sh"
-        tmpl_opcache_dir
-    } || true
+    if [[ -f "${BINDIR}/CONFIG/nc-datadir.sh" ]]
+    then # shellcheck disable=SC1090
+         source "${BINDIR}/CONFIG/nc-datadir.sh"
+         tmpl_opcache_dir
+    else true
+    fi
     )"
     if [[ -z "$OPCACHEDIR" ]]
-    then install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
-    else mkdir --parents "$OPCACHEDIR"
+    then install_template  "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
+    else mkdir --parents   "$OPCACHEDIR"
          chown --recursive "$HTUSER":"$HTUSER" "$OPCACHEDIR"
-         install_template "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
+         install_template  "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
     fi
     
     ## RE-CREATE DATABASE TABLE
@@ -316,7 +317,7 @@ function configure
     log -1 "Setting up: Database"
     
     # workaround to emulate DROP USER IF EXISTS ..;)
-    DBPASSWD="$(grep password /root/.my.cnf | sed 's|password=||')"
+    DBPASSWD="$(grep 'password' '/root/.my.cnf' | sed 's|password=||')"
     mysql <<EOF
 DROP DATABASE IF EXISTS nextcloud;
 CREATE DATABASE nextcloud
@@ -364,7 +365,7 @@ EOF
             proxy_wstunnel
     
     arch="$(uname -m)"
-    [[ "$arch" =~ "armv7" ]] && arch="armv7"
+    [[ "$arch" =~ "armv7" ]] && arch='armv7'
     install_template "$NOTIFYPUSH_TEMPLATE" "$NOTIFYPUSH_SERVICE"
 
     if ! isFile '/.docker-image'

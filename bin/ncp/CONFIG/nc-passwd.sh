@@ -21,22 +21,22 @@ function configure () {
     fi
     
     # persist ncp-web password in docker container
-    [[ -f /.docker-image ]] && {
-        mv /etc/shadow /data/etc/shadow
-        ln -s /data/etc/shadow /etc/shadow
-    }
+    if [[ -f '/.docker-image' ]]
+    then mv    '/etc/shadow'      '/data/etc/shadow'
+         ln -s '/data/etc/shadow' '/etc/shadow'
+    fi
     
     # activate NCP
     if ! is_ncp_activated; then
         # Run cron.php once now to get all checks right in CI.
-        sudo -u www-data php /var/www/nextcloud/cron.php
+        sudo -u www-data php '/var/www/nextcloud/cron.php'
         
         a2dissite ncp-activation
         a2ensite  ncp nextcloud
         apachectl -k graceful
         
         # Trusted Domain (local/public IP), also configures notify_push
-        bash /usr/local/bin/nextcloud-domain.sh
+        bash '/usr/local/bin/nextcloud-domain.sh'
     fi
 }
 

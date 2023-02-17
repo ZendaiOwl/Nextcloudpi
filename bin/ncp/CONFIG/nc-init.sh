@@ -52,18 +52,29 @@ function isSocket {
     [[ -S "$1" ]]
 }
 
+# Checks if a given String is zero
+# Return codes
+# 0: Is zero
+# 1: Not zero
+# 2: Invalid number of arguments
+function isZero {
+    [[ "$#" -ne 1 ]] && return 2
+    [[ -z "$1" ]]
+}
+
 DBADMIN='ncadmin'
 
-function configure
-{
+function configure {
     local DBPASSWD REDISPASS UPLOADTMPDIR='/var/www/nextcloud/data/tmp' \
           ID NCVER NCPREV
-    Print "Setting up a Nextcloud instance"
+    Print "Setting up: Nextcloud"
     Print "Wait until you see the message: NC init done"
     
     # checks
     REDISPASS="$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )"
-    [[ "$REDISPASS" == "" ]] && { Print "Redis server is without a password"; return 1; }
+    if isZero "$REDISPASS"
+    then Print "Redis server is without a password"; return 1
+    fi
     
     ## RE-CREATE DATABASE TABLE
     
@@ -84,7 +95,7 @@ function configure
     sleep 1
     
     # workaround to emulate DROP USER IF EXISTS ..;)
-    DBPASSWD="$( grep password /root/.my.cnf | sed 's|password=||' )"
+    DBPASSWD="$( grep 'password' '/root/.my.cnf' | sed 's|password=||' )"
     mysql <<EOF
 DROP DATABASE IF EXISTS nextcloud;
 CREATE DATABASE nextcloud
@@ -101,10 +112,10 @@ EOF
     
     # make sure redis is running first
     if ! pgrep -c redis-server &>/dev/null
-    then mkdir --parents /var/run/redis
-         chown redis     /var/run/redis
+    then mkdir --parents '/var/run/redis'
+         chown 'redis'   '/var/run/redis'
          # TODO: Add hostname to stop sudo error: unable to resolve host
-         sudo -u redis redis-server /etc/redis/redis.conf &
+         sudo -u redis redis-server '/etc/redis/redis.conf' &
     fi
     
     while :
@@ -115,18 +126,18 @@ EOF
     
     Print "Setting up: Nextcloud"
     if isDirectory '/var/www/nextcloud/'
-    then if ! cd /var/www/nextcloud/
+    then if ! cd '/var/www/nextcloud/'
          then Print "Failed to change directory to: /var/www/nextcloud/"
          fi
     fi
 
     if isFile 'config/config.php'
-    then if ! rm --force config/config.php
+    then if ! rm --force 'config/config.php'
          then Print "Failed to remove file: config/config.php"; exit 1
          fi
     fi
-    ncc maintenance:install --database "mysql" \
-                            --database-name "nextcloud"  \
+    ncc maintenance:install --database 'mysql' \
+                            --database-name 'nextcloud'  \
                             --database-user "$DBADMIN" \
                             --database-pass "$DBPASSWD" \
                             --admin-user "$ADMINUSER" \
@@ -136,8 +147,8 @@ EOF
     ncc background:cron
     
     # redis cache
-    sed -i '$d' config/config.php
-    cat >> config/config.php <<EOF
+    sed -i '$d' 'config/config.php'
+    cat >> 'config/config.php' <<EOF
   'memcache.local' => '\\OC\\Memcache\\Redis',
   'memcache.locking' => '\\OC\\Memcache\\Redis',
   'redis' =>
@@ -151,48 +162,50 @@ EOF
 EOF
 
     mkdir --parents "$UPLOADTMPDIR"
-    chown www-data:www-data "$UPLOADTMPDIR"
+    chown 'www-data':'www-data' "$UPLOADTMPDIR"
     ncc config:system:set tempdirectory --value "$UPLOADTMPDIR"
     sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/"$PHPVER"/cli/php.ini
     sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/"$PHPVER"/fpm/php.ini
     sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/"$PHPVER"/fpm/php.ini
     
     # 4 Byte UTF8 support
-    ncc config:system:set mysql.utf8mb4 --type boolean --value="true"
+    ncc config:system:set mysql.utf8mb4 --type boolean --value='true'
     
-    ncc config:system:set trusted_domains 7 --value="nextcloudpi"
-    ncc config:system:set trusted_domains 5 --value="nextcloudpi.local"
-    ncc config:system:set trusted_domains 8 --value="nextcloudpi.lan"
-    ncc config:system:set trusted_domains 3 --value="nextcloudpi.lan"
+    ncc config:system:set trusted_domains 7 --value='nextcloudpi'
+    ncc config:system:set trusted_domains 5 --value='nextcloudpi.local'
+    ncc config:system:set trusted_domains 8 --value='nextcloudpi.lan'
+    ncc config:system:set trusted_domains 3 --value='nextcloudpi.lan'
     
     # email
-    ncc config:system:set mail_smtpmode     --value="sendmail"
-    ncc config:system:set mail_smtpauthtype --value="LOGIN"
-    ncc config:system:set mail_from_address --value="admin"
-    ncc config:system:set mail_domain       --value="nextcloudpi.com"
+    ncc config:system:set mail_smtpmode     --value='sendmail'
+    ncc config:system:set mail_smtpauthtype --value='LOGIN'
+    ncc config:system:set mail_from_address --value='admin'
+    ncc config:system:set mail_domain       --value='nextcloudpi.com'
     
     # NCP theme
     isPath '/usr/local/etc/logo' && {
-        ID="$( grep instanceid config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
-        [[ "$ID" == "" ]] && { echo "failed to get ID"; return 1; }
-        mkdir --parents data/appdata_"$ID"/theming/images
-        cp /usr/local/etc/background data/appdata_"$ID"/theming/images
-        cp /usr/local/etc/logo data/appdata_"$ID"/theming/images/logo
-        cp /usr/local/etc/logo data/appdata_"$ID"/theming/images/logoheader
-        chown -R www-data:www-data data/appdata_"$ID"
+        ID="$( grep 'instanceid' 'config/config.php' | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
+        if isZero "$ID"
+        then Print "Failed to get ID"; return 1
+        fi
+        mkdir --parents                data/appdata_"$ID"/theming/images
+        cp '/usr/local/etc/background' data/appdata_"$ID"/theming/images
+        cp '/usr/local/etc/logo'       data/appdata_"$ID"/theming/images/logo
+        cp '/usr/local/etc/logo'       data/appdata_"$ID"/theming/images/logoheader
+        chown -R 'www-data':'www-data' data/appdata_"$ID"
     }
     
     mysql nextcloud <<EOF
 replace into  oc_appconfig values ( 'theming', 'name'          , "NextcloudPi"             );
-replace into  oc_appconfig values ( 'theming', 'slogan'        , "keep your data close"    );
-replace into  oc_appconfig values ( 'theming', 'url'           , "https://ownyourbits.com" );
+replace into  oc_appconfig values ( 'theming', 'slogan'        , "Keep your data close"    );
+replace into  oc_appconfig values ( 'theming', 'url'           , "https://nextcloudpi.com" );
 replace into  oc_appconfig values ( 'theming', 'logoMime'      , "image/svg+xml"           );
 replace into  oc_appconfig values ( 'theming', 'backgroundMime', "image/png"               );
 EOF
 
     # NCP app
-    cp -r /var/www/ncp-app /var/www/nextcloud/apps/nextcloudpi
-    chown -R www-data:     /var/www/nextcloud/apps/nextcloudpi
+    cp --recursive '/var/www/ncp-app' '/var/www/nextcloud/apps/nextcloudpi'
+    chown -R 'www-data':              '/var/www/nextcloud/apps/nextcloudpi'
     ncc app:enable nextcloudpi
     
     # Install some default apps, will be enabled by installation
@@ -211,44 +224,44 @@ EOF
     fi
     
     # ncp-previewgenerator
-    NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-    if is_more_recent_than "21.0.0" "$NCVER"
+    NCVER="$(ncc status 2>/dev/null | grep 'version:' | awk '{ print $3 }')"
+    if is_more_recent_than '21.0.0' "$NCVER"
     then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
     else ncc app:install notify_push
          ncc app:enable  notify_push
          isFile '/.ncp-image' || start_notify_push # don't start during build
          NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
     fi
-    ln -snf "$NCPREV"  /var/www/nextcloud/apps/previewgenerator
-    chown -R www-data: /var/www/nextcloud/apps/previewgenerator
+    ln -snf "$NCPREV"    '/var/www/nextcloud/apps/previewgenerator'
+    chown -R 'www-data': '/var/www/nextcloud/apps/previewgenerator'
     ncc app:enable previewgenerator
     
     # Preview generator
-    ncc config:app:set previewgenerator squareSizes --value="32 256"
-    ncc config:app:set previewgenerator widthSizes  --value="256 384"
-    ncc config:app:set previewgenerator heightSizes --value="256"
+    ncc config:app:set previewgenerator squareSizes --value='32 256'
+    ncc config:app:set previewgenerator widthSizes  --value='256 384'
+    ncc config:app:set previewgenerator heightSizes --value='256'
     ncc config:system:set preview_max_x             --value 2048
     ncc config:system:set preview_max_y             --value 2048
     ncc config:system:set jpeg_quality              --value 60
-    ncc config:app:set preview jpeg_quality         --value="60"
+    ncc config:app:set preview jpeg_quality         --value='60'
     # Other
     ncc config:system:set overwriteprotocol         --value='https'
-    ncc config:system:set overwrite.cli.url         --value="https://nextcloudpi/"
+    ncc config:system:set overwrite.cli.url         --value='https://nextcloudpi/'
     
     # Bash completion for ncc
     apt_install bash-completion
-    ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > /usr/share/bash-completion/completions/ncp
-    Print ". /etc/bash_completion" >> /etc/bash.bashrc
-    Print ". /usr/share/bash-completion/completions/ncp" >> /etc/bash.bashrc
+    ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > '/usr/share/bash-completion/completions/ncp'
+    Print ". /etc/bash_completion" >> '/etc/bash.bashrc'
+    Print ". /usr/share/bash-completion/completions/ncp" >> '/etc/bash.bashrc'
     
     # TODO temporary workaround for https://github.com/nextcloud/server/pull/13358
     ncc -n db:convert-filecache-bigint
     ncc db:add-missing-indices
     
     # Default trusted domain (only from ncp-config)
-    isFile '/usr/local/bin/nextcloud-domain.sh' && {
-        isFile '/.ncp-image' || bash /usr/local/bin/nextcloud-domain.sh
-    }
+    if isFile '/usr/local/bin/nextcloud-domain.sh'
+    then isFile '/.ncp-image' || bash '/usr/local/bin/nextcloud-domain.sh'
+    fi
     
     # dettach mysql during the build
     if [[ "$db_pid" != "" ]]

@@ -9,9 +9,8 @@
 #
 
 
-install()
-{
-  cat > /etc/systemd/system/zram.service <<EOF
+function install () {
+    cat > '/etc/systemd/system/zram.service' <<EOF
 [Unit]
 Description=Set up ZRAM
 
@@ -25,25 +24,27 @@ RemainAfterExit=yes
 WantedBy=sysinit.target
 EOF
 
-cat > /usr/local/bin/ncp-zram <<'EOF'
+    cat > '/usr/local/bin/ncp-zram' <<'EOF'
 #!/usr/bin/env bash
 # inspired by https://github.com/novaspirit/rpi_zram/blob/master/zram.sh
 
 case "$1" in
   start)
-      CORES=$(nproc --all)
-      modprobe zram num_devices=$CORES || exit 1
+      CORES="$(nproc --all)"
+      if ! modprobe zram num_devices="$CORES"
+      then exit 1
+      fi
 
       swapoff -a
 
-      TOTALMEM=`free | grep -e "^Mem:" | awk '{print $2}'`
-      MEM=$(( ($TOTALMEM / $CORES)* 1024 ))
+      TOTALMEM="$(free | grep -e "^Mem:" | awk '{print $2}')"
+      MEM="$(( ("$TOTALMEM" / "$CORES")* 1024 ))"
 
       core=0
-      while [ $core -lt $CORES ]; do
-        echo $MEM > /sys/block/zram$core/disksize
-        mkswap /dev/zram$core
-        swapon -p 5 /dev/zram$core
+      while [[ "$core" -lt "$CORES" ]]; do
+        echo "$MEM" > /sys/block/zram"$core"/disksize
+        mkswap /dev/zram"$core"
+        swapon -p 5 /dev/zram"$core"
         let core=core+1
       done
       ;;
@@ -58,20 +59,19 @@ case "$1" in
       ;;
 esac
 EOF
-chmod +x /usr/local/bin/ncp-zram
+    chmod +x '/usr/local/bin/ncp-zram'
 }
 
-configure()
-{
-  [[ $ACTIVE != "yes" ]] && { 
-    systemctl stop    zram
-    systemctl disable zram
-    echo "ZRAM disabled"
-    return 0
-  }
-  systemctl start  zram
-  systemctl enable zram
-  echo "ZRAM enabled"
+function configure () {
+    if [[ "$ACTIVE" != "yes" ]]
+    then systemctl stop    zram
+         systemctl disable zram
+         echo "Disabled: ZRAM"
+         return 0
+    fi
+    systemctl start  zram
+    systemctl enable zram
+    echo "Enabled: ZRAM"
 }
 
 # License

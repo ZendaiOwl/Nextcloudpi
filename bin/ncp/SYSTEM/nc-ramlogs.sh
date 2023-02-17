@@ -8,44 +8,57 @@
 # More at https://ownyourbits.com/
 #
 
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
+}
 
-
-is_active()
-{
+function is_active () {
   systemctl -q is-active log2ram &>/dev/null || systemctl -q is-active armbian-ramlog &>/dev/null
 }
 
-install()
-{
-  VERSION=1.5.2
-  [[ -d /var/log.hdd ]] || [[ -d /var/hdd.log ]] && { echo "log2ram detected, not installing"; return; }
-  cd /tmp
-  curl -Lo log2ram.tar.gz https://github.com/azlux/log2ram/archive/${VERSION}.tar.gz
-  tar xf log2ram.tar.gz
-  cd log2ram-${VERSION}
-  sed -i '/systemctl -q is-active log2ram/d' install.sh
-  sed -i '/systemctl enable log2ram/d' install.sh
-  chmod +x install.sh && sudo ./install.sh
-  cd ..
-  rm -r log2ram-${VERSION} log2ram.tar.gz
-  rm /etc/cron.daily/log2ram /usr/local/bin/uninstall-log2ram.sh
+function install () {
+    VERSION='1.5.2'
+    if [[ -d '/var/log.hdd' ]] || [[ -d '/var/hdd.log' ]]
+    then Print "log2ram detected, not installing"
+         return
+    fi
+    if ! cd '/tmp'
+    then Print "Failed to change directory to: /tmp"; return 1
+    fi
+    curl -Lo log2ram.tar.gz https://github.com/azlux/log2ram/archive/"$VERSION".tar.gz
+    tar xf 'log2ram.tar.gz'
+    if ! cd log2ram-"$VERSION"
+    then Print "Failed to change directory to: log2ram-$VERSION"; return 1
+    fi
+    sed -i '/systemctl -q is-active log2ram/d' 'install.sh'
+    sed -i '/systemctl enable log2ram/d'       'install.sh'
+    chmod +x 'install.sh' && sudo './install.sh'
+    if ! cd ..
+    then Print "Failed to change directory to: .."; return 1
+    fi
+    rm --recursive log2ram-"$VERSION" 'log2ram.tar.gz'
+    rm '/etc/cron.daily/log2ram' '/usr/local/bin/uninstall-log2ram.sh'
 }
 
-configure()
-{
-  [[ -f /lib/systemd/system/armbian-ramlog.service ]] && local ramlog=armbian-ramlog || local ramlog=log2ram
-
-  [[ $ACTIVE != "yes" ]] && {
-    systemctl disable "$ramlog"
-    systemctl stop    "$ramlog"
-    echo "Logs in SD. Reboot to take effect"
-    return
-  }
-
-  systemctl enable "$ramlog"
-  systemctl start  "$ramlog"
-
-  echo "Logs in RAM. Reboot to take effect"
+function configure () {
+    if [[ -f '/lib/systemd/system/armbian-ramlog.service' ]]
+    then local RAMLOG='armbian-ramlog'
+    else local RAMLOG='log2ram'
+    fi
+    
+    if [[ "$ACTIVE" != "yes" ]]
+    then systemctl disable "$RAMLOG"
+         systemctl stop    "$RAMLOG"
+         Print "Logs in SD. Reboot to take effect"
+         return
+    fi
+    
+    systemctl enable "$RAMLOG"
+    systemctl start  "$RAMLOG"
+    
+    Print "Logs in RAM. Reboot to take effect"
 }
 
 # License

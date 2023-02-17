@@ -8,24 +8,28 @@
 # More at: https://ownyourbits.com
 #
 
-
-install()
-{ 
-  apt-get update
-  apt-get install -y --no-install-recommends bsdmainutils
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function Print {
+    printf '%s\n' "$@"
 }
 
-configure() 
-{
-  echo "Gathering information..."
-  local OUT="$( bash /usr/local/bin/ncp-diag )"
+function install () {
+  apt-get update  --assume-yes
+  apt-get install --assume-yes --no-install-recommends bsdmainutils
+}
+
+function configure () {
+  Print "Gathering information"
+  local OUT
+  OUT="$(bash '/usr/local/bin/ncp-diag')"
 
   # info
-  echo "$OUT" | column -t -s'|'
+  Print "$OUT" | column -t -s'|'
 
   # suggestions
-  echo
-  bash /usr/local/bin/ncp-suggestions "$OUT"
+  Print ""
+  bash '/usr/local/bin/ncp-suggestions' "$OUT"
  
   return 0
 }

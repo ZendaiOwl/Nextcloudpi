@@ -93,7 +93,7 @@ function configure {
     
     # Checks
     if [[ "$DISABLE_FS_CHECK" != 1 ]]
-    then if ! grep -q -e ext -e btrfs <( stat -fc%T "$BASEDIR" )
+    then if ! grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR")
          then Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
               return 1
          fi
@@ -141,7 +141,7 @@ function configure {
          mkdir "$(dirname "$SRCDIR")"/ncdata_enc && mount --bind "$ENCDIR" "$(dirname "$SRCDIR")"/ncdata_enc
     else mv "$SRCDIR" "$DATADIR"
     fi
-    chown -R www-data:www-data "$DATADIR"
+    chown -R 'www-data':'www-data' "$DATADIR"
     
     # datadir
     ncc config:system:set datadirectory  --value="$DATADIR" \
