@@ -489,7 +489,7 @@ $CFG_STEP
 
 function prepare_dirs {
     local DIRS=(tmp output cache)
-    if notMatch "$CLEAN" "0"
+    if isEqual "$CLEAN" 1
     then rm --recursive --force "${DIRS[2]}"
     fi
     rm --recursive --force "${DIRS[0]}"
