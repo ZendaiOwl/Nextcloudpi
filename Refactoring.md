@@ -19,7 +19,7 @@ Menu template
 
 - [x] = Done
 
-<details><summary><pre>/</pre></summary>
+<details><summary>`/`</summary>
 
 - [x] /install.sh
 - [x] /lamp.sh
