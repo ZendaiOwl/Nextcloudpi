@@ -13,13 +13,13 @@ Menu template
 - [ ] Docker functions
 - [ ] Clean up code
 
-### Project Root
+### Project
 
 `×` = Ongoing
 
 - [x] = Done
 
-<details><summary>`/`</summary>
+<details><summary><code>/</code></summary>
 
 - [x] /install.sh
 - [x] /lamp.sh
