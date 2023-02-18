@@ -480,61 +480,63 @@ Menu template
 
 ---
 
-docker build .
+### Docker stuffz
 
-sudo docker build .
+`docker build .`
 
-docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock --rm -it [container id/name]
+`sudo docker build .`
+
+`docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock --rm -it [container id/name]`
 
 ### Image ID's
 
-docker images | awk '{print $3}' | tail -n +2
+`docker images | awk '{print $3}' | tail -n +2`
 
 ### Latest image ID
 
-docker images | awk '{print $3}' | tail -n +2 | head -1
+`docker images | awk '{print $3}' | tail -n +2 | head -1`
 
 <!-- 1: 20:13 - 20:41 28 minutes -->
 <!-- 2: 23:07 - 23:34 27 minutes -->
 
-docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock --rm -it "$(docker images | awk '{print $3}' | tail -n +2 | head -1)" docker-compose up -d --build
+`docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock --rm -it "$(docker images | awk '{print $3}' | tail -n +2 | head -1)" docker-compose up -d --build`
 
-docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock --rm -it "$(docker images | awk '{print $3}' | tail -n +2 | head -1)"
+`docker run --privileged -v /var/run/docker.sock:/var/run/docker.sock --rm -it "$(docker images | awk '{print $3}' | tail -n +2 | head -1)"`
 
 ### Container ID's
 
-docker ps | awk '{print $1}' | tail -n +2
+`docker ps | awk '{print $1}' | tail -n +2`
 
 ### Latest 3 container ID
 
-docker ps | awk '{print $1}' | tail -n +2 | head -3
+`docker ps | awk '{print $1}' | tail -n +2 | head -3`
 
 ### Latest 1st container ID
 
-docker ps | awk '{print $1}' | tail -n +2 | head -1
+`docker ps | awk '{print $1}' | tail -n +2 | head -1`
 
 ### Latest 2nd container ID
 
-docker ps | awk '{print $1}' | tail -n +3 | head -1
+`docker ps | awk '{print $1}' | tail -n +3 | head -1`
 
 ### Latest 3rd container ID
 
-docker ps | awk '{print $1}' | tail -n +4 | head -1
+`docker ps | awk '{print $1}' | tail -n +4 | head -1`
 
 ### ID and image name
 
-docker ps | awk '{print $2,$1}' | tail -n +4 | head -1
+`docker ps | awk '{print $2,$1}' | tail -n +4 | head -1`
 
 ### Image ID and name
 
-docker images | awk '{print $1,$3}' | tail -n +4 | head -1
+`docker images | awk '{print $1,$3}' | tail -n +4 | head -1`
 
 ### Kill latest 3
 
-for LINE in $(docker ps | awk '{print $1}' | tail -n +2 | head -3); do docker kill "$LINE"; done
+`for LINE in $(docker ps | awk '{print $1}' | tail -n +2 | head -3); do docker kill "$LINE"; done`
 
 ### Remove latest image
 
-docker rmi "$(docker images | awk '{print $3}' | tail -n +2 | head -1)"
+`docker rmi "$(docker images | awk '{print $3}' | tail -n +2 | head -1)"`
 
-curl --verbose --location 192.168.178.34
+`curl --verbose --location 192.168.178.34`
