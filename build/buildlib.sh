@@ -174,20 +174,6 @@ function notZero {
     [[ -n "$1" ]]
 }
 
-# Checks if a given variable is an array or not
-# Return codes
-# 0: Variable is an array
-# 1: Variable is not an array
-# 2: Missing argument: Variable to check
-function isArray {
-    if [[ "$#" -ne 1 ]]
-    then return 2
-    elif ! declare -a "$1" &>/dev/null
-    then return 1
-    else return 0
-    fi
-}
-
 # Checks if a given pattern in a String
 # Return codes
 # 0: Has String pattern
