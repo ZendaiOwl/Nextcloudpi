@@ -15,10 +15,9 @@ function add_build_variables {
   fi
 }
 
-if [[ -z "$DBG" ]]
-then set -e
-elif [[ -v "$DBG" ]]
+if [[ -v "$DBG" ]]
 then set -e"$DBG"
+else set -e
 fi
 
 BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"; add_build_variables BUILDLIBRARY
