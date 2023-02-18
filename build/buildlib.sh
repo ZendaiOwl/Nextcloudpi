@@ -956,13 +956,13 @@ function upload_ftp {
     fi
     
     ftp -np ftp.ownyourbits.com <<EOF
-user root@ownyourbits.com $FTPPASS
+user root@ownyourbits.com "$FTPPASS"
 mkdir testing
-mkdir testing/$IMGNAME
-cd testing/$IMGNAME
+mkdir testing/"$IMGNAME"
+cd testing/"$IMGNAME"
 binary
-rm  $IMGNAME.torrent
-put $IMGNAME.torrent
+rm  "$IMGNAME".torrent
+put "$IMGNAME".torrent
 bye
 EOF
     if ! cd -
@@ -976,11 +976,11 @@ EOF
     fi
 
     ftp -np ftp.ownyourbits.com <<EOF
-user root@ownyourbits.com $FTPPASS
-cd testing/$IMGNAME
+user root@ownyourbits.com "$FTPPASS"
+cd testing/"$IMGNAME"
 binary
-rm  $IMGNAME.tar.bz2
-put $IMGNAME.tar.bz2
+rm  "$IMGNAME".tar.bz2
+put "$IMGNAME".tar.bz2
 rm  md5sum
 put md5sum
 bye
