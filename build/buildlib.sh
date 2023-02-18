@@ -386,6 +386,8 @@ function launch_qemu {
 }
 
 # TODO: NEEDS TO BE REWORKED - PI USER NO LONGER EXISTS
+# Can be reused by changing the username and password in the
+# PIUSER & PIPASS variables
 function ssh_pi {
     [[ "$#" -lt 1 ]] && return 1
     local IP="$1" ARGS=("${@:2}") \
