@@ -145,8 +145,6 @@ sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 # cleanup
 if [[ -f 'etc/library.sh' ]]
 then source etc/library.sh && run_app_unsafe post-inst.sh
-     # Write library to the '.bash_aliases' file for root
-     cat 'etc/library.sh' > '/root/.bash_aliases'
 fi
 
 if [[ -f '/etc/resolv.conf' ]]
@@ -198,8 +196,6 @@ sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 # cleanup
 if [[ -f 'etc/library.sh' ]]
 then source etc/library.sh && run_app_unsafe post-inst.sh
-     # Write library to the '.bash_aliases' file for root
-     cat 'etc/library.sh' > '/root/.bash_aliases'
 fi
 
 if [[ -f '/etc/resolv.conf' ]]
