@@ -1,5 +1,13 @@
 # Refactoring
 
+Menu template
+
+```
+<details><summary></summary>
+
+</details>
+```
+
 - [x] Install functions
 - [x] Test functions
 - [ ] Docker functions
@@ -11,7 +19,7 @@
 
 - [x] = Done
 
-`/`
+<details><summary><pre>/</pre></summary>
 
 - [x] /install.sh
 - [x] /lamp.sh
@@ -20,6 +28,8 @@
 - [x] /update.sh
 - [ ] /run_update_history.sh
 - [ ] /tag_and_push.sh
+
+</details>
 
 `/bin`
 
