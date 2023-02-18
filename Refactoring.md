@@ -3,7 +3,7 @@
 Menu template
 
 ```
-<details><summary></summary>
+<details><summary><code></code></summary>
 
 </details>
 ```
@@ -31,7 +31,7 @@ Menu template
 
 </details>
 
-`/bin`
+<details><summary><code>/bin</code></summary>
 
 - [ ] /ncp-backup `×`
 - [ ] /ncp-check-nc-version `×`
@@ -49,7 +49,9 @@ Menu template
 - [x] /ncp-update-nc
 - [ ] /nextcloud-domain.sh `×`
 
-`/bin/ncp/BACKUPS`
+</details>
+
+<details><summary><code>/bin/ncp/BACKUPS</code></summary>
 
 - [ ] /nc-backup.sh
 - [ ] /nc-backup-auto.sh
@@ -63,7 +65,9 @@ Menu template
 - [ ] /nc-snapshot-auto.sh
 - [ ] /nc-snapshot-sync.sh
 
-`/bin/ncp/CONFIG`
+</details>
+
+<details><summary><code>/bin/ncp/CONFIG</code></summary>
 
 - [ ] /nc-admin.sh
 - [ ] /nc-database.sh
@@ -79,7 +83,9 @@ Menu template
 - [ ] /nc-trusted-domains.sh
 - [ ] /nc-webui.sh
 
-`/bin/ncp/NETWORKING`
+</details>
+
+<details><summary><code>/bin/ncp/NETWORKING</code></summary>
 
 - [ ] /dnsmasq.sh
 - [ ] /duckDNS.sh
@@ -95,7 +101,9 @@ Menu template
 - [ ] /spDYN.sh
 - [ ] /SSH.sh
 
-`/bin/ncp/SECURITY`
+</details>
+
+<details><summary><code>/bin/ncp/SECURITY</code></summary>
 
 - [ ] /fail2ban.sh
 - [ ] /modsecurity.sh
@@ -103,7 +111,9 @@ Menu template
 - [ ] /nc-encrypt.sh
 - [ ] /UFW.sh
 
-`/bin/ncp/SYSTEM`
+</details>
+
+<details><summary><code>/bin/ncp/SYSTEM</code></summary>
 
 - [ ] /metrics.sh
 - [ ] /nc-automount.sh
@@ -114,7 +124,9 @@ Menu template
 - [ ] /nc-swapfile.sh
 - [ ] /nc-zram.sh
 
-`/bin/ncp/TOOLS`
+</details>
+
+<details><summary><code>/bin/ncp/TOOLS</code></summary>
 
 - [ ] /clear-php-opcache.sh
 - [ ] /nc-fix-permissions.sh
@@ -123,7 +135,9 @@ Menu template
 - [ ] /nc-previews.sh
 - [ ] /nc-scan.sh
 
-`/bin/ncp/UPDATES`
+</details>
+
+<details><summary><code>/bin/ncp/UPDATES</code></summary>
 
 - [ ] /nc-autoupdate-nc.sh
 - [ ] /nc-autoupdate-ncp.sh
@@ -134,7 +148,9 @@ Menu template
 - [ ] /nc-update-nextcloud.sh
 - [ ] /unattended-upgrades.sh
 
-`/build`
+</details>
+
+<details><summary><code>/build</code></summary>
 
 - [ ] /batch.sh
 - [ ] /build-docker.sh
@@ -148,40 +164,56 @@ Menu template
 - [ ] /lxc_config
 - [ ] /Vagrantfile
 
-`/build/armbian`
+</details>
+
+<details><summary><code>/build/armbian</code></summary>
 
 - [ ] /armbian.sh
 - [ ] /config-odroidc2.conf
 - [ ] /config-orangepizeroplus2-h5.conf
 
-`/build/docker`
+</details>
+
+<details><summary><code>/build/docker</code></summary>
 
 - [ ] /docker-compose.yml
 - [ ] /docker-compose-ncpdev.yml
 - [ ] /Dockerfile
 
-`/build/docker/debian-ncp`
+</details>
+
+<details><summary><code>/build/docker/debian-ncp</code></summary>
 
 - [ ] /run-parts.sh
 
-`/build/docker/lamp`
+</details>
+
+<details><summary><code>/build/docker/lamp</code></summary>
 
 - [ ] /010lamp
 
-`/build/docker/nextcloud`
+</details>
+
+<details><summary><code>/build/docker/nextcloud</code></summary>
 
 - [ ] /020nextcloud
 
-`/build/docker/nextcloudpi`
+</details>
+
+<details><summary><code>/build/docker/nextcloudpi</code></summary>
 
 - [ ] /000ncp
 
-`/etc`
+</details>
+
+<details><summary><code>/etc</code></summary>
 
 - [ ] /library.sh
 - [ ] /ncp.cfg
 
-`/etc/ncp-config.d`
+</details>
+
+<details><summary><code>/etc/ncp-config.d</code></summary>
 
 - [ ] /clear-php-opcache.cfg
 - [ ] /dnsmasq.cfg
@@ -248,58 +280,82 @@ Menu template
 - [ ] /UFW.cfg
 - [ ] /unattended-upgrades.cfg
 
-`/etc/ncp-templates`
+</details>
+
+<details><summary><code>/etc/ncp-templates</code></summary>
 
 - [ ] /ncp-metrics.cfg.sh
 - [ ] /nextcloud.conf.sh
 
-`/etc/ncp-templates/apache2`
+</details>
+
+<details><summary><code>/etc/ncp-templates/apache2</code></summary>
 
 - [ ] /http2.conf.sh
 
-`/etc/ncp-templates/mysql`
+</details>
+
+<details><summary><code>/etc/ncp-templates/mysql</code></summary>
 
 - [ ] /mysql/90-ncp.cnf.sh
 - [ ] /mysql/91-ncp.cnf.sh
 
-`/etc/ncp-templates/php`
+</details>
+
+<details><summary><code>/etc/ncp-templates/php</code></summary>
 
 - [ ] /90-ncp.ini.sh
 - [ ] /opcache.ini.sh
 - [ ] /pool.d.www.conf.sh
 
-`/etc/ncp-templates/systemd`
+</details>
+
+<details><summary><code>/etc/ncp-templates/systemd</code></summary>
 
 - [ ] /notify_push.service.sh
 
-`/ncp-app/appinfo`
+</details>
+
+<details><summary><code>/ncp-app/appinfo</code></summary>
 
 - [ ] /info.xml
 - [ ] /routes.php
 
-`/ncp-app/css`
+</details>
+
+<details><summary><code>/ncp-app/css</code></summary>
 
 - [ ] /style.css
 
-`/ncp-app/js`
+</details>
+
+<details><summary><code>/ncp-app/js</code></summary>
 
 - [ ] /script.js
 
-`/ncp-app/lib/Controller`
+</details>
+
+<details><summary><code>/ncp-app/lib/Controller</code></summary>
 
 - [ ] /PageController.php
 
-`/ncp-app/templates`
+</details>
+
+<details><summary><code>/ncp-app/templates</code></summary>
 
 - [ ] /index.php
 
-`/ncp-activation`
+</details>
+
+<details><summary><code>/ncp-activation</code></summary>
 
 - [ ] /CSS.css
 - [ ] /index.php
 - [ ] /JS.js
 
-`/ncp-web`
+</details>
+
+<details><summary><code>/ncp-web</code></summary>
 
 - [ ] /backups.php
 - [ ] /csrf.php
@@ -313,13 +369,17 @@ Menu template
 - [ ] /upload.php
 - [ ] /langs.cfg
 
-`/ncp-web/activate`
+</details>
+
+<details><summary><code>/ncp-web/activate</code></summary>
 
 - [ ] /CSS.css
 - [ ] /index.php
 - [ ] /JS.js
 
-`/ncp-web/bootstrap`
+</details>
+
+<details><summary><code>/ncp-web/bootstrap</code></summary>
 
 - [ ] /css/bootstrap.css
 - [ ] /css/bootstrap.css.map
@@ -335,36 +395,50 @@ Menu template
 - [ ] /js/bootstrap.min.js
 - [ ] /js/npm.js
 
-`/ncp-web/css`
+</details>
+
+<details><summary><code>/ncp-web/css</code></summary>
 
 - [ ] /ncp.css
 
-`/ncp-web/decrypt`
+</details>
+
+<details><summary><code>/ncp-web/decrypt</code></summary>
 
 - [ ] /CSS.css
 - [ ] /index.php
 - [ ] /JS.js
 
-`/ncp-web/js`
+</details>
+
+<details><summary><code>/ncp-web/js</code></summary>
 
 - [ ] /minified.js
 - [ ] /ncp.js
 
-`/ncp-web/wizard`
+</details>
+
+<details><summary><code>/ncp-web/wizard</code></summary>
 
 - [ ] /index.php
 
-`/ncp-web/wizard/CSS`
+</details>
+
+<details><summary><code>/ncp-web/wizard/CSS</code></summary>
 
 - [ ] /wizard.css
 
-`/ncp-web/wizard/JS`
+</details>
+
+<details><summary><code>/ncp-web/wizard/JS</code></summary>
 
 - [ ] /jquery.bootstrap.wizard.js
 - [ ] /jquery-latest.js
 - [ ] /wizard.js
 
-`/tests`
+</details>
+
+<details><summary><code>/tests</code></summary>
 
 - [ ] /activation_tests.py
 - [ ] /libvirt_forwarding.sh
@@ -375,7 +449,9 @@ Menu template
 - [ ] /requirements.txt
 - [ ] /system_tests.py
 
-`/updates`
+</details>
+
+<details><summary><code>/updates</code></summary>
 
 - [ ] /1.13.6.sh
 - [ ] /1.16.0.sh
@@ -395,6 +471,8 @@ Menu template
 - [ ] /1.50.1.sh
 - [ ] /1.50.5.sh
 - [ ] /1.51.0.sh
+
+</details>
 
 `/ncp-previewgenerator/ncp-previewgenerator-nc20`
 
