@@ -1014,7 +1014,7 @@ function upload_docker {
 
     for (( i = 0; i < "${#ARCHS[@]}"; i++ ))
     do for (( x = 0; x < "${#REPOS[@]}"; x++ ))
-       do docker push "$OWNER"/"$${REPOS[$x]}"-"${ARCHS[$i]}":"$VERSION"
+       do docker push "$OWNER"/"${REPOS[$x]}"-"${ARCHS[$i]}":"$VERSION"
           docker push "$OWNER"/"${REPOS[$x]}"-"${ARCHS[$i]}":latest
        done
     done
