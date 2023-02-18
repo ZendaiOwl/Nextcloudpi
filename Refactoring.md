@@ -7,7 +7,8 @@
 
 ### Project Root
 
-- `×` = Ongoing
+`×` = Ongoing
+
 - [x] = Done
 
 `/`
