@@ -7,9 +7,9 @@
 #
 # More at: https://ownyourbits.com
 #
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
 function install () {
@@ -39,7 +39,7 @@ function configure () {
         service smbd stop
         update-rc.d smbd disable
         update-rc.d nmbd disable
-        Print "Disabled: SMB"
+        prtln "Disabled: SMB"
         return
     }
     
@@ -47,10 +47,10 @@ function configure () {
     ################################
     local DATADIR USERS DIR
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        Print "Error reading data directory. Is Nextcloud running and configured?"
+        prtln "Error reading data directory. Is Nextcloud running and configured?"
         return 1
     }
-    [[ -d "$DATADIR" ]] || { Print "Directory not found: $DATADIR"; return 1; }
+    [[ -d "$DATADIR" ]] || { prtln "Directory not found: $DATADIR"; return 1; }
     
     # CONFIG
     ################################
@@ -73,13 +73,13 @@ EOF
     do # Exclude users not matching group filter (if enabled)
         if [[ -n "$FILTER_BY_GROUP" ]] \
         && [[ -z "$(ncc user:info "$user" --output=json | jq ".groups[] | select( . == \"${FILTER_BY_GROUP}\" )")" ]]
-        then Print "Omitting user $user (not in group ${FILTER_BY_GROUP})"
+        then prtln "Omitting user $user (not in group ${FILTER_BY_GROUP})"
              continue
         fi
     
-    Print "adding SAMBA share for user $user"
+    prtln "adding SAMBA share for user $user"
     DIR="${DATADIR}/${user}/files"
-    [[ -d "$DIR" ]] || { Print "Directory not found: $DIR"; return 1; }
+    [[ -d "$DIR" ]] || { prtln "Directory not found: $DIR"; return 1; }
     
     cat >> /etc/samba/smb.conf <<EOF
     
@@ -99,7 +99,7 @@ EOF
 
     ## create user with no login if it doesn't exist
     id "$user" &>/dev/null || adduser --disabled-password --force-badname --gecos "" "$user" || return 1
-    Print "$PWD" "$PWD" | smbpasswd -s -a "$user"
+    prtln "$PWD" "$PWD" | smbpasswd -s -a "$user"
 
     usermod -aG www-data "$user"
     sudo chmod g+w "$DIR"
@@ -112,7 +112,7 @@ EOF
   update-rc.d nmbd enable
   service nmbd restart
 
-  Print "Enabled: SMB"
+  prtln "Enabled: SMB"
 }
 
 # License

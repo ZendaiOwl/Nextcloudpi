@@ -2,8 +2,8 @@
 
 # Update to the latest NextcloudPi code from GitHub
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -126,7 +126,7 @@ fi
         fi
         
         VER="$(git describe --tags "$(git rev-list --tags --max-count=1)" | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; } )"
-        Print "$VER" > "$TMPDIR"/version
+        prtln "$VER" > "$TMPDIR"/version
 
         if ! cd "$TMPDIR"
         then log 2 "FAiled to change directory to: $TMPDIR"; exit 1

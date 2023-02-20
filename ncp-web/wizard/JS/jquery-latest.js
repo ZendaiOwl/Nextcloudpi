@@ -188,7 +188,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 	}
 
 	// Handle case when target is a string or something (possible in deep copy)
-	if ( typeof target !== "object" && !jQuery.isFunction(target) ) {
+	if ( typeof target !== "object" && !jQuery.is_function(target) ) {
 		target = {};
 	}
 
@@ -212,10 +212,10 @@ jQuery.extend = jQuery.fn.extend = function() {
 				}
 
 				// Recurse if we're merging plain objects or arrays
-				if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)) ) ) {
+				if ( deep && copy && ( jQuery.isPlainObject(copy) || (copyIsArray = jQuery.is_array(copy)) ) ) {
 					if ( copyIsArray ) {
 						copyIsArray = false;
-						clone = src && jQuery.isArray(src) ? src : [];
+						clone = src && jQuery.is_array(src) ? src : [];
 
 					} else {
 						clone = src && jQuery.isPlainObject(src) ? src : {};
@@ -249,14 +249,14 @@ jQuery.extend({
 
 	noop: function() {},
 
-	// See test/unit/core.js for details concerning isFunction.
+	// See test/unit/core.js for details concerning is_function.
 	// Since version 1.3, DOM methods and functions like alert
 	// aren't supported. They return false on IE (#2968).
-	isFunction: function( obj ) {
+	is_function: function( obj ) {
 		return jQuery.type(obj) === "function";
 	},
 
-	isArray: Array.isArray || function( obj ) {
+	is_array: Array.is_array || function( obj ) {
 		return jQuery.type(obj) === "array";
 	},
 
@@ -269,7 +269,7 @@ jQuery.extend({
 		// parseFloat NaNs numeric-cast false positives (null|true|false|"")
 		// ...but misinterprets leading-number strings, particularly hex literals ("0x...")
 		// subtraction forces infinities to NaN
-		return !jQuery.isArray( obj ) && obj - parseFloat( obj ) >= 0;
+		return !jQuery.is_array( obj ) && obj - parseFloat( obj ) >= 0;
 	},
 
 	isEmptyObject: function( obj ) {
@@ -355,10 +355,10 @@ jQuery.extend({
 		var value,
 			i = 0,
 			length = obj.length,
-			isArray = isArraylike( obj );
+			is_array = is_arraylike( obj );
 
 		if ( args ) {
-			if ( isArray ) {
+			if ( is_array ) {
 				for ( ; i < length; i++ ) {
 					value = callback.apply( obj[ i ], args );
 
@@ -378,7 +378,7 @@ jQuery.extend({
 
 		// A special, fast, case for the most common use of each
 		} else {
-			if ( isArray ) {
+			if ( is_array ) {
 				for ( ; i < length; i++ ) {
 					value = callback.call( obj[ i ], i, obj[ i ] );
 
@@ -412,7 +412,7 @@ jQuery.extend({
 		var ret = results || [];
 
 		if ( arr != null ) {
-			if ( isArraylike( Object(arr) ) ) {
+			if ( is_arraylike( Object(arr) ) ) {
 				jQuery.merge( ret,
 					typeof arr === "string" ?
 					[ arr ] : arr
@@ -493,11 +493,11 @@ jQuery.extend({
 		var value,
 			i = 0,
 			length = elems.length,
-			isArray = isArraylike( elems ),
+			is_array = is_arraylike( elems ),
 			ret = [];
 
 		// Go through the array, translating each of the items to their new values
-		if ( isArray ) {
+		if ( is_array ) {
 			for ( ; i < length; i++ ) {
 				value = callback( elems[ i ], i, arg );
 
@@ -537,7 +537,7 @@ jQuery.extend({
 
 		// Quick check to determine if target is callable, in the spec
 		// this throws a TypeError, but we will just return undefined.
-		if ( !jQuery.isFunction( fn ) ) {
+		if ( !jQuery.is_function( fn ) ) {
 			return undefined;
 		}
 
@@ -567,7 +567,7 @@ jQuery.each("Boolean Number String Function Array Date RegExp Object Error".spli
 	class2type[ "[object " + name + "]" ] = name.toLowerCase();
 });
 
-function isArraylike( obj ) {
+function is_arraylike( obj ) {
 	var length = obj.length,
 		type = jQuery.type( obj );
 
@@ -2641,7 +2641,7 @@ var risSimple = /^.[^:#\[\.,]*$/;
 
 // Implement the identical functionality for filter and not
 function winnow( elements, qualifier, not ) {
-	if ( jQuery.isFunction( qualifier ) ) {
+	if ( jQuery.is_function( qualifier ) ) {
 		return jQuery.grep( elements, function( elem, i ) {
 			/* jshint -W018 */
 			return !!qualifier.call( elem, i, elem ) !== not;
@@ -2781,7 +2781,7 @@ var rootjQuery,
 					if ( rsingleTag.test( match[1] ) && jQuery.isPlainObject( context ) ) {
 						for ( match in context ) {
 							// Properties of context are called as methods if possible
-							if ( jQuery.isFunction( this[ match ] ) ) {
+							if ( jQuery.is_function( this[ match ] ) ) {
 								this[ match ]( context[ match ] );
 
 							// ...and otherwise set as attributes
@@ -2834,7 +2834,7 @@ var rootjQuery,
 
 		// HANDLE: $(function)
 		// Shortcut for document ready
-		} else if ( jQuery.isFunction( selector ) ) {
+		} else if ( jQuery.is_function( selector ) ) {
 			return typeof rootjQuery.ready !== "undefined" ?
 				rootjQuery.ready( selector ) :
 				// Execute immediately if ready is not present
@@ -3270,11 +3270,11 @@ jQuery.extend({
 					var fns = arguments;
 					return jQuery.Deferred(function( newDefer ) {
 						jQuery.each( tuples, function( i, tuple ) {
-							var fn = jQuery.isFunction( fns[ i ] ) && fns[ i ];
+							var fn = jQuery.is_function( fns[ i ] ) && fns[ i ];
 							// deferred[ done | fail | progress ] for forwarding actions to newDefer
 							deferred[ tuple[1] ](function() {
 								var returned = fn && fn.apply( this, arguments );
-								if ( returned && jQuery.isFunction( returned.promise ) ) {
+								if ( returned && jQuery.is_function( returned.promise ) ) {
 									returned.promise()
 										.done( newDefer.resolve )
 										.fail( newDefer.reject )
@@ -3343,7 +3343,7 @@ jQuery.extend({
 			length = resolveValues.length,
 
 			// the count of uncompleted subordinates
-			remaining = length !== 1 || ( subordinate && jQuery.isFunction( subordinate.promise ) ) ? length : 0,
+			remaining = length !== 1 || ( subordinate && jQuery.is_function( subordinate.promise ) ) ? length : 0,
 
 			// the master Deferred. If resolveValues consist of only a single Deferred, just use that.
 			deferred = remaining === 1 ? subordinate : jQuery.Deferred(),
@@ -3370,7 +3370,7 @@ jQuery.extend({
 			progressContexts = new Array( length );
 			resolveContexts = new Array( length );
 			for ( ; i < length; i++ ) {
-				if ( resolveValues[ i ] && jQuery.isFunction( resolveValues[ i ].promise ) ) {
+				if ( resolveValues[ i ] && jQuery.is_function( resolveValues[ i ].promise ) ) {
 					resolveValues[ i ].promise()
 						.done( updateFunc( i, resolveContexts, resolveValues ) )
 						.fail( deferred.reject )
@@ -3792,7 +3792,7 @@ function internalRemoveData( elem, name, pvt ) {
 		if ( thisCache ) {
 
 			// Support array or space separated string names for data keys
-			if ( !jQuery.isArray( name ) ) {
+			if ( !jQuery.is_array( name ) ) {
 
 				// try the string as a key before any manipulation
 				if ( name in thisCache ) {
@@ -3964,7 +3964,7 @@ jQuery.extend({
 
 			// Speed up dequeue by getting out quickly if this is just a lookup
 			if ( data ) {
-				if ( !queue || jQuery.isArray(data) ) {
+				if ( !queue || jQuery.is_array(data) ) {
 					queue = jQuery._data( elem, type, jQuery.makeArray(data) );
 				} else {
 					queue.push( data );
@@ -4118,7 +4118,7 @@ var access = jQuery.access = function( elems, fn, key, value, chainable, emptyGe
 	} else if ( value !== undefined ) {
 		chainable = true;
 
-		if ( !jQuery.isFunction( value ) ) {
+		if ( !jQuery.is_function( value ) ) {
 			raw = true;
 		}
 
@@ -4568,7 +4568,7 @@ jQuery.event = {
 				jQuery.acceptData( elem ) ) {
 
 				// Call a native DOM method on the target with the same name name as the event.
-				// Can't use an .isFunction() check here because IE6/7 fails that test.
+				// Can't use an .is_function() check here because IE6/7 fails that test.
 				// Don't do default actions on window, that's where global variables be (#6170)
 				if ( ontype && elem[ type ] && !jQuery.isWindow( elem ) ) {
 
@@ -5891,15 +5891,15 @@ jQuery.fn.extend({
 			set = this,
 			iNoClone = l - 1,
 			value = args[0],
-			isFunction = jQuery.isFunction( value );
+			is_function = jQuery.is_function( value );
 
 		// We can't cloneNode fragments that contain checked, in WebKit
-		if ( isFunction ||
+		if ( is_function ||
 				( l > 1 && typeof value === "string" &&
 					!support.checkClone && rchecked.test( value ) ) ) {
 			return this.each(function( index ) {
 				var self = set.eq( index );
-				if ( isFunction ) {
+				if ( is_function ) {
 					args[0] = value.call( this, index, self.html() );
 				}
 				self.domManip( args, callback );
@@ -6851,7 +6851,7 @@ jQuery.fn.extend({
 				map = {},
 				i = 0;
 
-			if ( jQuery.isArray( name ) ) {
+			if ( jQuery.is_array( name ) ) {
 				styles = getStyles( elem );
 				len = name.length;
 
@@ -7250,7 +7250,7 @@ function propFilter( props, specialEasing ) {
 		name = jQuery.camelCase( index );
 		easing = specialEasing[ name ];
 		value = props[ index ];
-		if ( jQuery.isArray( value ) ) {
+		if ( jQuery.is_array( value ) ) {
 			easing = value[ 1 ];
 			value = props[ index ] = value[ 0 ];
 		}
@@ -7364,7 +7364,7 @@ function Animation( elem, properties, options ) {
 
 	jQuery.map( props, createTween, animation );
 
-	if ( jQuery.isFunction( animation.opts.start ) ) {
+	if ( jQuery.is_function( animation.opts.start ) ) {
 		animation.opts.start.call( elem, animation );
 	}
 
@@ -7385,7 +7385,7 @@ function Animation( elem, properties, options ) {
 
 jQuery.Animation = jQuery.extend( Animation, {
 	tweener: function( props, callback ) {
-		if ( jQuery.isFunction( props ) ) {
+		if ( jQuery.is_function( props ) ) {
 			callback = props;
 			props = [ "*" ];
 		} else {
@@ -7415,9 +7415,9 @@ jQuery.Animation = jQuery.extend( Animation, {
 jQuery.speed = function( speed, easing, fn ) {
 	var opt = speed && typeof speed === "object" ? jQuery.extend( {}, speed ) : {
 		complete: fn || !fn && easing ||
-			jQuery.isFunction( speed ) && speed,
+			jQuery.is_function( speed ) && speed,
 		duration: speed,
-		easing: fn && easing || easing && !jQuery.isFunction( easing ) && easing
+		easing: fn && easing || easing && !jQuery.is_function( easing ) && easing
 	};
 
 	opt.duration = jQuery.fx.off ? 0 : typeof opt.duration === "number" ? opt.duration :
@@ -7432,7 +7432,7 @@ jQuery.speed = function( speed, easing, fn ) {
 	opt.old = opt.complete;
 
 	opt.complete = function() {
-		if ( jQuery.isFunction( opt.old ) ) {
+		if ( jQuery.is_function( opt.old ) ) {
 			opt.old.call( this );
 		}
 
@@ -7714,7 +7714,7 @@ var rreturn = /\r/g;
 
 jQuery.fn.extend({
 	val: function( value ) {
-		var hooks, ret, isFunction,
+		var hooks, ret, is_function,
 			elem = this[0];
 
 		if ( !arguments.length ) {
@@ -7737,7 +7737,7 @@ jQuery.fn.extend({
 			return;
 		}
 
-		isFunction = jQuery.isFunction( value );
+		is_function = jQuery.is_function( value );
 
 		return this.each(function( i ) {
 			var val;
@@ -7746,7 +7746,7 @@ jQuery.fn.extend({
 				return;
 			}
 
-			if ( isFunction ) {
+			if ( is_function ) {
 				val = value.call( this, i, jQuery( this ).val() );
 			} else {
 				val = value;
@@ -7757,7 +7757,7 @@ jQuery.fn.extend({
 				val = "";
 			} else if ( typeof val === "number" ) {
 				val += "";
-			} else if ( jQuery.isArray( val ) ) {
+			} else if ( jQuery.is_array( val ) ) {
 				val = jQuery.map( val, function( value ) {
 					return value == null ? "" : value + "";
 				});
@@ -7867,7 +7867,7 @@ jQuery.extend({
 jQuery.each([ "radio", "checkbox" ], function() {
 	jQuery.valHooks[ this ] = {
 		set: function( elem, value ) {
-			if ( jQuery.isArray( value ) ) {
+			if ( jQuery.is_array( value ) ) {
 				return ( elem.checked = jQuery.inArray( jQuery(elem).val(), value ) >= 0 );
 			}
 		}
@@ -8286,7 +8286,7 @@ jQuery.fn.extend({
 			len = this.length,
 			proceed = typeof value === "string" && value;
 
-		if ( jQuery.isFunction( value ) ) {
+		if ( jQuery.is_function( value ) ) {
 			return this.each(function( j ) {
 				jQuery( this ).addClass( value.call( this, j, this.className ) );
 			});
@@ -8329,7 +8329,7 @@ jQuery.fn.extend({
 			len = this.length,
 			proceed = arguments.length === 0 || typeof value === "string" && value;
 
-		if ( jQuery.isFunction( value ) ) {
+		if ( jQuery.is_function( value ) ) {
 			return this.each(function( j ) {
 				jQuery( this ).removeClass( value.call( this, j, this.className ) );
 			});
@@ -8373,7 +8373,7 @@ jQuery.fn.extend({
 			return stateVal ? this.addClass( value ) : this.removeClass( value );
 		}
 
-		if ( jQuery.isFunction( value ) ) {
+		if ( jQuery.is_function( value ) ) {
 			return this.each(function( i ) {
 				jQuery( this ).toggleClass( value.call(this, i, this.className, stateVal), stateVal );
 			});
@@ -8607,7 +8607,7 @@ function addToPrefiltersOrTransports( structure ) {
 			i = 0,
 			dataTypes = dataTypeExpression.toLowerCase().match( rnotwhite ) || [];
 
-		if ( jQuery.isFunction( func ) ) {
+		if ( jQuery.is_function( func ) ) {
 			// For each dataType in the dataTypeExpression
 			while ( (dataType = dataTypes[i++]) ) {
 				// Prepend if requested
@@ -9313,7 +9313,7 @@ jQuery.extend({
 jQuery.each( [ "get", "post" ], function( i, method ) {
 	jQuery[ method ] = function( url, data, callback, type ) {
 		// shift arguments if data argument was omitted
-		if ( jQuery.isFunction( data ) ) {
+		if ( jQuery.is_function( data ) ) {
 			type = type || callback;
 			callback = data;
 			data = undefined;
@@ -9351,7 +9351,7 @@ jQuery._evalUrl = function( url ) {
 
 jQuery.fn.extend({
 	wrapAll: function( html ) {
-		if ( jQuery.isFunction( html ) ) {
+		if ( jQuery.is_function( html ) ) {
 			return this.each(function(i) {
 				jQuery(this).wrapAll( html.call(this, i) );
 			});
@@ -9380,7 +9380,7 @@ jQuery.fn.extend({
 	},
 
 	wrapInner: function( html ) {
-		if ( jQuery.isFunction( html ) ) {
+		if ( jQuery.is_function( html ) ) {
 			return this.each(function(i) {
 				jQuery(this).wrapInner( html.call(this, i) );
 			});
@@ -9400,10 +9400,10 @@ jQuery.fn.extend({
 	},
 
 	wrap: function( html ) {
-		var isFunction = jQuery.isFunction( html );
+		var is_function = jQuery.is_function( html );
 
 		return this.each(function(i) {
-			jQuery( this ).wrapAll( isFunction ? html.call(this, i) : html );
+			jQuery( this ).wrapAll( is_function ? html.call(this, i) : html );
 		});
 	},
 
@@ -9441,7 +9441,7 @@ var r20 = /%20/g,
 function buildParams( prefix, obj, traditional, add ) {
 	var name;
 
-	if ( jQuery.isArray( obj ) ) {
+	if ( jQuery.is_array( obj ) ) {
 		// Serialize array item.
 		jQuery.each( obj, function( i, v ) {
 			if ( traditional || rbracket.test( prefix ) ) {
@@ -9473,7 +9473,7 @@ jQuery.param = function( a, traditional ) {
 		s = [],
 		add = function( key, value ) {
 			// If value is a function, invoke it and return its value
-			value = jQuery.isFunction( value ) ? value() : ( value == null ? "" : value );
+			value = jQuery.is_function( value ) ? value() : ( value == null ? "" : value );
 			s[ s.length ] = encodeURIComponent( key ) + "=" + encodeURIComponent( value );
 		};
 
@@ -9483,7 +9483,7 @@ jQuery.param = function( a, traditional ) {
 	}
 
 	// If an array was passed in, assume that it is an array of form elements.
-	if ( jQuery.isArray( a ) || ( a.jquery && !jQuery.isPlainObject( a ) ) ) {
+	if ( jQuery.is_array( a ) || ( a.jquery && !jQuery.isPlainObject( a ) ) ) {
 		// Serialize the form elements
 		jQuery.each( a, function() {
 			add( this.name, this.value );
@@ -9523,7 +9523,7 @@ jQuery.fn.extend({
 
 			return val == null ?
 				null :
-				jQuery.isArray( val ) ?
+				jQuery.is_array( val ) ?
 					jQuery.map( val, function( val ) {
 						return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
 					}) :
@@ -9841,7 +9841,7 @@ jQuery.ajaxPrefilter( "json jsonp", function( s, originalSettings, jqXHR ) {
 	if ( jsonProp || s.dataTypes[ 0 ] === "jsonp" ) {
 
 		// Get callback name, remembering preexisting value associated with it
-		callbackName = s.jsonpCallback = jQuery.isFunction( s.jsonpCallback ) ?
+		callbackName = s.jsonpCallback = jQuery.is_function( s.jsonpCallback ) ?
 			s.jsonpCallback() :
 			s.jsonpCallback;
 
@@ -9884,7 +9884,7 @@ jQuery.ajaxPrefilter( "json jsonp", function( s, originalSettings, jqXHR ) {
 			}
 
 			// Call if it was a function and we have a response
-			if ( responseContainer && jQuery.isFunction( overwritten ) ) {
+			if ( responseContainer && jQuery.is_function( overwritten ) ) {
 				overwritten( responseContainer[ 0 ] );
 			}
 
@@ -9951,7 +9951,7 @@ jQuery.fn.load = function( url, params, callback ) {
 	}
 
 	// If it's a function
-	if ( jQuery.isFunction( params ) ) {
+	if ( jQuery.is_function( params ) ) {
 
 		// We assume that it's the callback
 		callback = params;
@@ -10047,7 +10047,7 @@ jQuery.offset = {
 			curLeft = parseFloat( curCSSLeft ) || 0;
 		}
 
-		if ( jQuery.isFunction( options ) ) {
+		if ( jQuery.is_function( options ) ) {
 			options = options.call( elem, i, curOffset );
 		}
 

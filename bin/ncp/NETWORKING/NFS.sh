@@ -8,9 +8,9 @@
 # More at: https://ownyourbits.com
 #
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
 
@@ -26,7 +26,7 @@ function configure () {
     if [[ "$ACTIVE" != "yes" ]]
     then service nfs-kernel-server stop
          systemctl disable nfs-kernel-server
-         Print "NFS disabled"
+         prtln "NFS disabled"
          return
     fi
     
@@ -34,9 +34,9 @@ function configure () {
     ################################
     id    "$USER"  &>/dev/null || { echo "user $USER does not exist"  ; return 1; }
     id -g "$GROUP" &>/dev/null || { echo "group $GROUP does not exist"; return 1; }
-    [[ -d "$DIR" ]] || { Print "Directory not found: $DIR. Creating"; mkdir --parents "$DIR"; }
+    [[ -d "$DIR" ]] || { prtln "Directory not found: $DIR. Creating"; mkdir --parents "$DIR"; }
     if [[ "$( stat -fc%d / )" == "$( stat -fc%d "$DIR" )" ]]
-    then Print "INFO: mounting a in the SD card" "If you want to use an external mount, make sure it is properly set up"
+    then prtln "INFO: mounting a in the SD card" "If you want to use an external mount, make sure it is properly set up"
     fi
     # CONFIG
     ################################
@@ -47,7 +47,7 @@ EOF
     systemctl enable rpcbind
     systemctl enable nfs-kernel-server
     service nfs-kernel-server restart
-    Print "Enabled: NFS"
+    prtln "Enabled: NFS"
 }
 
 # License

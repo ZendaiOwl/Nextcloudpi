@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -40,7 +40,7 @@ function log {
 # 0: Is root
 # 1: Not root
 # 2: Invalid number of arguments
-function isRoot {
+function is_root {
     [[ "$#" -ne 0 ]] && return 2
     [[ "$EUID" -eq 0 ]]
 }
@@ -50,7 +50,7 @@ function isRoot {
 # 0: Command exists on the system
 # 1: Command is unavailable on the system
 # 2: Missing command argument to check
-function hasCMD {
+function has_cmd {
     if [[ "$#" -eq 1 ]]
     then declare -r CHECK="$1"
          if command -v "$CHECK" &>/dev/null
@@ -66,13 +66,13 @@ function hasCMD {
 # 0: Install completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
-function updatePKG {
+function update_apt {
     if [[ "$#" -ne 0 ]]
     then log 2 "Invalid number of arguments, requires none"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-        if isRoot
+        if is_root
         then log -1 "Updating apt lists"
              if "${ROOTUPDATE[@]}" &>/dev/null
              then log 0 "Apt list updated"
@@ -93,14 +93,14 @@ function updatePKG {
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-function installPKG {
+function install_package {
     if [[ "$#" -eq 0 ]]
     then log 2 "Requires: [PKG(s) to install]"; return 3
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
          declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-        if isRoot
+        if is_root
         then log -1 "Installing ${PKG[*]}"
              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
              then log 0 "Installation completed"; return 0
@@ -132,12 +132,12 @@ function install {
              HTTP_USER='www-data' \
              PROVISIONING_SERVICE='/usr/lib/systemd/system/nc-provisioning.service'
     # During build, this step is run before ncp.sh. Avoid executing twice
-    if isFile "$PROVISIONING_SERVICE"
+    if is_file "$PROVISIONING_SERVICE"
     then return 0
     fi
 
     # Update
-    updatePKG
+    update_apt
 
     # Optional packets for Nextcloud and Apps
     # NOTE: php-smbclient in sury but not in Debian sources, we'll use the binary version
@@ -147,7 +147,7 @@ function install {
     # bcmath: for LDAP
     # gmp: for bookmarks
     # imagick, ghostscript: for gallery
-    installPKG jq \
+    install_package jq \
                wget \
                lbzip2 \
                procps \
@@ -159,15 +159,15 @@ function install {
                iputils-ping \
                redis-server \
                php"$PHPVER"-{exif,bcmath,gmp,redis} 
-    #installPKG imagemagick php"$PHPVER"-imagick ghostscript
+    #install_package imagemagick php"$PHPVER"-imagick ghostscript
 
     # POSTFIX
-    if ! installPKG 'postfix'
+    if ! install_package 'postfix'
     then # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
          log -1 "[NCP]: Please ignore the previous postfix installation error"
          mv '/usr/bin/newaliases' '/'
          ln -s '/bin/true' '/usr/bin/newaliases'
-         installPKG 'postfix'
+         install_package 'postfix'
          rm '/usr/bin/newaliases'
          mv '/newaliases' '/usr/bin/newaliases'
     fi
@@ -178,8 +178,8 @@ function install {
     sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'    "$REDIS_CONF"
     sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'   "$REDIS_CONF"
     sed -i "s|^port.*|port $PORT_NR|"                                 "$REDIS_CONF"
-    Print "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
-    Print 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
+    prtln "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
+    prtln 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
 
     if is_lxc
     then mkdir --parents '/etc/systemd/system/redis-server.service.d'
@@ -243,7 +243,7 @@ function configure
     fi
 
     log -1 "Checking for existing nextcloud directory"
-    if isDirectory 'nextcloud'
+    if is_directory 'nextcloud'
     then rm --recursive --force 'nextcloud'
          log -1 "Removed directory: nextcloud"
     else log -1 "Directory not found: nextcloud"
@@ -275,11 +275,11 @@ function configure
     chmod +x "$OCPATH"/occ
     
     log -1 "chmod ($HTUSER) & chown (0644): .htaccess"
-    if isFile "$OCPATH"/.htaccess
+    if is_file "$OCPATH"/.htaccess
     then chmod 0644 "$OCPATH"/.htaccess
          chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
     fi
-    if isFile "$OCPATH"/data/.htaccess
+    if is_file "$OCPATH"/data/.htaccess
     then chmod 0644 "$OCPATH"/data/.htaccess
          chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
     fi
@@ -310,7 +310,7 @@ function configure
     fi
     
     while :
-    do isSocket "$MYSQL_SOCKET" && break
+    do is_socket "$MYSQL_SOCKET" && break
        sleep 1
     done
     
@@ -368,7 +368,7 @@ EOF
     [[ "$arch" =~ "armv7" ]] && arch='armv7'
     install_template "$NOTIFYPUSH_TEMPLATE" "$NOTIFYPUSH_SERVICE"
 
-    if ! isFile '/.docker-image'
+    if ! is_file '/.docker-image'
     then systemctl enable notify_push
     fi
     

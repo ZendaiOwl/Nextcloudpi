@@ -88,7 +88,7 @@ class Test:
 
 
 def usage():
-    "Print usage"
+    "prtln usage"
     print("usage: nextcloud_tests.py [--new] [ip]")
     print("--new removes saved configuration")
 

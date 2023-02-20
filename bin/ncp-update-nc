@@ -17,8 +17,8 @@
 # - failure at each test point
 # -> must pass basic NC in tests.py ( meaning it's not in a broken state )
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -53,7 +53,7 @@ function log {
 # 0: Is root
 # 1: Not root
 # 2: Invalid number of arguments
-function isRoot {
+function is_root {
     [[ "$#" -ne 0 ]] && return 2
     [[ "$EUID" -eq 0 ]]
 }
@@ -63,7 +63,7 @@ function isRoot {
 # 0: Is a user
 # 1: Not a user
 # 2: Invalid number of arguments
-function isUser {
+function is_user {
     [[ "$#" -ne 1 ]] && return 2
     if id -u "$1" &>/dev/null
     then return 0
@@ -76,7 +76,7 @@ function isUser {
 # 0: Path exist
 # 1: No such path
 # 2: Invalid number of arguments
-function isPath {
+function is_path {
     [[ "$#" -ne 1 ]] && return 2
     [[ -e "$1" ]]
 }
@@ -85,7 +85,7 @@ function isPath {
 # 0: Is a file
 # 1: Not a file
 # 2: Invalid number of arguments
-function isFile {
+function is_file {
     [[ "$#" -ne 1 ]] && return 2
     [[ -f "$1" ]]
 }
@@ -94,7 +94,7 @@ function isFile {
 # 0: Is readable
 # 1: Not readable
 # 2: Invalid number of arguments
-function isReadable {
+function is_readable {
     [[ "$#" -ne 1 ]] && return 2
     [[ -r "$1" ]]
 }
@@ -103,7 +103,7 @@ function isReadable {
 # 0: Is writable
 # 1: Not writable
 # 2: Invalid number of arguments
-function isWritable {
+function is_writeable {
     [[ "$#" -ne 1 ]] && return 2
     [[ -w "$1" ]]
 }
@@ -112,7 +112,7 @@ function isWritable {
 # 0: Is executable
 # 1: Not executable
 # 2: Invalid number of arguments
-function isExecutable {
+function is_executable {
     [[ "$#" -ne 1 ]] && return 2
     [[ -x "$1" ]]
 }
@@ -122,7 +122,7 @@ function isExecutable {
 # 0: Is a directory
 # 1: Not a directory
 # 2: Invalid number of arguments
-function isDirectory {
+function is_directory {
     [[ "$#" -ne 1 ]] && return 2
     [[ -d "$1" ]]
 }
@@ -132,7 +132,7 @@ function isDirectory {
 # 0: Is a named pipe
 # 1: Not a named pipe
 # 2: Invalid number of arguments
-function isPipe {
+function is_pipe {
     [[ "$#" -ne 1 ]] && return 2
     [[ -p "$1" ]]
 }
@@ -142,7 +142,7 @@ function isPipe {
 # 0: Is greater
 # 1: Not greater
 # 2: Invalid number of arguments
-function isGreater {
+function is_greater {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -gt "$2" ]]
 }
@@ -152,7 +152,7 @@ function isGreater {
 # 0: Is greater than or equal
 # 1: Not greater than or equal
 # 2: Invalid number of arguments
-function isGreaterOrEqual {
+function is_equal_or_greater {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -ge "$2" ]]
 }
@@ -162,7 +162,7 @@ function isGreaterOrEqual {
 # 0: Is less
 # 1: Not less
 # 2: Invalid number of arguments
-function isLess {
+function is_less {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -lt "$2" ]]
 }
@@ -172,7 +172,7 @@ function isLess {
 # 0: Is set name reference
 # 1: Not set name reference
 # 2: Invalid number of arguments
-function isReference {
+function is_reference {
     [[ "$#" -ne 1 ]] && return 2
     [[ -R "$1" ]]
 }
@@ -182,7 +182,7 @@ function isReference {
 # 0: Is a socket
 # 1: Not a socket
 # 2: Invalid number of arguments
-function isSocket {
+function is_socket {
     [[ "$#" -ne 1 ]] && return 2
     [[ -S "$1" ]]
 }
@@ -192,7 +192,7 @@ function isSocket {
 # 0: Is set
 # 1: Not set 
 # 2: Invalid number of arguments
-function isSet {
+function is_set {
     [[ "$#" -ne 1 ]] && return 2
     [[ -v "$1" ]]
 }
@@ -202,7 +202,7 @@ function isSet {
 # 0: Not set
 # 1: Is set 
 # 2: Invalid number of arguments
-function notSet {
+function not_set {
     [[ "$#" -ne 1 ]] && return 2
     [[ ! -v "$1" ]]
 }
@@ -212,7 +212,7 @@ function notSet {
 # 0: Is equal
 # 1: Not equal
 # 2: Invalid number of arguments
-function isEqual {
+function is_equal {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -eq "$2" ]]
 }
@@ -222,7 +222,7 @@ function isEqual {
 # 0: Not equal
 # 1: Is equal
 # 2: Invalid number of arguments
-function notEqual {
+function not_equal {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -ne "$2" ]]
 }
@@ -232,7 +232,7 @@ function notEqual {
 # 0: Is a match
 # 1: Not a match
 # 2: Invalid number of arguments
-function isMatch {
+function is_match {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" == "$2" ]]
 }
@@ -242,7 +242,7 @@ function isMatch {
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function notMatch {
+function not_match {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" != "$2" ]]
 }
@@ -252,7 +252,7 @@ function notMatch {
 # 0: Is zero
 # 1: Not zero
 # 2: Invalid number of arguments
-function isZero {
+function is_zero {
     [[ "$#" -ne 1 ]] && return 2
     [[ -z "$1" ]]
 }
@@ -262,7 +262,7 @@ function isZero {
 # 0: Not zero
 # 1: Is zero
 # 2: Invalid number of arguments
-function notZero {
+function not_zero {
     [[ "$#" -ne 1 ]] && return 2
     [[ -n "$1" ]]
 }
@@ -272,7 +272,7 @@ function notZero {
 # 0: Variable is an array
 # 1: Variable is not an array
 # 2: Missing argument: Variable to check
-function isArray {
+function is_array {
     if [[ "$#" -ne 1 ]]
     then return 2
     elif ! declare -a "$1" &>/dev/null
@@ -286,7 +286,7 @@ function isArray {
 # 0: Available
 # 1: Unvailable
 # 2: Too many/few arguments
-function isFunction {
+function is_function {
     if [[ "$#" -eq 1 ]]
     then declare -r FUNC="$1"
          if declare -f "$FUNC" &>/dev/null
@@ -302,7 +302,7 @@ function isFunction {
 # 0: Has String pattern
 # 1: No String pattern
 # 2: Invalid number of arguments
-function hasText {
+function has_text {
     [[ "$#" -ne 2 ]] && return 2
     declare -r PATTERN="$1" STRING="$2"
     [[ "$STRING" == *"$PATTERN"* ]]
@@ -312,20 +312,20 @@ VER="$1"
 BIN="${0##*/}"
 
 # shellcheck disable=SC1091
-if isFile '/usr/local/etc/library.sh' 
+if is_file '/usr/local/etc/library.sh' 
 then source '/usr/local/etc/library.sh' 
-elif isFile 'etc/library.sh'
+elif is_file 'etc/library.sh'
 then source '/usr/local/etc/library.sh'
 fi
 
 # pre-checks
 ####################
-if isZero "$VER"
+if is_zero "$VER"
 then log 2 "Usage: $BIN <version>"
      exit 1
 fi
 
-if isFile '/.docker-image'
+if is_file '/.docker-image'
 then BASEDIR='/data'
 else BASEDIR='/var/www'
 fi
@@ -365,7 +365,7 @@ fi
 # check version
 ####################
 
-if isRoot
+if is_root
 then SUDO=(sudo -u www-data)
 fi
 
@@ -382,11 +382,11 @@ then log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 1
 fi
 
 if ! grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT"
-then Print "Invalid version: $CURRENT"; exit 1
+then prtln "Invalid version: $CURRENT"; exit 1
 fi
 
 if ! grep -qP "\d+\.\d+\.\d+" <<<"$VER"
-then Print "Invalid version: $VER"; exit 1
+then prtln "Invalid version: $VER"; exit 1
 fi
 
 log -1 "Current Nextcloud version: $CURRENT"
@@ -406,7 +406,7 @@ fi
 # make sure that cron.php is not running and there are no pending jobs
 # https://github.com/nextcloud/server/issues/10949
 pgrep -cf cron.php &>/dev/null && { pkill -f cron.php; sleep 3; }
-pgrep -cf cron.php &>/dev/null && { Print "cron.php running. Abort"; exit 1; }
+pgrep -cf cron.php &>/dev/null && { prtln "cron.php running. Abort"; exit 1; }
 mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 
 # cleanup
@@ -414,7 +414,7 @@ mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 function cleanup {
     local RET="$?"
     set +eE
-    Print "Cleanup"
+    prtln "Cleanup"
     if ! rm --recursive --force "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
     then log 2 "Failed to remove: $BASEDIR/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
     fi
@@ -440,7 +440,7 @@ WITH_DATA='no'
 COMPRESSED='yes'
 LIMIT=0
 
-Print "Creating backup"
+prtln "Creating backup"
 set +eE
 ncp-backup "$BKPDIR" "$WITH_DATA" "$COMPRESSED" "$LIMIT" # && false # test point
 RET="$?"
@@ -465,7 +465,7 @@ then rm --force "$BKP_"
 fi
 
 BKP="$(dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
-Print "Storing backup at: $BKP"
+prtln "Storing backup at: $BKP"
 mv "$BKP_" "$BKP"
 
 # simple restore if anything fails from here
@@ -473,7 +473,7 @@ mv "$BKP_" "$BKP"
 function rollback_simple () {
     set +eE
     trap "" INT TERM HUP ERR
-    Print "Abort" "Simple rollback"
+    prtln "Abort" "Simple rollback"
     if ! rm --recursive --force "$BASEDIR"/nextcloud
     then log 2 "Failed to remove: $BASEDIR/nextcloud"
     fi
@@ -487,7 +487,7 @@ trap 'rollback_simple' INT TERM HUP ERR
 
 # replace code
 ####################
-Print "Installing Nextcloud: $VER"
+prtln "Installing Nextcloud: $VER"
 mv -T                  'nextcloud nextcloud-old'
 tar -xf                'nextcloud.tar.bz2'     # && false # test point
 rm --recursive --force '/var/www/nextcloud.tar.bz2'
@@ -513,7 +513,7 @@ done
 # copy data if it was at the default location
 ####################
 if [[ "$DATADIR" == "/var/www/nextcloud/data" ]] || [[ "$DATADIR" == "/data/nextcloud/data" ]]
-then Print "Restoring data"
+then prtln "Restoring data"
      if ! mv -T 'nextcloud-old/data' 'nextcloud/data'
      then log 2 "Failed to move nextcloud-old/data to nextcloud/data"
           exit 1
@@ -525,7 +525,7 @@ fi
 function rollback () {
     set +eE
     trap "" INT TERM HUP ERR EXIT
-    Print "Abort" "Doing cleanup"
+    prtln "Abort" "Doing cleanup"
     
     if ! rm --recursive --force '/var/www/nextcloud.tar.bz2' "$BASEDIR"/nextcloud-old
     then log 2 "Failed to remove: /var/www/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
@@ -606,7 +606,7 @@ else
           start_notify_push
 
           NC_DOMAIN="$(ncc config:system:get overwrite.cli.url)"
-          if ! set-nc-domain "$NC_DOMAIN"
+          if ! set_nc_domain "$NC_DOMAIN"
           then log 2 "notify_push setup failed. Are you behind a proxy?"
                log -1 "Run: 'ncc config:system:set trusted_proxies 15 --value=<proxy_IP>' and then 'ncc notify_push:setup https://<domain>/push to enable"
                log -1 "Check https://help.nextcloud.com/tags/ncp for support"
@@ -659,7 +659,7 @@ then (
 
         # Setup apt repository for php 8
         wget -O '/etc/apt/trusted.gpg.d/php.gpg' 'https://packages.sury.org/php/apt.gpg'
-        Print "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > '/etc/apt/sources.list.d/php.list'
+        prtln "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > '/etc/apt/sources.list.d/php.list'
         apt-get update --assume-yes
         clear_opcache
 
@@ -687,7 +687,7 @@ then (
 
         a2enconf php"$PHPVER_NEW"-fpm
         
-        Print "Starting apache and php-fpm"
+        prtln "Starting apache and php-fpm"
         service php"$PHPVER_NEW"-fpm start
         service apache2 start
         "${ncc[@]}" status

@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -63,20 +63,20 @@ function configure {
     ## CHECKS
     local SRCDIR BASEDIR ENCDIR BKP
     if ! SRCDIR="$( get_nc_config_value datadirectory )"
-    then Print "Error reading data directory. Is Nextcloud running and configured?"
+    then prtln "Error reading data directory. Is Nextcloud running and configured?"
          return 1
     fi
     
     if [[ ! -d "${SRCDIR?}" ]]
-    then Print "Directory not found: $SRCDIR"
+    then prtln "Directory not found: $SRCDIR"
          return 1
     fi
     
     if [[ "$SRCDIR" == "${DATADIR?}" ]]
-    then Print "Data exists: $SRCDIR"
+    then prtln "Data exists: $SRCDIR"
          return 0
     elif [[ "$SRCDIR" == "$DATADIR"/data ]]
-    then Print "Data exists: $SRCDIR"
+    then prtln "Data exists: $SRCDIR"
          return 0
     fi
     
@@ -94,12 +94,12 @@ function configure {
     # Checks
     if [[ "$DISABLE_FS_CHECK" != 1 ]]
     then if ! grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR")
-         then Print "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
+         then prtln "Only ext/btrfs filesystems can hold the data directory (found '$(stat -fc%T "$BASEDIR")')"
               return 1
          fi
     fi
     if ! sudo -u www-data test -x "$BASEDIR"
-    then Print "ERROR: www-data user does not have execute permissions in: $BASEDIR"
+    then prtln "ERROR: www-data user does not have execute permissions in: $BASEDIR"
          return 1
     fi
     
@@ -107,7 +107,7 @@ function configure {
     if [[ -d "$BASEDIR" ]]
     then if ! rmdir "$BASEDIR" &>/dev/null
          then BKP="${BASEDIR}-$(date "+%m-%d-%y.%s")"
-              Print "INFO: $BASEDIR is not empty. Creating backup: ${BKP?}"
+              prtln "INFO: $BASEDIR is not empty. Creating backup: ${BKP?}"
               if ! mv "$BASEDIR" "$BKP"
               then log 2 "Failed to create a backup"; return 1
               fi
@@ -117,15 +117,15 @@ function configure {
     
     ## COPY
     if ! cd '/var/www/nextcloud'
-    then Print "Failed to change directory to: /var/www/nextcloud"; return 1
+    then prtln "Failed to change directory to: /var/www/nextcloud"; return 1
     fi
     [[ "$BUILD_MODE" == 1 ]] || save_maintenance_mode
     
-    Print "Moving data directory from $SRCDIR to $BASEDIR"
+    prtln "Moving data directory from $SRCDIR to $BASEDIR"
     
     # use subvolumes, if BTRFS
     if [[ "$(stat -fc%T "$BASEDIR")" == "btrfs" ]] && ! is_docker
-    then Print "BTRFS filesystem detected"
+    then prtln "BTRFS filesystem detected"
          if ! rmdir "$BASEDIR"
          then log 2 "Failed to remove directory: $BASEDIR"; return 1
          fi
@@ -176,12 +176,12 @@ function configure {
         # shellcheck disable=SC1090
         . "${BINDIR?}/SYSTEM/metrics.sh"
         if ! reload_metrics_config
-        then Print "WARNING: There was an issue reloading ncp metrics. This might not affect your installation, but keep it in mind if there is an issue with metrics."
+        then prtln "WARNING: There was an issue reloading ncp metrics. This might not affect your installation, but keep it in mind if there is an issue with metrics."
              true
         fi
     )
     
-    Print "The NC data directory has been moved successfully."
+    prtln "The NC data directory has been moved successfully."
 }
 
 # License

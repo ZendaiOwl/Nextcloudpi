@@ -8,9 +8,9 @@
 # More at https://ownyourbits.com/
 #
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print {
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -19,7 +19,7 @@ function Print {
 # 0: Is a directory
 # 1: Not a directory
 # 2: Invalid number of arguments
-function isDirectory {
+function is_directory {
     [[ "$#" -ne 1 ]] && return 2
     [[ -d "$1" ]]
 }
@@ -29,7 +29,7 @@ function isDirectory {
 # 0: Is a match
 # 1: Not a match
 # 2: Invalid number of arguments
-function isMatch {
+function is_match {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" == "$2" ]]
 }
@@ -49,18 +49,18 @@ function tmpl_db_dir () {
 function configure () {
     local SRCDIR BASEDIR
     SRCDIR="$(grep 'datadir' '/etc/mysql/mariadb.conf.d/90-ncp.cnf' | awk -F "= " '{ print $2 }')"
-    if ! isDirectory "$SRCDIR"
-    then Print "Database directory not found: $SRCDIR"
+    if ! is_directory "$SRCDIR"
+    then prtln "Database directory not found: $SRCDIR"
          return 1
     fi
 
-    if isDirectory "$DBDIR"
-    then if isEqual "$( find "$DBDIR" -maxdepth 0 -empty | wc -l )" 0
-         then Print "Directory is not empty: $DBDIR"
+    if is_directory "$DBDIR"
+    then if is_equal "$( find "$DBDIR" -maxdepth 0 -empty | wc -l )" 0
+         then prtln "Directory is not empty: $DBDIR"
               return 1
          fi
          if ! rmdir "$DBDIR"
-         then Print "Failed to remove database directory: $DBDIR"
+         then prtln "Failed to remove database directory: $DBDIR"
               return 1
          fi
     fi
@@ -69,22 +69,22 @@ function configure () {
     mkdir --parents "$BASEDIR"
     
     if ! grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR")
-    then Print "Only ext/btrfs filesystems can hold the data directory. (Found: '$(stat -fc%T "${BASEDIR}")"
+    then prtln "Only ext/btrfs filesystems can hold the data directory. (Found: '$(stat -fc%T "${BASEDIR}")"
          return 1
     fi
     if ! sudo -u mysql test -x "$BASEDIR"
-    then Print "ERROR: MySQL user does not have permissions to execute in: $BASEDIR"
+    then prtln "ERROR: MySQL user does not have permissions to execute in: $BASEDIR"
          return 1
     fi
 
-    if isMatch "$(stat -fc%d /)" "$(stat -fc%d "$BASEDIR")"
-    then Print "Moving database to the SD card"
-         Print "If you want to use an external mount make sure to set it up properly"
+    if is_match "$(stat -fc%d /)" "$(stat -fc%d "$BASEDIR")"
+    then prtln "Moving database to the SD card"
+         prtln "If you want to use an external mount make sure to set it up properly"
     fi
     
     save_maintenance_mode
     
-    Print "Moving database to: $DBDIR"
+    prtln "Moving database to: $DBDIR"
     service mysql stop
     mv "$SRCDIR" "$DBDIR"
     install_template 'mysql/90-ncp.cnf.sh' '/etc/mysql/mariadb.conf.d/90-ncp.cnf'

@@ -41,7 +41,7 @@
           <p>This password can be changed from the Nextcloud user configuration</p>
 <br>
           <p>
-             <button type="button" id="print-pwd"   > Print    </button>
+             <button type="button" id="print-pwd"   > prtln    </button>
              <button type="button" id="activate-ncp"> Activate </button>
           </p>
 <br>

@@ -11,8 +11,8 @@
 # This is placed here so the script doesn't fail should someone update from
 # an old NextcloudPi version and source a library.sh without the log function
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -43,7 +43,7 @@ function log {
 # 0: Is set
 # 1: Not set 
 # 2: Invalid number of arguments
-function isSet {
+function is_set {
     [[ "$#" -ne 1 ]] && return 2
     [[ -v "$1" ]]
 }
@@ -56,7 +56,7 @@ LOCAL_LIBRARY='/usr/local/etc/library.sh'
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
 
-if isSet DBG
+if is_set DBG
 then set -e"$DBG"
 else set -e
 fi
@@ -138,35 +138,35 @@ cp --recursive  'etc/ncp-templates' '/usr/local/etc/'
 
 # install new entries of ncp-config and update others
 for FILE in etc/ncp-config.d/* # Skip directories
-do if isDirectory "$FILE"
+do if is_directory "$FILE"
    then continue
-   elif ! isFile "$FILE"
+   elif ! is_file "$FILE"
    then continue
    fi
-   if ! isFile /usr/local/"$FILE"
+   if ! is_file /usr/local/"$FILE"
    then install_app "$(basename "$FILE" .cfg)" # Install new NextcloudPi apps
    fi
 
   # keep saved cfg values
-  if isFile /usr/local/"$FILE"
+  if is_file /usr/local/"$FILE"
   then LENGTH="$(jq '.params | length' /usr/local/"$FILE")"
        for (( i = 0; i < "$LENGTH"; i++ ))
        do ID="$(jq -r ".params[$i].id" /usr/local/"$FILE")"
           VAL="$(jq -r ".params[$i].value" /usr/local/"$FILE")"
           for (( j = 0; j < "$LENGTH"; j++ ))
           do NEW_ID="$(jq -r ".params[$j].id" "$FILE")"
-             if isMatch "$NEW_ID" "$ID"
+             if is_match "$NEW_ID" "$ID"
              then CFG="$(jq ".params[$j].value = \"$VAL\"" "$FILE")"; break
              fi
           done
-        Print "$CFG" > "$FILE"
+        prtln "$CFG" > "$FILE"
         done
   fi
 
   # Configure if active by default
-  if ! isFile /usr/local/"$FILE"
-  then if isMatch "$(jq -r ".params[0].id" "$FILE")" "ACTIVE" && \
-          isMatch "$(jq -r ".params[0].value" "$FILE")" "yes"
+  if ! is_file /usr/local/"$FILE"
+  then if is_match "$(jq -r ".params[0].id" "$FILE")" "ACTIVE" && \
+          is_match "$(jq -r ".params[0].value" "$FILE")" "yes"
        then if ! cp "$FILE" /usr/local/"$FILE"
             then log 2 "Failed to copy file: $FILE"; exit 1
             fi
@@ -185,12 +185,12 @@ LOCAL_NCP_CONFIG='/usr/local/etc/ncp.cfg'
 NCP_CONFIG='etc/ncp.cfg'
 NC_VERSION="$(jq -r '.nextcloud_version' "$NCP_CONFIG")"
 CFG="$(jq ".nextcloud_version = \"$NC_VERSION\"" "$LOCAL_NCP_CONFIG")"
-Print "$CFG" > "$LOCAL_NCP_CONFIG"
+prtln "$CFG" > "$LOCAL_NCP_CONFIG"
 
 NEXTCLOUD_CONFIG='etc/ncp-config.d/nc-nextcloud.cfg'
 LOCAL_NEXTCLOUD_CONFIG='/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
 CFG="$(jq ".params[0].value = \"$NC_VERSION\"" "$NEXTCLOUD_CONFIG")"
-Print "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
+prtln "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
 cp -rT 'etc/ncp-config.d/l10n' "$CONFDIR"/l10n
@@ -255,12 +255,12 @@ then NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
 
      CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
      CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
-     Print "$CFG" > '/usr/local/etc/ncp-recommended.cfg'
+     prtln "$CFG" > '/usr/local/etc/ncp-recommended.cfg'
 
      [[ -f '/.dockerenv' ]] && \
         MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
         MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
-        Print "$MSG"
+        prtln "$MSG"
         notify_admin "New distribution available" "$MSG"
         wall "$MSG"
         cat > '/etc/update-motd.d/30ncp-dist-upgrade' <<EOF

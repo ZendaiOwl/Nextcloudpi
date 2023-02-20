@@ -8,9 +8,9 @@
 # More at: https://ownyourbits.com
 #
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
 

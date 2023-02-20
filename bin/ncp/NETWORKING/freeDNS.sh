@@ -6,9 +6,9 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
 
@@ -25,25 +25,25 @@ function configure () {
     [[ "$ACTIVE" != "yes" ]] && {
         rm --force /etc/cron.d/freeDNS
         service cron restart
-        Print "Disabled: FreeDNS client"
+        prtln "Disabled: FreeDNS client"
         return 0
     }
     
     cat > /usr/local/bin/freedns.sh <<EOF
 #!/usr/bin/env bash
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
-Print "Started: FreeDNS client"
-Print "$URL"
+prtln "Started: FreeDNS client"
+prtln "$URL"
 REGISTERED_IP=\$(dig +short "$DOMAIN"|tail -n1)
 CURRENT_IP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
     [[ "\$CURRENT_IP" != "\$REGISTERED_IP" ]] && {
         wget -q -O /dev/null $URL
     }
-Print "Registered IP: \$REGISTERED_IP | Current IP: \$CURRENT_IP"
+prtln "Registered IP: \$REGISTERED_IP | Current IP: \$CURRENT_IP"
 EOF
     chmod +744 /usr/local/bin/freedns.sh
     
@@ -51,9 +51,9 @@ EOF
     chmod 644 /etc/cron.d/freeDNS
     service cron restart
     
-    set-nc-domain "$DOMAIN"
+    set_nc_domain "$DOMAIN"
     
-    Print "Enabled: FreeDNS client"
+    prtln "Enabled: FreeDNS client"
 }
 
 # License

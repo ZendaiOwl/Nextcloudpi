@@ -7,9 +7,9 @@
 #
 # More at https://ownyourbits.com/2017/03/17/lets-encrypt-installer-for-apache/
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
 
@@ -36,7 +36,7 @@ function tmpl_letsencrypt_domain () {
 function install () {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     if ! cd /etc
-    then Print "Failed to change directory to: /etc"; return 1
+    then prtln "Failed to change directory to: /etc"; return 1
     fi
     apt-get update  "${ARGS[@]}"
     apt-get install "${ARGS[@]}" letsencrypt
@@ -71,13 +71,13 @@ function configure () {
         sed -i "s|SSLCertificateFile.*|SSLCertificateFile $CERT_PATH|"      "$NCP_VHOSTCFG"
         sed -i "s|SSLCertificateKeyFile.*|SSLCertificateKeyFile $KEY_PATH|" "$NCP_VHOSTCFG"
         apachectl -k graceful
-        Print "Letsencrypt certificates disabled. Using self-signed certificates instead."
+        prtln "Letsencrypt certificates disabled. Using self-signed certificates instead."
         exit 0
     }
     
     # shellcheck disable=SC2153
     if [[ -z "$DOMAIN" ]]
-    then Print "Empty domain"; return 1
+    then prtln "Empty domain"; return 1
     fi
     
     # Do it
@@ -140,8 +140,8 @@ EOF
             for DOM in "$DOMAIN" "${OTHER_DOMAINS_ARRAY[@]}"
             do if [[ "$DOM" != "" ]]
                then if [[ ! "$DOMAIN_INDEX" -lt 20 ]]
-                    then Print "WARNING: $DOM will not be included in trusted domains for Nextcloud (maximum reached)."
-                         Print "It will still be included in the SSL certificate"
+                    then prtln "WARNING: $DOM will not be included in trusted domains for Nextcloud (maximum reached)."
+                         prtln "It will still be included in the SSL certificate"
                          continue
                     else ncc config:system:set trusted_domains "$DOMAIN_INDEX" --value="$DOM"
                          DOMAIN_INDEX="$(( "$DOMAIN_INDEX" + 1 ))"
@@ -149,7 +149,7 @@ EOF
                fi
             done
             
-            set-nc-domain "$DOMAIN"
+            set_nc_domain "$DOMAIN"
             apachectl -k graceful
             rm --recursive --force "$NCDIR"/.well-known
             

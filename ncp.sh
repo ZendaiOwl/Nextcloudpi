@@ -12,7 +12,7 @@
 # 0: Is a file
 # 1: Not a file
 # 2: Invalid number of arguments
-function isFile {
+function is_file {
     [[ "$#" -ne 1 ]] && return 2
     [[ -f "$1" ]]
 }
@@ -22,7 +22,7 @@ function isFile {
 # 0: Is a user
 # 1: Not a user
 # 2: Invalid number of arguments
-function isUser {
+function is_user {
     [[ "$#" -ne 1 ]] && return 2
     if id -u "$1" &>/dev/null
     then return 0
@@ -35,21 +35,21 @@ function isUser {
 # 0: Is equal
 # 1: Not equal
 # 2: Invalid number of arguments
-function isEqual {
+function is_equal {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -eq "$2" ]]
 }
 
 function is_docker {
-    isFile /.dockerenv || isFile /.docker-image || isEqual "$DOCKERBUILD" 1
+    is_file /.dockerenv || is_file /.docker-image || is_equal "$DOCKERBUILD" 1
 }
 
 function is_lxc {
     grep -q container=lxc /proc/1/environ &>/dev/null
 }
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -80,7 +80,7 @@ function log {
 # 0: Command exists on the system
 # 1: Command is unavailable on the system
 # 2: Missing command argument to check
-function hasCMD {
+function has_cmd {
     if [[ "$#" -eq 1 ]]
     then declare -r CHECK="$1"
          if command -v "$CHECK" &>/dev/null
@@ -100,13 +100,13 @@ function hasCMD {
 # 0: Install completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
-function updatePKG {
+function update_apt {
     if [[ "$#" -ne 0 ]]
     then log 2 "Invalid number of arguments, requires none"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-         if isRoot
+         if is_root
          then log -1 "Updating apt lists"
               if "${ROOTUPDATE[@]}" &>/dev/null
               then log 0 "Apt list updated"
@@ -127,14 +127,14 @@ function updatePKG {
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-function installPKG {
+function install_package {
     if [[ "$#" -eq 0 ]]
     then log 2 "Requires: [PKG(s) to install]"; return 3
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
          declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-         if isRoot
+         if is_root
          then log -1 "Installing ${PKG[*]}"
               if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
               then log 0 "Installation completed"; return 0
@@ -151,9 +151,9 @@ function installPKG {
 
 #########################
 
-if isFile 'etc/library.sh'
+if is_file 'etc/library.sh'
 then LIBRARY='etc/library.sh'
-elif isFile '/usr/local/etc/library.sh'
+elif is_file '/usr/local/etc/library.sh'
 then LIBRARY='/usr/local/etc/library.sh'
 else log 2 "File not found: library.sh"; return 1
 fi
@@ -179,13 +179,13 @@ function install {
     local NCP_LAUNCHER="${HOME_HTTP_USER}/ncp-launcher.sh" \
           BACKUP_LAUNCHER="${HOME_HTTP_USER}/ncp-backup-launcher.sh"
     # NCP-CONFIG
-    installPKG git dialog whiptail jq file lsb-release
+    install_package git dialog whiptail jq file lsb-release
     mkdir --parents "$CONFDIR" "$BINDIR"
     
     # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
     # The raspi-config layout and options have also changed
     # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-    if isFile "$RASPI_CONFIG"
+    if is_file "$RASPI_CONFIG"
     then # shellcheck disable=SC1003
         sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' "$RASPI_CONFIG"
         sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             "$RASPI_CONFIG"
@@ -281,7 +281,7 @@ Listen 4443
 </Directory>
 EOF
 
-    installPKG libapache2-mod-authnz-external pwauth
+    install_package libapache2-mod-authnz-external pwauth
     a2enmod authnz_external \
             authn_core \
             auth_basic
@@ -289,10 +289,10 @@ EOF
     a2ensite ncp-activation
     
     ## NCP USER FOR AUTHENTICATION
-    if ! isUser "$WEBADMIN"
+    if ! is_user "$WEBADMIN"
     then useradd --home-dir '/nonexistent' "$WEBADMIN"
     fi
-    Print "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
+    prtln "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" root
     
@@ -343,7 +343,7 @@ fi
 tar $PIGZ -tf "$FILE" data &>/dev/null
 EOF
   chmod 700 "$BACKUP_LAUNCHER"
-  Print "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
+  prtln "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
 
   # NCP AUTO TRUSTED DOMAIN
   mkdir --parents '/usr/lib/systemd/system'
@@ -393,7 +393,7 @@ EOF
 
   # ONLY FOR IMAGE BUILDS
   # If-statement closes at the end of the install function()
-  if isFile '/.ncp-image'
+  if is_file '/.ncp-image'
   then rm --recursive --force '/var/log/ncp.log'
        ## NEXTCLOUDPI MOTD
        rm --recursive --force '/etc/update-motd.d'
@@ -412,17 +412,17 @@ EOF
        chmod a+x /etc/update-motd.d/*
 
        ## HOSTNAME AND mDNS
-       if ! isFile '/.docker-image'
-       then installPKG avahi-daemon
+       if ! is_file '/.docker-image'
+       then install_package avahi-daemon
             sed -i '/^127.0.1.1/d'                        '/etc/hosts'
             sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" '/etc/hosts'
        fi
-       Print 'nextcloudpi' > '/etc/hostname'
+       prtln 'nextcloudpi' > '/etc/hostname'
        
        ## tag image
        is_docker && local DOCKER_TAG="_docker"
        is_lxc && local DOCKER_TAG="_lxc"
-       Print "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
+       prtln "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
        
        ## SSH hardening
        if [[ -f '/etc/ssh/sshd_config' ]]

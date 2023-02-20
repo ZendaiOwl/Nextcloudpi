@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print () {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln () {
     printf '%s\n' "$@"
 }
 
@@ -25,14 +25,14 @@ function configure () {
     
     local DATADIR MOUNTPOINT
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        Print "Error reading data directory. Is Nextcloud running?"
+        prtln "Error reading data directory. Is Nextcloud running?"
         return 1
     }
     
     # file system check
     MOUNTPOINT="$( stat -c "%m" "$DATADIR" )" || return 1
     [[ "$( stat -fc%T "$MOUNTPOINT" )" != "btrfs" ]] && {
-        Print "Not a BTRFS filesystem: $MOUNTPOINT"; return 1
+        prtln "Not a BTRFS filesystem: $MOUNTPOINT"; return 1
     }
     
     btrfs-snp "$MOUNTPOINT" manual "$LIMIT" 0 ../ncp-snapshots

@@ -8,9 +8,9 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
 
@@ -23,13 +23,13 @@ function install () {
 function configure () {
     [[ "$ACTIVE" != "yes" ]] && {
         rm --force /etc/cron.d/ncp-rsync-auto
-        Print "Automatic rsync disabled"
+        prtln "Automatic rsync disabled"
         return 0
     }
     
     local DATADIR NET SSH
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        Print "Error reading data directory. Is Nextcloud running and configured?"
+        prtln "Error reading data directory. Is Nextcloud running and configured?"
         return 1
     }
     
@@ -39,14 +39,14 @@ function configure () {
         NET="${DESTINATION//:.*/}"
         #NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
         SSH=(ssh -o "BatchMode=yes" -p "$PORTNUMBER" "$NET")
-        "${SSH[@]}" echo || { Print "SSH non-interactive not properly configured"; return 1; }
+        "${SSH[@]}" echo || { prtln "SSH non-interactive not properly configured"; return 1; }
     }
     
     echo "0  5  */$SYNCDAYS  *  *  root  /usr/bin/rsync -ax -e \"ssh -p $PORTNUMBER\" --delete \"$DATADIR\" \"$DESTINATION\"" > /etc/cron.d/ncp-rsync-auto
     chmod 644 /etc/cron.d/ncp-rsync-auto
     service cron restart
     
-    Print "Automatic rsync enabled"
+    prtln "Automatic rsync enabled"
 }
 
 # License

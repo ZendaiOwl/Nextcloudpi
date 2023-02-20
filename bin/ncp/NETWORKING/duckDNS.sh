@@ -7,9 +7,9 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print () {
+function prtln () {
     printf '%s\n' "$@"
 }
 
@@ -26,17 +26,17 @@ function configure () {
     
          # Creates duck.sh script that checks for updates to DNS records
          if ! touch "$INSTALLPATH"/duck.sh
-         then Print "Failed to create file: $INSTALLPATH/duck.sh"; return 1
+         then prtln "Failed to create file: $INSTALLPATH/duck.sh"; return 1
          fi
          if ! touch "$INSTALLPATH"/duck.log
-         then Print "Failed to create file: $INSTALLPATH/duck.log"; return 1
+         then prtln "Failed to create file: $INSTALLPATH/duck.log"; return 1
          fi
          
          echo -e "echo url=\"https://www.duckdns.org/update?domains=${DOMAIN}&token=${TOKEN}&ip=\" | curl -k -o ${INSTALLPATH}/duck.log -K -" > "$INSTALLPATH"/duck.sh
          
          # Adds file to cron to run script for DNS record updates and change permissions
          if ! touch "$CRONFILE"
-         then Print "Failed to create file: $CRONFILE"; return 1
+         then prtln "Failed to create file: $CRONFILE"; return 1
          fi
          
          echo "*/5 * * * * root $INSTALLPATH/duck.sh >/dev/null 2>&1" > "$CRONFILE"
@@ -49,9 +49,9 @@ function configure () {
          
          # Checks for successful run of duck.sh
          if [[ "$SUCCESS" == "OK" ]]
-         then Print "DuckDNS is enabled"
+         then prtln "DuckDNS is enabled"
          elif [[ "$SUCCESS" == "KO" ]]
-         then Print "Failed to install DuckDNS, is your information correct?"
+         then prtln "Failed to install DuckDNS, is your information correct?"
          fi
          
     elif [[ "$ACTIVE" == "no" ]]
@@ -59,7 +59,7 @@ function configure () {
          rm --force "$INSTALLPATH"/duck.sh
          rm --force "$INSTALLPATH"/duck.log
          rmdir "$INSTALLPATH"
-         Print "Disabled: DuckDNS"
+         prtln "Disabled: DuckDNS"
     fi
 }
 

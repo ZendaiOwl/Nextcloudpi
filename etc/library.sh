@@ -10,8 +10,8 @@
 # Bash - Utility Functions #
 ############################
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -45,9 +45,7 @@ function log {
 # Return codes
 # 0: Is root
 # 1: Not root
-# 2: Invalid number of arguments
-function isRoot {
-    [[ "$#" -ne 0 ]] && return 2
+function is_root {
     [[ "$EUID" -eq 0 ]]
 }
 
@@ -56,9 +54,9 @@ function isRoot {
 # 0: Is a user
 # 1: Not a user
 # 2: Invalid number of arguments
-function isUser {
+function is_user {
     [[ "$#" -ne 1 ]] && return 2
-    if id -u "$1" &>/dev/null
+    if id --user "$1" &>/dev/null
     then return 0
     else return 1
     fi
@@ -69,7 +67,7 @@ function isUser {
 # 0: Path exist
 # 1: No such path
 # 2: Invalid number of arguments
-function isPath {
+function is_path {
     [[ "$#" -ne 1 ]] && return 2
     [[ -e "$1" ]]
 }
@@ -78,36 +76,9 @@ function isPath {
 # 0: Is a file
 # 1: Not a file
 # 2: Invalid number of arguments
-function isFile {
+function is_file {
     [[ "$#" -ne 1 ]] && return 2
     [[ -f "$1" ]]
-}
-
-# Checks if a given path is a readable file
-# 0: Is readable
-# 1: Not readable
-# 2: Invalid number of arguments
-function isReadable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -r "$1" ]]
-}
-
-# Checks if a given path is a writable file
-# 0: Is writable
-# 1: Not writable
-# 2: Invalid number of arguments
-function isWritable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -w "$1" ]]
-}
-
-# Checks if a given path is an executable file
-# 0: Is executable
-# 1: Not executable
-# 2: Invalid number of arguments
-function isExecutable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -x "$1" ]]
 }
 
 # Checks if given path is a directory 
@@ -115,19 +86,9 @@ function isExecutable {
 # 0: Is a directory
 # 1: Not a directory
 # 2: Invalid number of arguments
-function isDirectory {
+function is_directory {
     [[ "$#" -ne 1 ]] && return 2
     [[ -d "$1" ]]
-}
-
-# Checks if given path is a named pipe
-# Return codes
-# 0: Is a named pipe
-# 1: Not a named pipe
-# 2: Invalid number of arguments
-function isPipe {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -p "$1" ]]
 }
 
 # Checks if the first given digit is greater than the second digit
@@ -135,7 +96,7 @@ function isPipe {
 # 0: Is greater
 # 1: Not greater
 # 2: Invalid number of arguments
-function isGreater {
+function is_greater {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -gt "$2" ]]
 }
@@ -145,29 +106,9 @@ function isGreater {
 # 0: Is greater than or equal
 # 1: Not greater than or equal
 # 2: Invalid number of arguments
-function isGreaterOrEqual {
+function is_equal_or_greater {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -ge "$2" ]]
-}
-
-# Checks if the first given digit is less than the second digit
-# Return codes
-# 0: Is less
-# 1: Not less
-# 2: Invalid number of arguments
-function isLess {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -lt "$2" ]]
-}
-
-# Checks if a given variable has been set and is a name reference
-# Return codes
-# 0: Is set name reference
-# 1: Not set name reference
-# 2: Invalid number of arguments
-function isReference {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -R "$1" ]]
 }
 
 # Checks if a given path is a socket
@@ -175,7 +116,7 @@ function isReference {
 # 0: Is a socket
 # 1: Not a socket
 # 2: Invalid number of arguments
-function isSocket {
+function is_socket {
     [[ "$#" -ne 1 ]] && return 2
     [[ -S "$1" ]]
 }
@@ -185,19 +126,9 @@ function isSocket {
 # 0: Is set
 # 1: Not set 
 # 2: Invalid number of arguments
-function isSet {
+function is_set {
     [[ "$#" -ne 1 ]] && return 2
     [[ -v "$1" ]]
-}
-
-# Checks if a given variable has been set and assigned a value.
-# Return codes
-# 0: Not set
-# 1: Is set 
-# 2: Invalid number of arguments
-function notSet {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ ! -v "$1" ]]
 }
 
 # Checks if 2 given digits are equal
@@ -205,19 +136,9 @@ function notSet {
 # 0: Is equal
 # 1: Not equal
 # 2: Invalid number of arguments
-function isEqual {
+function is_equal {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -eq "$2" ]]
-}
-
-# Checks if 2 given digits are not equal
-# Return codes
-# 0: Not equal
-# 1: Is equal
-# 2: Invalid number of arguments
-function notEqual {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -ne "$2" ]]
 }
 
 # Checks if 2 given String variables match
@@ -225,7 +146,7 @@ function notEqual {
 # 0: Is a match
 # 1: Not a match
 # 2: Invalid number of arguments
-function isMatch {
+function is_match {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" == "$2" ]]
 }
@@ -235,7 +156,7 @@ function isMatch {
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function notMatch {
+function not_match {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" != "$2" ]]
 }
@@ -245,7 +166,7 @@ function notMatch {
 # 0: Is zero
 # 1: Not zero
 # 2: Invalid number of arguments
-function isZero {
+function is_zero {
     [[ "$#" -ne 1 ]] && return 2
     [[ -z "$1" ]]
 }
@@ -255,39 +176,9 @@ function isZero {
 # 0: Not zero
 # 1: Is zero
 # 2: Invalid number of arguments
-function notZero {
+function not_zero {
     [[ "$#" -ne 1 ]] && return 2
     [[ -n "$1" ]]
-}
-
-# Checks if a given variable is an array or not
-# Return codes
-# 0: Variable is an array
-# 1: Variable is not an array
-# 2: Missing argument: Variable to check
-function isArray {
-    if [[ "$#" -ne 1 ]]
-    then return 2
-    elif ! declare -a "$1" &>/dev/null
-    then return 1
-    else return 0
-    fi
-}
-
-# Test if a function() is available
-# Return codes
-# 0: Available
-# 1: Unvailable
-# 2: Too many/few arguments
-function isFunction {
-    if [[ "$#" -eq 1 ]]
-    then declare -r FUNC="$1"
-         if declare -f "$FUNC" &>/dev/null
-         then return 0
-         else return 1
-         fi
-    else return 2
-    fi
 }
 
 # Checks if a given pattern in a String
@@ -295,7 +186,7 @@ function isFunction {
 # 0: Has String pattern
 # 1: No String pattern
 # 2: Invalid number of arguments
-function hasText {
+function has_text {
     [[ "$#" -ne 2 ]] && return 2
     declare -r PATTERN="$1" STRING="$2"
     [[ "$STRING" == *"$PATTERN"* ]]
@@ -306,33 +197,13 @@ function hasText {
 # 0: Command exists on the system
 # 1: Command is unavailable on the system
 # 2: Missing command argument to check
-function hasCMD {
+function has_cmd {
     if [[ "$#" -eq 1 ]]
-    then declare -r CHECK="$1"
-         if command -v "$CHECK" &>/dev/null
+    then if command -v "$1" &>/dev/null
          then return 0
          else return 1
          fi
     else return 2
-    fi
-}
-
-# Checks if a package exists on the system
-# Return status codes
-# 0: Package is installed
-# 1: Package is not installed but is available in apt
-# 2: Package is not installed and is not available in apt
-# 3: Missing package argument to check
-function hasPKG {
-    if [[ "$#" -eq 1 ]]
-    then declare -r CHECK="$1"
-         if dpkg-query --status "$CHECK" &>/dev/null
-         then return 0
-         elif apt-cache show "$CHECK" &>/dev/null
-         then return 1
-         else return 2
-         fi
-    else return 3
     fi
 }
 
@@ -345,13 +216,13 @@ function hasPKG {
 # 0: Install completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
-function updatePKG {
+function update_apt {
     if [[ "$#" -ne 0 ]]
     then log 2 "Invalid number of arguments, requires none"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-        if isRoot
+        if is_root
         then log -1 "Updating apt lists"
              if "${ROOTUPDATE[@]}" &>/dev/null
              then log 0 "Apt list updated"
@@ -372,14 +243,14 @@ function updatePKG {
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-function installPKG {
+function install_package {
     if [[ "$#" -eq 0 ]]
     then log 2 "Requires: [PKG(s) to install]"; return 3
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
          declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-        if isRoot
+        if is_root
         then log -1 "Installing ${PKG[*]}"
              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
              then log 0 "Installation completed"; return 0
@@ -394,9 +265,9 @@ function installPKG {
     fi
 }
 
-################################
-# Bash - Permissions Functions #
-################################
+########################
+# Bash - NCP Functions #
+########################
 # Template
 # Return status codes
 # 0: Success
@@ -405,391 +276,17 @@ function installPKG {
 # 3: 
 # 4: 
 
-# Changes permissions on a given file
-# Checks for which argument is a file & a positive integer digit
-# Return status codes
-# 0: Success
-# 1: Failed to change permissions on file: $1 or $2
-# 2: Command not found: sudo
-# 3: Not a file: $1 or $2
-# 4: Not a positive integer digit: $1 or $2
-# 5: Invalid number of arguments
-function change_permissions {
-    if notEqual "$#" 2
-    then return 5
-    else
-         if [[ ! "$1" =~ [0-9*] ]] && [[ ! "$2" =~ [0-9*] ]]
-         then return 4
-         elif ! isFile "$1" && ! isFile "$2"
-         then return 3
-         elif [[ "$1" =~ [0-9*] ]] && isFile "$2"
-         then if isRoot
-              then if chmod "$1" "$2"
-                   then return 0
-                   else return 1
-                   fi
-              else
-                   if hasCMD sudo
-                   then if sudo chmod "$1" "$2"
-                        then return 0
-                        else return 1
-                        fi
-                   else return 2
-                   fi
-              fi
-         elif [[ "$2" =~ [0-9*] ]] && isFile "$1"
-         then if isRoot
-              then if chmod "$2" "$1"
-                   then return 0
-                   else return 1
-                   fi
-              else
-                   if hasCMD sudo
-                   then if sudo chmod "$2" "$1"
-                        then return 0
-                        else return 1
-                        fi
-                   else return 2
-                   fi
-              fi
-         fi
-    fi
-}
-
-# Change permissions recursively on a given path
-# Checks for which argument is a file & a positive integer digit
-# Return status codes
-# 0: Success
-# 1: Failed to change permissions on file: $1 or $2
-# 2: Command not found: sudo
-# 3: Not a path: $1 or $2
-# 4: Not a positive integer digit: $1 or $2
-# 5: Invalid number of arguments
-function change_permissions_recursively {
-    if notEqual "$#" 2
-    then return 5
-    else
-         if [[ ! "$1" =~ [0-9*] ]] && [[ ! "$2" =~ [0-9*] ]]
-         then return 4
-         elif ! isPath "$1" && ! isPath "$2"
-         then return 3
-         elif [[ "$1" =~ [0-9*] ]] && isPath "$2"
-         then if isRoot
-              then if chmod "$1" "$2"
-                   then return 0
-                   else return 1
-                   fi
-              else
-                   if hasCMD sudo
-                   then if sudo chmod "$1" "$2"
-                        then return 0
-                        else return 1
-                        fi
-                   else return 2
-                   fi
-              fi
-         elif [[ "$2" =~ [0-9*] ]] && isFile "$1"
-         then if isRoot
-              then if chmod "$2" "$1"
-                   then return 0
-                   else return 1
-                   fi
-              else
-                   if hasCMD sudo
-                   then if sudo chmod "$2" "$1"
-                        then return 0
-                        else return 1
-                        fi
-                   else return 2
-                   fi
-              fi
-         fi
-    fi
-}
-
-# Set ownership permissions on a file
-# Return status codes
-# 0: Success
-# 1: Failed to set ownership to file: $1:$2 $3
-# 2: Command not found: sudo
-# 3: Not a file: $3
-# 4: Invalid number of arguments
-function set_owner {
-    if notEqual "$#" 3
-    then return 4
-    elif ! isFile "$3"
-    then return 3
-    else
-         if isRoot
-         then if chown "$1":"$2" "$3"
-              then return 0
-              else return 1
-              fi
-         elif hasCMD sudo
-         then if sudo chown "$1":"$2" "$3"
-              then return 0
-              else return 1
-              fi
-         else return 2
-         fi
-    fi
-}
-
-# Set ownership permissions on a path recursively
-# Return status codes
-# 0: Success
-# 1: Failed to set ownership to file: $1:$2 $3
-# 2: Command not found: sudo
-# 3: Not a file: $3
-# 4: Invalid number of arguments
-function set_owner_recursive {
-    if notEqual "$#" 3
-    then return 4
-    elif ! isPath "$3"
-    then return 3
-    else
-         if isRoot
-         then if chown --recursive "$1":"$2" "$3"
-              then return 0
-              else return 1
-              fi
-         elif hasCMD sudo
-         then if sudo chown --recursive  "$1":"$2" "$3"
-              then return 0
-              else return 1
-              fi
-         else return 2
-         fi
-    fi
-}
-
-# Changes owner of file
-# Return status codes
-# 0: Success
-# 1: Failed to change owner of the file
-# 2: Missing command: sudo
-# 3: Not a file: $2
-# 4: Not a user: $1
-# 5: Invalid number of arguments
-function change_owner {
-    if notEqual "$#" 2
-    then return 5
-    else
-         if ! isUser "$1"
-         then return 4
-         elif isFile "$2"
-         then if isRoot
-              then if chown "$1":"$1" "$2"
-                   then return 0
-                   else return 1
-                   fi
-              elif hasCMD sudo
-              then if sudo chown "$1":"$1" "$2"
-                   then return 0
-                   else return 1
-                   fi
-              else return 2
-              fi
-         else return 3
-         fi
-    fi
-}
-
-
-# Changes owner of file/directory recursively
-# Return status codes
-# 0: Success
-# 1: Failed to change owner of the file
-# 2: Missing command: sudo
-# 3: Not a file: $2
-# 4: Not a user: $1
-# 5: Invalid number of arguments
-function change_owner_recursive {
-    if notEqual "$#" 2
-    then return 5
-    else
-         if ! isUser "$1"
-         then return 4
-         elif isFile "$2"
-         then if isRoot
-              then if chown --recursive "$1":"$1" "$2"
-                   then return 0
-                   else return 1
-                   fi
-              elif hasCMD sudo
-              then if sudo chown --recursive "$1":"$1" "$2"
-                   then return 0
-                   else return 1
-                   fi
-              else return 2
-              fi
-         else return 3
-         fi
-    fi
-}
-
-# Makes a file executable
-# Return status codes
-# 0: Success
-# 1: Failed to make file executable
-# 2: Missing command: sudo
-# 3: Not a file: $1
-# 4: Invalid number of arguments
-function make_executable {
-    if notEqual "$#" 1
-    then return 4
-    else
-         if isFile "$1"
-         then if isRoot
-              then if chmod +x "$1"
-                   then return 0
-                   else return 1
-                   fi
-              elif hasCMD sudo
-              then if sudo chmod +x "$1"
-                   then return 0
-                   else return 1
-                   fi
-              else return 2
-              fi
-         else return 3
-         fi
-    fi
-}
-
-# Make files executable recursively
-# Return status codes
-# 0: Success
-# 1: Failed to make files executable
-# 2: Missing command: sudo
-# 3: Not a file: $1
-# 4: Invalid number of arguments
-function make_executable_recurisve {
-    if notEqual "$#" 1
-    then return 4
-    else
-         if isFile "$1" || isDirectory "$1"
-         then if isRoot
-              then if chmod --recursive +x "$1"
-                   then return 0
-                   else return 1
-                   fi
-              elif hasCMD sudo
-              then if sudo chmod --recursive +x "$1"
-                   then return 0
-                   else return 1
-                   fi
-              else return 2
-              fi
-         else return 3
-         fi
-    fi
-}
-
-# Checks for the ncc command
-# Return status codes
-# 0: ncc command found
-# 1: No command found while file exists
-# 2: Command & file not found: ncc & /usr/local/bin/ncc
-# 3: Too many arguments
-function has_ncc_command {
-    declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
-    if notEqual "$#" 0
-    then return 3
-    elif hasCMD ncc
-    then return 0
-    elif isFile "$NCC_SCRIPTFILE"
-    then return 1
-    else return 2
-    fi
-}
 
 # Ncc shortcut command as a function()
 # Return codes
 # 1: Command not found: sudo
 function ncc {
-    if hasCMD sudo
+    if has_cmd 'sudo'
     then declare -r -a SUDO=(sudo -E -u www-data)
          "${SUDO[@]}" php /var/www/nextcloud/occ "$@"
     else return 1
     fi
 }
-
-# Checks if ncc exists as a function
-# Return status codes
-# 0: Found function: ncc
-# 1: No such function found: ncc
-# 2: Too many arguments
-function has_ncc_function {
-    if notEqual "$#" 0
-    then return 2
-    elif isFunction ncc
-    then return 0
-    else return 1
-    fi
-}
-
-# Checks for the ncc script file
-# Return status codes
-# 0: Found file: /usr/local/bin/ncc
-# 1: File not found: /usr/local/bin/ncc
-# 2: Too many arguments
-function has_local_ncc_script {
-    if notEqual "$#" 0
-    then return 2
-    elif isFile '/usr/local/bin/ncc'
-    then return 0
-    else return 1
-    fi
-}
-
-# Checks if the ncc script file is executable or not
-# Return status codes
-# 0: Is executable
-# 1: Not executable 
-# 2: File not found
-# 3: Invalid number of arguments
-function is_ncc_executable {
-    if isEqual "$#" 0
-    then  declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
-    elif isEqual "$#" 1
-    then declare -r NCC_SCRIPTFILE="$1"
-    else return 3
-    fi
-    if isFile "$NCC_SCRIPTFILE"
-    then if isExecutable "$NCC_SCRIPTFILE"
-         then return 0
-         else return 1
-         fi
-    else return 2
-    fi
-}
-
-# Makes the ncc script file executable
-# Return status codes
-# 0: Succes
-# 1: File not found: $1 or /usr/local/bin/ncc
-# 2: Invalid number of arguments
-# ?: Return code from attempting to change permissions on file
-function make_ncc_executable {
-    if isGreater "$#" 1
-    then return 2
-    elif isEqual "$#" 1
-    then declare -r NCC_SCRIPTFILE="$1"
-    else declare -r NCC_SCRIPTFILE='/usr/local/bin/ncc'
-    fi
-    if has_ncc_script
-    then if make_executable "$NCC_SCRIPTFILE"
-         then return 0
-         else return "$?"
-         fi
-    else return 1
-    fi
-}
-
-########################
-# Bash - NCP Functions #
-########################
 
 function apt_install {
     apt-get update --allow-releaseinfo-change
@@ -801,11 +298,12 @@ function install_with_shadow_workaround {
     (
         RESTORE_SHADOW=true
         [[ -L '/etc/shadow' ]] || RESTORE_SHADOW=false
-        [[ "$RESTORE_SHADOW" == "false" ]] || {
-            trap "mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow" EXIT SIGINT SIGABRT SIGHUP
-            rm '/etc/shadow'; cp '/data/etc/shadow' '/etc/shadow'
-        }
-        if isRoot
+        if ! [[ "$RESTORE_SHADOW" == "false" ]]
+        then trap "mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow" EXIT SIGINT SIGABRT SIGHUP
+             rm '/etc/shadow'
+             cp '/data/etc/shadow' '/etc/shadow'
+        fi
+        if is_root
         then DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes "$@"
         else DEBIAN_FRONTEND=noninteractive sudo apt-get install --assume-yes "$@"
         fi
@@ -832,14 +330,14 @@ function is_more_recent_than {
     # Compare version A with version B
     # Versioning ex. 25.0.3 or 24.9.5 etc
     # Returns a 1 if B is greater than A
-    if isGreater "$MAJOR_B" "$MAJOR_A"
+    if is_greater "$MAJOR_B" "$MAJOR_A"
     then return 1
-    elif isEqual "$MAJOR_B" "$MAJOR_A" && \
-         isGreater "$MINOR_B" "$MINOR_A"
+    elif is_equal "$MAJOR_B" "$MAJOR_A" && \
+         is_greater "$MINOR_B" "$MINOR_A"
     then return 1
-    elif isEqual "$MAJOR_B" "$MAJOR_A" && \
-         isEqual "$MINOR_B" "$MINOR_A" && \
-         isGreaterOrEqual "$PATCH_B" "$PATCH_A"
+    elif is_equal "$MAJOR_B" "$MAJOR_A" && \
+         is_equal "$MINOR_B" "$MINOR_A" && \
+         is_equal_or_greater "$PATCH_B" "$PATCH_A"
     then return 1
     fi
     return 0
@@ -850,7 +348,7 @@ function install_app {
     local NCP_APP="$1" SCRIPT 
     
     # $1 can be either an installed app name or an app script
-    if isFile "$NCP_APP"
+    if is_file "$NCP_APP"
     then SCRIPT="$NCP_APP"; NCP_APP="$(basename "$SCRIPT" .sh)"
     else SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
     fi
@@ -878,18 +376,18 @@ function configure_app {
           RES=0
     log -1 "Configuring app: $NCP_APP"
     # Checks
-    if ! hasPKG dialog
+    if ! has_pkg 'dialog'
     then log 1 "Missing package: dialog"; log -1 "Attempting to install: dialog"
-         if ! installPKG dialog
+         if ! install_package 'dialog'
          then log 2 "Failed! Please install dialog manually"; return 3
          fi
     fi
-    if ! isFile "$CFG_FILE"
+    if ! is_file "$CFG_FILE"
     then log 1 "No configuration file for: $NCP_APP"; return 0
     fi
     
     LENGTH="$(jq  '.params | length' "$CFG_FILE")"
-    if isEqual "$LENGTH" 0
+    if is_equal "$LENGTH" 0
     then return
     fi
     
@@ -924,13 +422,13 @@ function configure_app {
                     done
                     RET=0
                     break ;;
-            "$DIALOG_ERROR") log 2 "$VALUE"; break ;;
+            "$DIALOG_ERROR") log  2 "$VALUE"; break ;;
               "$DIALOG_ESC") log -1 "ESC pressed."; break ;;
                           *) log -1 "Return code was: $RES"; break ;;
         esac
     done
     
-    Print "$CFG" > "$CFG_FILE"
+    prtln "$CFG" > "$CFG_FILE"
     printf '\033[2J' && tput cup 0 0             # clear screen, don't clear scroll, cursor on top
     log 0 "Configured app: $NCP_APP"; return "$RET"
 }
@@ -940,11 +438,11 @@ function persistent_cfg {
     local SRC="$1" DST="${2:-/data/etc/$( basename "$SRC" )}"
     log -1 "Persisting configuration"
     # Trick to disable in dev docker
-    if isPath '/changelog.md'
+    if is_path '/changelog.md'
     then return
     fi
     mkdir --parents "$(dirname "$DST")"
-    if ! isPath "$DST"
+    if ! is_path "$DST"
     then log -1 "Making $SRC persistent"; mv "$SRC" "$DST"
     fi
     rm --recursive --force "$SRC"
@@ -958,7 +456,7 @@ function cleanup_script {
     log -1 "Source: $SCRIPT"
     # shellcheck disable=SC1090
     source "$SCRIPT"
-    if isMatch "$(type -t cleanup)" "function"
+    if is_match "$(type -t cleanup)" "function"
     then log -1 "Cleanup function found: $SCRIPT"; cleanup; return "$?"
     fi
     return 0
@@ -979,25 +477,25 @@ function check_distro {
 function clear_password_fields {
     local -r CFG_FILE="$1"
     local LENGTH TYPE VAL
-    if ! isFile "$CFG_FILE"
+    if ! is_file "$CFG_FILE"
     then log 2 "File not found: $CFG_FILE"; return 1
     fi
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0 ; i < "$LENGTH" ; i++ ))
     do TYPE="$(jq -r ".params[$i].type" "$CFG_FILE")"
        VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
-       if isMatch "$TYPE" "password"
+       if is_match "$TYPE" "password"
        then VAL=""
        fi
        CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
     done
-    Print "$CFG" > "$CFG_FILE"
+    prtln "$CFG" > "$CFG_FILE"
 }
 
 # Return codes
 # 1: Missing command: a2query
 function is_ncp_activated {
-    if hasCMD a2query
+    if has_cmd a2query
     then (! a2query -s ncp-activation -q)
     else log 2 "Missing command: a2query"; return 1
     fi
@@ -1009,10 +507,10 @@ function is_active_app {
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local LENGTH VAL VAR ID VALUE
     
-    if ! isFile "$SCRIPT"
+    if ! is_file "$SCRIPT"
     then SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
     fi
-    if ! isFile "$SCRIPT"
+    if ! is_file "$SCRIPT"
     then log 2 "File not found: $NCP_APP"; return 1
     fi
     
@@ -1021,8 +519,8 @@ function is_active_app {
     
     #shellcheck disable=SC1090
     source "$SCRIPT"
-    if isFunction 'is_active' # Read config parameters
-    then if isFile "$CFG_FILE"
+    if is_function 'is_active' # Read config parameters
+    then if is_file "$CFG_FILE"
          then LENGTH="$(jq '.params | length' "$CFG_FILE")"
               for (( i = 0; i < "$LENGTH"; i++ ))
               do VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
@@ -1034,14 +532,14 @@ function is_active_app {
     fi
     
     # Config
-    if ! isFile "$CFG_FILE"
+    if ! is_file "$CFG_FILE"
     then log 2 "File not found: $CFG_FILE"; return 1
     fi
     
     ID="$(jq -r ".params[0].id" "$CFG_FILE")"
     VALUE="$(jq -r ".params[0].value" "$CFG_FILE")"
     
-    if isMatch "$ID" "ACTIVE" && isMatch "$VALUE" "yes"
+    if is_match "$ID" "ACTIVE" && is_match "$VALUE" "yes"
     then return 0
     fi
 }
@@ -1060,15 +558,15 @@ function info_app {
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local INFO INFOTITLE
     
-    if isFile "$CFG_FILE"
+    if is_file "$CFG_FILE"
     then INFO="$(jq -r '.info' "$CFG_FILE")"
          INFOTITLE="$(jq -r '.infotitle' "$CFG_FILE")"
     fi
     
-    if isZero "$INFO" || isMatch "$INFO" "null"
+    if is_zero "$INFO" || is_match "$INFO" "null"
     then return 0
     fi
-    if isZero "$INFOTITLE" || isMatch "$INFOTITLE" "null"
+    if is_zero "$INFOTITLE" || is_match "$INFOTITLE" "null"
     then INFOTITLE="Info"
     fi
     
@@ -1093,7 +591,7 @@ function get_ip {
 }
 
 function is_docker {
-    isFile '/.dockerenv' || isFile '/.docker-image' || isEqual "$DOCKERBUILD" 1
+    is_file '/.dockerenv' || is_file '/.docker-image' || is_equal "$DOCKERBUILD" 1
 }
 
 function is_lxc {
@@ -1103,7 +601,7 @@ function is_lxc {
 # Return codes
 # 1: Missing command: ncc
 function nc_version {
-    if hasCMD ncc
+    if has_cmd ncc
     then ncc status | grep "version:" | awk '{ print $3 }'
     else log 2 "Missing command: ncc"; return 1
     fi
@@ -1111,7 +609,7 @@ function nc_version {
 
 # Return codes
 # 2: Missing command: ncc
-function set-nc-domain {
+function set_nc_domain {
     local DOMAIN="${1?}" PROTOCOL URL
     DOMAIN="$(sed 's|http.\?://||;s|\(/.*\)||' <<<"$DOMAIN")"
     if ! ping -c1 -w1 -q "$DOMAIN" &>/dev/null
@@ -1125,12 +623,12 @@ function set-nc-domain {
     if ! PROTOCOL="$(ncc config:system:get overwriteprotocol)"
     then true
     fi
-    if isZero "$PROTOCOL"
+    if is_zero "$PROTOCOL"
     then PROTOCOL="https"
     fi
     URL="${PROTOCOL}://${DOMAIN%*/}"
-    if notMatch "$2" "--no-trusted-domain"
-    then if hasCMD ncc
+    if not_match "$2" "--no-trusted-domain"
+    then if has_cmd ncc
          then ncc config:system:set trusted_domains 3 --value="${DOMAIN%*/}"
               ncc config:system:set overwrite.cli.url --value="${URL}/"
               if is_ncp_activated && is_app_enabled notify_push
@@ -1153,7 +651,7 @@ function set-nc-domain {
 
 function start_notify_push {
     pgrep notify_push &>/dev/null && return
-    if isFile /.docker-image
+    if is_file /.docker-image
     then NEXTCLOUD_URL='https://localhost' sudo -E -u www-data "/var/www/nextcloud/apps/notify_push/bin/${ARCH}/notify_push" --allow-self-signed '/var/www/nextcloud/config/config.php' &>/dev/null &
     else systemctl enable --now notify_push
     fi
@@ -1164,7 +662,7 @@ function start_notify_push {
 function notify_admin {
     local HEADER="$1" MSG="$2" ADMINS
     ADMINS="$(mysql -u root nextcloud -Nse "select uid from oc_group_user where gid='admin';")"
-    if isZero "$ADMINS"
+    if is_zero "$ADMINS"
     then log 2 "Admin user(s) not found" >&2; return 0
     fi
     while read -r ADMIN
@@ -1178,7 +676,7 @@ function notify_admin {
 function run_app {
     local NCP_APP="$1" SCRIPT
     SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
-    if ! isFile "$SCRIPT"
+    if ! is_file "$SCRIPT"
     then log 2 "File not found: $SCRIPT"; return 1
     fi
     run_app_unsafe "$SCRIPT"
@@ -1192,7 +690,7 @@ function run_app_unsafe {
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     
-    if ! isFile "$SCRIPT"
+    if ! is_file "$SCRIPT"
     then log 2 "File not found: $SCRIPT"; return 1
     fi
     
@@ -1210,7 +708,7 @@ function run_app_unsafe {
     source "$SCRIPT"
     
     # Read config parameters
-    if isFile "$CFG_FILE"
+    if is_file "$CFG_FILE"
     then log -1 "Reading config parameters: $NCP_APP"
          LENGTH="$(jq '.params | length' "$CFG_FILE")"
          for (( i = 0; i < "$LENGTH"; i++ ))
@@ -1224,9 +722,9 @@ function run_app_unsafe {
     log -1 "Executing configure: $NCP_APP"
     ( configure ) 2>&1 | tee -a "$LOG"; RET="${PIPESTATUS[0]}"
     
-    Print "" >> "$LOG"
+    prtln "" >> "$LOG"
     
-    if isFile "$CFG_FILE"
+    if is_file "$CFG_FILE"
     then log -1 "Clearing password fields: $NCP_APP"
          clear_password_fields "$CFG_FILE"
     fi
@@ -1241,11 +739,11 @@ function find_app_param_num {
                          LENGTH VAL VAR P_ID
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-    if isFile "$CFG_FILE"
+    if is_file "$CFG_FILE"
     then LENGTH="$(jq '.params | length' "$CFG_FILE")"
          for (( i = 0 ; i < "$LENGTH" ; i++ ))
          do P_ID="$(jq -r ".params[$i].id" "$CFG_FILE")"
-            if isMatch "$PARAM_ID" "$P_ID"
+            if is_match "$PARAM_ID" "$P_ID"
             then echo "$i"; return 0
             fi
          done
@@ -1262,7 +760,7 @@ function find_app_param {
     if ! P_NUM="$(find_app_param_num "$SCRIPT" "$PARAM_ID")"
     then log 2 "Parameter index not found: $SCRIPT"; return 1
     fi
-    if ! isFile "$CFG_FILE"
+    if ! is_file "$CFG_FILE"
     then log 2 "File not found: $CFG_FILE"; return 2
     fi
     jq -r ".params[$P_NUM].value" "$CFG_FILE"
@@ -1277,7 +775,7 @@ function set_app_param {
     if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "$PARAM_VALUE"
     then log 2 "Invalid characters in field ${VARIABLES[$i]}"; return 1
     fi
-    if ! isFile "$CFG_FILE"
+    if ! is_file "$CFG_FILE"
     then log 2 "File not found: $CFG_FILE"; return 2
     fi
     
@@ -1285,15 +783,15 @@ function set_app_param {
     PARAM_FOUND=false
     
     for (( i = 0; i < "$LENGTH"; i++ )) # check for invalid characters
-    do if isMatch "$(jq -r ".params[$i].id" "$CFG_FILE")" "$PARAM_ID"
+    do if is_match "$(jq -r ".params[$i].id" "$CFG_FILE")" "$PARAM_ID"
        then PARAM_FOUND=true
             CFG="$(jq ".params[$i].value = \"$PARAM_VALUE\"" "$CFG_FILE")"
        fi
     done
-    if notMatch "$PARAM_FOUND" "true"
+    if not_match "$PARAM_FOUND" "true"
     then log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"; return 1
     fi
-    Print "$CFG" > "$CFG_FILE"
+    prtln "$CFG" > "$CFG_FILE"
 }
 
 # Return codes
@@ -1305,7 +803,7 @@ function install_template {
     log -1 "Installing template: $TEMPLATE"
     
     mkdir --parents "$(dirname "$TARGET")"
-    if isFile "$TARGET"
+    if is_file "$TARGET"
     then cp -a "$TARGET" "$BACKUP"
     fi
     {
@@ -1326,7 +824,7 @@ function install_template {
 function save_maintenance_mode
 {
     unset NCP_MAINTENANCE_MODE
-    if hasCMD ncc
+    if has_cmd ncc
     then if grep -q 'enabled' <(ncc maintenance:mode)
          then export NCP_MAINTENANCE_MODE="on" || true
          fi
@@ -1341,13 +839,13 @@ function save_maintenance_mode
 
 function restore_maintenance_mode
 {
-    if hasCMD ncc
-    then if notZero "${NCP_MAINTENANCE_MODE:-}"
+    if has_cmd ncc
+    then if not_zero "${NCP_MAINTENANCE_MODE:-}"
          then ncc maintenance:mode --on
          else ncc maintenance:mode --off
          fi
     else
-         if notZero "${NCP_MAINTENANCE_MODE:-}"
+         if not_zero "${NCP_MAINTENANCE_MODE:-}"
          then ${ncc} maintenance:mode --on
          else ${ncc} maintenance:mode --off
          fi
@@ -1358,19 +856,19 @@ function needs_decrypt
 {
     local ACTIVE
     ACTIVE="$(find_app_param_num nc-encrypt ACTIVE)"
-    (! is_active_app nc-encrypt) && isMatch "$ACTIVE" "yes"
+    (! is_active_app nc-encrypt) && is_match "$ACTIVE" "yes"
 }
 
 function set_ncpcfg {
     local NAME="${1}" VALUE="${2}" CFG
     CFG="$(jq ".$NAME = \"$VALUE\"" "$NCPCFG")"
-    Print "$CFG" > "$NCPCFG"
+    prtln "$CFG" > "$NCPCFG"
 }
 
 function get_ncpcfg
 {
     local NAME="${1}"
-    if isFile "$NCPCFG"
+    if is_file "$NCPCFG"
     then jq -r ".$NAME" "$NCPCFG"
     else log 2 "File not found: $NCPCFG"; return 1
     fi
@@ -1386,7 +884,7 @@ function clear_opcache
 {
     local DATA_DIR
     DATA_DIR="$(get_nc_config_value datadirectory)"
-    if isDirectory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"
+    if is_directory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"
     then log -1 "Clearing opcache"
          log -1 "This can take some time, please don't interrupt by closing or refreshing your browser tab"
          rm --recursive --force "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/* "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/.[!.]*
@@ -1400,9 +898,9 @@ function clear_opcache
 ########################
 
 CFGDIR="${CFGDIR:-etc/ncp-config.d}"
-if isDirectory "$CFGDIR"
+if is_directory "$CFGDIR"
 then CFGDIR="$CFGDIR"
-elif isDirectory '/usr/local/etc/ncp-config.d'
+elif is_directory '/usr/local/etc/ncp-config.d'
 then CFGDIR='/usr/local/etc/ncp-config.d'
 else log 2 "Directory not found: ncp-config.d"; return 1
 fi
@@ -1418,51 +916,51 @@ export NCDIR
 ncc="${ncc:-/usr/local/bin/ncc}"
 export ncc
 
-# if isFile "$ncc"; then
+# if is_file "$ncc"; then
 #   ncc="$ncc"
 # fi
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
-if isFile "$NCPCFG"
+if is_file "$NCPCFG"
 then NCPCFG="$NCPCFG"
-elif isFile '/usr/local/etc/ncp.cfg'
+elif is_file '/usr/local/etc/ncp.cfg'
 then NCPCFG='/usr/local/etc/ncp.cfg'
-elif isFile 'ncp.cfg'
+elif is_file 'ncp.cfg'
 then NCPCFG='ncp.cfg'
 else log 2 "File not found: ncp.cfg"; return 1
 fi
 
 export NCPCFG
 
-if ! hasCMD dpkg
+if ! has_cmd dpkg
 then log 2 "Missing command: dpkg"; return 1
 else ARCH="$(dpkg --print-architecture)"
 fi
 
 if [[ "$ARCH" =~ ^(armhf|arm)$ ]]
 then ARCH='armv7'
-elif isMatch "$ARCH" "arm64"
+elif is_match "$ARCH" "arm64"
 then ARCH='aarch64'
-elif isMatch "$ARCH" "amd64"
+elif is_match "$ARCH" "amd64"
 then ARCH='x86_64'
 fi
 
 DETECT_DOCKER="$(ps -p 1 --no-headers -o "%c")"
 
-if isMatch "$(ps -p 1 --no-headers -o "%c")" "systemd" \
-&& ! isDirectory "/run/systemd/system"
+if is_match "$(ps -p 1 --no-headers -o "%c")" "systemd" \
+&& ! is_directory "/run/systemd/system"
 then INIT_SYSTEM="chroot"
-elif isDirectory "/run/systemd/system"
+elif is_directory "/run/systemd/system"
 then INIT_SYSTEM="systemd"
-elif isMatch "$DETECT_DOCKER" "run-parts.sh"
+elif is_match "$DETECT_DOCKER" "run-parts.sh"
 then INIT_SYSTEM="docker"
 else INIT_SYSTEM="unknown"
 fi
 
 unset DETECT_DOCKER
 
-if ! hasCMD jq
-then if ! installPKG jq
+if ! has_cmd jq
+then if ! install_package jq
      then return 1
      fi
 fi
@@ -1477,7 +975,7 @@ if grep -Eh '^deb ' '/etc/apt/sources.list' | grep "${RELEASE}-security" > /dev/
 then RELEASE="${RELEASE}-security"
 fi
 
-if hasCMD ncc
+if has_cmd ncc
 then NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
      export NCVER
 fi

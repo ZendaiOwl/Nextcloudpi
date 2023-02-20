@@ -8,9 +8,9 @@
 # More at https://ownyourbits.com/
 #
 
-# Prints a line using printf instead of using echo
+# prtlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function Print {
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -24,33 +24,33 @@ function configure () {
     local ORIG DSTDIR
     ORIG="$(swapon | tail -1 | awk '{ print $1 }')"
     DSTDIR="$(dirname "$SWAPFILE")"
-    [[ "$ORIG" == "$SWAPFILE" ]] && { Print "Nothing to do";                return 0; }
-    [[ -d "$SWAPFILE"         ]] && { Print "Is a directory: $SWAPFILE";    return 1; }
-    [[ -d "$DSTDIR"           ]] || { Print "Directory not found: $DSTDIR"; return 1; }
+    [[ "$ORIG" == "$SWAPFILE" ]] && { prtln "Nothing to do";                return 0; }
+    [[ -d "$SWAPFILE"         ]] && { prtln "Is a directory: $SWAPFILE";    return 1; }
+    [[ -d "$DSTDIR"           ]] || { prtln "Directory not found: $DSTDIR"; return 1; }
     
     [[ "$( stat -fc%T "$DSTDIR" )" == "btrfs" ]] && {
-        Print "BTRFS doesn't support swapfiles. You can still use nc-zram"
+        prtln "BTRFS doesn't support swapfiles. You can still use nc-zram"
         return 1
     }
 
     if [[ "$(stat -fc%d /)" == "$(stat -fc%d "$DSTDIR")" ]]
-    then Print "Moving swapfile to another place in the same SD card" \
+    then prtln "Moving swapfile to another place in the same SD card" \
                "If you want to use an external mount, make sure it is properly set up"
     fi
     
     sed -i "s|#\?CONF_SWAPFILE=.*|CONF_SWAPFILE=$SWAPFILE|" '/etc/dphys-swapfile'
     sed -i "s|#\?CONF_SWAPSIZE=.*|CONF_SWAPSIZE=$SWAPSIZE|" '/etc/dphys-swapfile'
-    grep -q vm.swappiness '/etc/sysctl.conf' || Print "vm.swappiness = 10" >> '/etc/sysctl.conf' && sysctl --load &>/dev/null
+    grep -q vm.swappiness '/etc/sysctl.conf' || prtln "vm.swappiness = 10" >> '/etc/sysctl.conf' && sysctl --load &>/dev/null
 
     if dphys-swapfile setup && dphys-swapfile swapon
     then if [[ -f "$ORIG" ]] && swapoff "$ORIG"
          then rm --force "$ORIG"
-              Print "Successfully moved: swapfile"
+              prtln "Successfully moved: swapfile"
               return 0
          fi
     fi
 
-    Print "Failed to move: swapfile"
+    prtln "Failed to move: swapfile"
     return 1
 }
 

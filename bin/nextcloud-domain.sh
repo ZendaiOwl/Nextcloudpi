@@ -38,7 +38,7 @@ do if ! NC_DOMAIN="$(ncc config:system:get overwrite.cli.url)"
    if [[ "$NC_DOMAIN" =~ "RedisException" ]]
    then NC_DOMAIN="$(hostname)"
    fi
-   set-nc-domain "$NC_DOMAIN" >> '/var/log/ncp.log'
+   set_nc_domain "$NC_DOMAIN" >> '/var/log/ncp.log'
    break
 done
 

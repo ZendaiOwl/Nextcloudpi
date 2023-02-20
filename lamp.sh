@@ -19,8 +19,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -55,7 +55,7 @@ function log {
 # 0: Is root
 # 1: Not root
 # 2: Invalid number of arguments
-function isRoot {
+function is_root {
     [[ "$#" -ne 0 ]] && return 2
     [[ "$EUID" -eq 0 ]]
 }
@@ -65,7 +65,7 @@ function isRoot {
 # 0: Is a user
 # 1: Not a user
 # 2: Invalid number of arguments
-function isUser {
+function is_user {
     [[ "$#" -ne 1 ]] && return 2
     if id -u "$1" &>/dev/null
     then return 0
@@ -78,7 +78,7 @@ function isUser {
 # 0: Path exist
 # 1: No such path
 # 2: Invalid number of arguments
-function isPath {
+function is_path {
     [[ "$#" -ne 1 ]] && return 2
     [[ -e "$1" ]]
 }
@@ -87,7 +87,7 @@ function isPath {
 # 0: Is a file
 # 1: Not a file
 # 2: Invalid number of arguments
-function isFile {
+function is_file {
     [[ "$#" -ne 1 ]] && return 2
     [[ -f "$1" ]]
 }
@@ -96,7 +96,7 @@ function isFile {
 # 0: Is readable
 # 1: Not readable
 # 2: Invalid number of arguments
-function isReadable {
+function is_readable {
     [[ "$#" -ne 1 ]] && return 2
     [[ -r "$1" ]]
 }
@@ -105,7 +105,7 @@ function isReadable {
 # 0: Is writable
 # 1: Not writable
 # 2: Invalid number of arguments
-function isWritable {
+function is_writeable {
     [[ "$#" -ne 1 ]] && return 2
     [[ -w "$1" ]]
 }
@@ -114,7 +114,7 @@ function isWritable {
 # 0: Is executable
 # 1: Not executable
 # 2: Invalid number of arguments
-function isExecutable {
+function is_executable {
     [[ "$#" -ne 1 ]] && return 2
     [[ -x "$1" ]]
 }
@@ -124,7 +124,7 @@ function isExecutable {
 # 0: Is a directory
 # 1: Not a directory
 # 2: Invalid number of arguments
-function isDirectory {
+function is_directory {
     [[ "$#" -ne 1 ]] && return 2
     [[ -d "$1" ]]
 }
@@ -134,7 +134,7 @@ function isDirectory {
 # 0: Is a named pipe
 # 1: Not a named pipe
 # 2: Invalid number of arguments
-function isPipe {
+function is_pipe {
     [[ "$#" -ne 1 ]] && return 2
     [[ -p "$1" ]]
 }
@@ -144,7 +144,7 @@ function isPipe {
 # 0: Is greater
 # 1: Not greater
 # 2: Invalid number of arguments
-function isGreater {
+function is_greater {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -gt "$2" ]]
 }
@@ -154,7 +154,7 @@ function isGreater {
 # 0: Is greater than or equal
 # 1: Not greater than or equal
 # 2: Invalid number of arguments
-function isGreaterOrEqual {
+function is_equal_or_greater {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -ge "$2" ]]
 }
@@ -164,7 +164,7 @@ function isGreaterOrEqual {
 # 0: Is less
 # 1: Not less
 # 2: Invalid number of arguments
-function isLess {
+function is_less {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -lt "$2" ]]
 }
@@ -174,7 +174,7 @@ function isLess {
 # 0: Is set name reference
 # 1: Not set name reference
 # 2: Invalid number of arguments
-function isReference {
+function is_reference {
     [[ "$#" -ne 1 ]] && return 2
     [[ -R "$1" ]]
 }
@@ -184,7 +184,7 @@ function isReference {
 # 0: Is a socket
 # 1: Not a socket
 # 2: Invalid number of arguments
-function isSocket {
+function is_socket {
     [[ "$#" -ne 1 ]] && return 2
     [[ -S "$1" ]]
 }
@@ -194,7 +194,7 @@ function isSocket {
 # 0: Is set
 # 1: Not set 
 # 2: Invalid number of arguments
-function isSet {
+function is_set {
     [[ "$#" -ne 1 ]] && return 2
     [[ -v "$1" ]]
 }
@@ -204,7 +204,7 @@ function isSet {
 # 0: Not set
 # 1: Is set 
 # 2: Invalid number of arguments
-function notSet {
+function not_set {
     [[ "$#" -ne 1 ]] && return 2
     [[ ! -v "$1" ]]
 }
@@ -214,7 +214,7 @@ function notSet {
 # 0: Is equal
 # 1: Not equal
 # 2: Invalid number of arguments
-function isEqual {
+function is_equal {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -eq "$2" ]]
 }
@@ -224,7 +224,7 @@ function isEqual {
 # 0: Not equal
 # 1: Is equal
 # 2: Invalid number of arguments
-function notEqual {
+function not_equal {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" -ne "$2" ]]
 }
@@ -234,7 +234,7 @@ function notEqual {
 # 0: Is a match
 # 1: Not a match
 # 2: Invalid number of arguments
-function isMatch {
+function is_match {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" == "$2" ]]
 }
@@ -244,7 +244,7 @@ function isMatch {
 # 0: Not a match
 # 1: Is a match
 # 2: Invalid number of arguments
-function notMatch {
+function not_match {
     [[ "$#" -ne 2 ]] && return 2
     [[ "$1" != "$2" ]]
 }
@@ -254,7 +254,7 @@ function notMatch {
 # 0: Is zero
 # 1: Not zero
 # 2: Invalid number of arguments
-function isZero {
+function is_zero {
     [[ "$#" -ne 1 ]] && return 2
     [[ -z "$1" ]]
 }
@@ -264,7 +264,7 @@ function isZero {
 # 0: Not zero
 # 1: Is zero
 # 2: Invalid number of arguments
-function notZero {
+function not_zero {
     [[ "$#" -ne 1 ]] && return 2
     [[ -n "$1" ]]
 }
@@ -274,7 +274,7 @@ function notZero {
 # 0: Variable is an array
 # 1: Variable is not an array
 # 2: Missing argument: Variable to check
-function isArray {
+function is_array {
     if [[ "$#" -ne 1 ]]
     then return 2
     elif ! declare -a "$1" &>/dev/null
@@ -288,7 +288,7 @@ function isArray {
 # 0: Available
 # 1: Unvailable
 # 2: Too many/few arguments
-function isFunction {
+function is_function {
     if [[ "$#" -eq 1 ]]
     then declare -r FUNC="$1"
          if declare -f "$FUNC" &>/dev/null
@@ -304,7 +304,7 @@ function isFunction {
 # 0: Has String pattern
 # 1: No String pattern
 # 2: Invalid number of arguments
-function hasText {
+function has_text {
     [[ "$#" -ne 2 ]] && return 2
     declare -r PATTERN="$1" STRING="$2"
     [[ "$STRING" == *"$PATTERN"* ]]
@@ -315,7 +315,7 @@ function hasText {
 # 0: Command exists on the system
 # 1: Command is unavailable on the system
 # 2: Missing command argument to check
-function hasCMD {
+function has_cmd {
     if [[ "$#" -eq 1 ]]
     then declare -r CHECK="$1"
          if command -v "$CHECK" &>/dev/null
@@ -332,7 +332,7 @@ function hasCMD {
 # 1: Package is not installed but is available in apt
 # 2: Package is not installed and is not available in apt
 # 3: Missing package argument to check
-function hasPKG {
+function has_pkg {
     if [[ "$#" -eq 1 ]]
     then declare -r CHECK="$1"
          if dpkg-query --status "$CHECK" &>/dev/null
@@ -354,13 +354,13 @@ function hasPKG {
 # 0: Install completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
-function updatePKG {
+function update_apt {
     if [[ "$#" -ne 0 ]]
     then log 2 "Invalid number of arguments, requires none"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-        if isRoot
+        if is_root
         then log -1 "Updating apt lists"
              if "${ROOTUPDATE[@]}" &>/dev/null
              then log 0 "Apt list updated"
@@ -381,14 +381,14 @@ function updatePKG {
 # 1: Coudn't update apt list
 # 2: Error during installation
 # 3: Missing package argument
-function installPKG {
+function install_package {
     if [[ "$#" -eq 0 ]]
     then log 2 "Requires: [PKG(s) to install]"; return 3
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
          declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-        if isRoot
+        if is_root
         then log -1 "Installing ${PKG[*]}"
              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
              then log 0 "Installation completed"; return 0
@@ -421,8 +421,8 @@ function install {
     # Setup apt repository for php 8
     wget -O '/etc/apt/trusted.gpg.d/php.gpg' "$PHPREPO_GPGKEY"
     echo "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
-    updatePKG
-    installPKG apt-utils cron curl apache2
+    update_apt
+    install_package apt-utils cron curl apache2
 
     ls -l '/var/lock' || true
     # Fix missing lock directory
@@ -430,7 +430,7 @@ function install {
     apache2ctl -V || true
 
     # Create systemd users to keep uids persistent between containers
-    if ! isUser systemd-resolve
+    if ! is_user systemd-resolve
     then addgroup --quiet --system systemd-journal
          adduser  --quiet -u 180 --system --group --no-create-home --home /run/systemd \
                   --gecos "systemd Network Management" systemd-network
@@ -439,18 +439,18 @@ function install {
     fi
     
     install_with_shadow_workaround --no-install-recommends systemd
-    installPKG php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql}
+    install_package php"$PHPVER" php"$PHPVER"-{curl,gd,fpm,cli,opcache,mbstring,xml,zip,fileinfo,ldap,intl,bz2,mysql}
 
     mkdir --parents "$PHPDAEMON"
 
-    Print "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
-    #Print "[client]" "password=$DBPASSWD" > /root/.my.cnf
+    prtln "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
+    #prtln "[client]" "password=$DBPASSWD" > /root/.my.cnf
     chmod 600 "$MYCNF_FILE"
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password_again password $DBPASSWD"
     
-    installPKG mariadb-server
+    install_package mariadb-server
     
     mkdir --parents "$DBDAEMON"
     chown "$DBUSER" "$DBDAEMON"
@@ -477,7 +477,7 @@ function install {
     a2enmod mime
     a2enmod ssl
 
-    Print "ServerName localhost" >> '/etc/apache2/apache2.conf'
+    prtln "ServerName localhost" >> '/etc/apache2/apache2.conf'
 
 
     ################################
@@ -485,13 +485,13 @@ function install {
     ################################
     
     # Self-signed certificates
-    installPKG ssl-cert
+    install_package ssl-cert
 
     install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" "--defaults"
     install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" "--defaults"
 
   # Start MariaDB if it's not already running
-  if ! isFile "$DBPID_FILE"
+  if ! is_file "$DBPID_FILE"
   then log -1 "Starting MariaDB"
        mysqld &
        declare -x DBPID="$!"
@@ -499,7 +499,7 @@ function install {
 
   # Wait for MariaDB to start
   while :
-  do isSocket "$DBSOCKET" && break
+  do is_socket "$DBSOCKET" && break
      sleep 1
   done
 

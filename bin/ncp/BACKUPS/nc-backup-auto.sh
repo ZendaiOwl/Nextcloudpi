@@ -7,8 +7,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# Prints a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function Print {
+# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function prtln {
     printf '%s\n' "$@"
 }
 
@@ -24,7 +24,7 @@ function configure () {
     [[ "$ACTIVE" != "yes" ]] && {
         rm -f /etc/cron.d/ncp-backup-auto
         service cron restart
-        Print "Automatic backups disabled"
+        prtln "Automatic backups disabled"
         return 0
     }
 
@@ -59,7 +59,7 @@ EOF
         reload_metrics_config
     )
     
-    Print "Automatic backups enabled"
+    prtln "Automatic backups enabled"
 }
 
 function install () { :; }

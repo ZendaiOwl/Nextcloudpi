@@ -50,15 +50,15 @@ function clean_build_sd_rpi {
 
 ##############################################################################
 
-if isFile "$TAR"
+if is_file "$TAR"
 then log 1 "File exists: $TAR"; exit 0
 fi
 
-if findFullProcess qemu-arm-static
+if find_full_process qemu-arm-static
 then log 2 "qemu-arm-static already running"; exit 1
 fi
 
-if findFullProcess qemu-aarch64-static
+if find_full_process qemu-aarch64-static
 then log 2 "qemu-aarch64-static already running"; exit 1
 fi
 
@@ -83,7 +83,7 @@ resize_image      "$IMG" "$SIZE"
 update_boot_uuid  "$IMG"
 
 # Make sure we don't accidentally disable first run wizard
-if isRoot
+if is_root
 then rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
 else sudo rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
 fi
@@ -92,19 +92,19 @@ fi
 
 prepare_chroot_raspbian "$IMG"
 
-if isRoot
+if is_root
 then mkdir "$ROOTDIR"/"$BUILD_DIR"
 else sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
 fi
 
-if isRoot
+if is_root
 then # shellcheck disable=SC2035
      rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 else # shellcheck disable=SC2035
      sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 fi
 
-if isRoot
+if is_root
 then PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
      chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
 set -ex
@@ -209,7 +209,7 @@ fi
 EOFCHROOT
 fi
 
-if isRoot
+if is_root
 then log -1 "Image created: $(basename "$IMG")"
      basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 else log -1 "Image created: $(sudo basename "$IMG")"
