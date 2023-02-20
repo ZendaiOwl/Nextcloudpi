@@ -9,12 +9,11 @@
 #
 
 
-configure() 
-{
+function configure {
   ncc app:update --all -n
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

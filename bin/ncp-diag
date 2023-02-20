@@ -8,9 +8,9 @@
 #   sudo ncp-diag
 #
 #
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln {
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -46,16 +46,16 @@ function is_zero {
 if is_file '/usr/local/etc/library.sh'
 then # shellcheck disable=SC1091
      source '/usr/local/etc/library.sh'
-else prtln "File not found: /usr/local/etc/library.sh"; return 1
+else print_line "File not found: /usr/local/etc/library.sh"; return 1
 fi
 # Distro, NCP version and tag
-prtln "NextcloudPi version|$( cat /usr/local/etc/ncp-version )"
+print_line "NextcloudPi version|$( cat /usr/local/etc/ncp-version )"
 
 if is_file '/usr/local/etc/ncp-baseimage'
-then prtln "NextcloudPi image|$( cat /usr/local/etc/ncp-baseimage )"
+then print_line "NextcloudPi image|$( cat /usr/local/etc/ncp-baseimage )"
 fi
 
-prtln "OS|$(sed 's| \\n \\l||' /etc/issue). $(uname -r) ($(uname -m))"
+print_line "OS|$(sed 's| \\n \\l||' /etc/issue). $(uname -r) ($(uname -m))"
 
 # Data
 DATADIR="$( grep datadirectory /var/www/nextcloud/config/config.php |
@@ -72,24 +72,24 @@ fi
 am_cfg='/usr/local/etc/ncp-config.d/nc-automount.cfg'
 if is_file "$am_cfg" \
 && [[ "$(jq -r ".params[0].value" "$am_cfg")" == "yes" ]]
-then prtln "automount|yes"
-else prtln "automount|no"
+then print_line "automount|yes"
+else print_line "automount|no"
 fi
 
-prtln "USB devices|$USBDEVS"
-prtln "datadir|$DATADIR$DIRINFO"
+print_line "USB devices|$USBDEVS"
+print_line "datadir|$DATADIR$DIRINFO"
 
 [[ "$DIRINFO" == "" ]] && {
-  prtln "data in SD|$( [[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo yes || echo no )"
-  prtln "data filesystem|$( stat -fc%T "$DATADIR" )"
-  prtln "data disk usage|$( df -h "$DATADIR" | tail -1 | awk '{ print $3"/"$2 }')"
+  print_line "data in SD|$( [[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo yes || echo no )"
+  print_line "data filesystem|$( stat -fc%T "$DATADIR" )"
+  print_line "data disk usage|$( df -h "$DATADIR" | tail -1 | awk '{ print $3"/"$2 }')"
 }
-prtln "rootfs usage|$( df -h / | tail -1 | awk '{ print $3"/"$2 }')"
+print_line "rootfs usage|$( df -h / | tail -1 | awk '{ print $3"/"$2 }')"
 SWP="$( swapon | tail -1 | awk '{ print $1 }' )"
 if is_zero "$SWP"
 then SWP="none"
 fi
-prtln "swapfile|$SWP"
+print_line "swapfile|$SWP"
 
 # Database
 DBDIR="$( grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }' )"
@@ -97,26 +97,26 @@ if ! is_directory "$DBDIR"
 then DBDIRINFO=" (doesn't exist)"
 fi
 
-prtln "dbdir|$DBDIR$DBDIRINFO"
+print_line "dbdir|$DBDIR$DBDIRINFO"
 
 # Nextcloud
 VERSION="$( ncc status | grep "version:" | awk '{ print $3 }' )"
 if [[ "$VERSION" != "" ]]
-then prtln "Nextcloud check|ok"
-     prtln "Nextcloud version|$VERSION"
-else prtln "Nextcloud check|error"
+then print_line "Nextcloud check|ok"
+     print_line "Nextcloud version|$VERSION"
+else print_line "Nextcloud check|error"
 fi
 
 # Services
-prtln "HTTPD service|$( pgrep -c apache2 &>/dev/null && echo 'up' || echo 'down' )"
-prtln "PHP service|$( pgrep -c php-fpm &>/dev/null && echo 'up' || echo 'down' )"
-prtln "MariaDB service|$( (pgrep -c mysqld || pgrep -c mariadb) &>/dev/null && echo 'up' || echo 'down' )"
-prtln "Redis service|$( pgrep -c redis-server &>/dev/null && echo 'up' || echo 'down' )"
-prtln "HPB service|$( ncc notify_push:self-test &>/dev/null && echo 'up' || echo 'down' )"
-prtln "Postfix service|$( pgrep -fc postfix &>/dev/null && echo 'up' || echo 'down' )"
+print_line "HTTPD service|$( pgrep -c apache2 &>/dev/null && echo 'up' || echo 'down' )"
+print_line "PHP service|$( pgrep -c php-fpm &>/dev/null && echo 'up' || echo 'down' )"
+print_line "MariaDB service|$( (pgrep -c mysqld || pgrep -c mariadb) &>/dev/null && echo 'up' || echo 'down' )"
+print_line "Redis service|$( pgrep -c redis-server &>/dev/null && echo 'up' || echo 'down' )"
+print_line "HPB service|$( ncc notify_push:self-test &>/dev/null && echo 'up' || echo 'down' )"
+print_line "Postfix service|$( pgrep -fc postfix &>/dev/null && echo 'up' || echo 'down' )"
 
 # WAN
-prtln "Internet check|$( ping -W 2 -w 1 -q github.com &>/dev/null && echo 'ok' || echo 'no' )"
+print_line "Internet check|$( ping -W 2 -w 1 -q github.com &>/dev/null && echo 'ok' || echo 'no' )"
 
 function is_port_open () {
   # The URL leads to an application I've deployed for NCP on https://fly.io using a Docker container I made.
@@ -134,20 +134,20 @@ function is_port_open () {
   if ! [[ "$TYPE" =~ ^(0|4|6)$ ]]
   then # As this print is redirected to STDERR it will not be
        # asssigned in the arrays of the if-statement below this function
-       prtln "Invalid type: $TYPE" 1>&2
+       print_line "Invalid type: $TYPE" 1>&2
        return 1
   elif [[ "$TYPE" == 0 ]]
   then # Public IPv4/6 is not available
-       prtln "[N/A]" "[N/A]"
+       print_line "[N/A]" "[N/A]"
   else IPType="--ipv6"
        [[ "$TYPE" -eq 6 ]] || IPType="--ipv4"
        curl --silent --max-time 4 "$IPType" "$PORTURL" | jq -r '."80",."443"'
   fi
 }
 publicIPv4="$(curl --silent --max-time 4 --ipv4 'https://ipv4.icanhazip.com' 2>/dev/null)" || unset publicIPv4
-prtln "Public IPv4|${publicIPv4:-'not found'}"
+print_line "Public IPv4|${publicIPv4:-'not found'}"
 publicIPv6="$(curl --silent --max-time 4 --ipv6 'https://ipv6.icanhazip.com' 2>/dev/null)" || unset publicIPv6
-prtln "Public IPv6|${publicIPv6:-'not found'}"
+print_line "Public IPv6|${publicIPv6:-'not found'}"
 
 # Declares the array variables for mapfile to work
 declare -a IPv4PORTS
@@ -179,29 +179,29 @@ then PORT443="[N/A]"
 else PORT443="closed"
 fi
 
-prtln "Port 80|$PORT80"
-prtln "Port 443|$PORT443"
+print_line "Port 80|$PORT80"
+print_line "Port 443|$PORT443"
 
 # LAN
 IFACE="$( ip r | grep "default via" | awk '{ print $5 }' | head -1 )"
 GW="$(    ip r | grep "default via" | awk '{ print $3 }' | head -1 )"
 IP="$(get_ip)"
 
-prtln "IP|$IP"
-prtln "Gateway|$GW"
-prtln "Interface|$IFACE"
+print_line "IP|$IP"
+print_line "Gateway|$GW"
+print_line "Interface|$IFACE"
 
 # Certificates
 CERTS="$( grep "SSLCertificateFile */etc/letsencrypt/live/" /etc/apache2/sites-available/nextcloud.conf \
         | sed 's|.*SSLCertificateFile */etc/letsencrypt/live/||;s|/fullchain.pem||' )"
 [[ "$CERTS" == "" ]] && CERTS='none'
-prtln "Certificates|$CERTS"
+print_line "Certificates|$CERTS"
 
 RESOLV="$( ping -c1 -w1 "$CERTS" 2>/dev/null | head -1 | grep -oP '\d{1,3}(.\d{1,3}){3}' )"
-prtln "NAT loopback|$( [[ "$RESOLV" == "$IP" ]] && echo yes || echo no )"
+print_line "NAT loopback|$( [[ "$RESOLV" == "$IP" ]] && echo yes || echo no )"
 
 # Other
-prtln "Uptime|$( uptime | cut -f1 -d',' | awk '{ $1=""; $2=""; print }' | tr -d "  " )"
+print_line "Uptime|$( uptime | cut -f1 -d',' | awk '{ $1=""; $2=""; print }' | tr -d "  " )"
 # Get kernel version
 
 # License

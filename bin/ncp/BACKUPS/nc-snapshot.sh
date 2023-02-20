@@ -8,31 +8,31 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln () {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function install () {
+function install {
     local -r URL='https://raw.githubusercontent.com/nachoparker/btrfs-snp/master/btrfs-snp'
     local -r FILE='/usr/local/bin/btrfs-snp'
     wget "$URL" -O "$FILE"
     chmod +x       "$FILE"
 }
 
-function configure () {
+function configure {
     save_maintenance_mode
     
     local DATADIR MOUNTPOINT
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        prtln "Error reading data directory. Is Nextcloud running?"
+        print_line "Error reading data directory. Is Nextcloud running?"
         return 1
     }
     
     # file system check
     MOUNTPOINT="$( stat -c "%m" "$DATADIR" )" || return 1
     [[ "$( stat -fc%T "$MOUNTPOINT" )" != "btrfs" ]] && {
-        prtln "Not a BTRFS filesystem: $MOUNTPOINT"; return 1
+        print_line "Not a BTRFS filesystem: $MOUNTPOINT"; return 1
     }
     
     btrfs-snp "$MOUNTPOINT" manual "$LIMIT" 0 ../ncp-snapshots

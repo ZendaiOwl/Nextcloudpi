@@ -8,15 +8,15 @@
 
 
 
-function install () { :; }
+function install { :; }
 
-function is_active () {
+function is_active {
   local REWRITEBASE
   REWRITEBASE="$(grep RewriteBase /var/www/nextcloud/.htaccess)" || return 1
   [[ "$REWRITEBASE" != 1 ]]
 }
 
-function configure () {
+function configure {
     # make sure overwrite.cli.url end with a '/'
     local URL
     URL="$(ncc config:system:get overwrite.cli.url)"

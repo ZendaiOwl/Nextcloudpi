@@ -7,9 +7,9 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -17,7 +17,7 @@ INSTALLDIR='duckdns'
 INSTALLPATH="/usr/local/etc/$INSTALLDIR"
 CRONFILE='/etc/cron.d/duckdns'
 
-function configure () {
+function configure {
     local DOMAIN SUCCESS
     DOMAIN="${DOMAIN//.duckdns.org/}"
     #DOMAIN="$( sed 's|.duckdns.org||' <<<"$DOMAIN" )"
@@ -26,17 +26,17 @@ function configure () {
     
          # Creates duck.sh script that checks for updates to DNS records
          if ! touch "$INSTALLPATH"/duck.sh
-         then prtln "Failed to create file: $INSTALLPATH/duck.sh"; return 1
+         then print_line "Failed to create file: $INSTALLPATH/duck.sh"; return 1
          fi
          if ! touch "$INSTALLPATH"/duck.log
-         then prtln "Failed to create file: $INSTALLPATH/duck.log"; return 1
+         then print_line "Failed to create file: $INSTALLPATH/duck.log"; return 1
          fi
          
          echo -e "echo url=\"https://www.duckdns.org/update?domains=${DOMAIN}&token=${TOKEN}&ip=\" | curl -k -o ${INSTALLPATH}/duck.log -K -" > "$INSTALLPATH"/duck.sh
          
          # Adds file to cron to run script for DNS record updates and change permissions
          if ! touch "$CRONFILE"
-         then prtln "Failed to create file: $CRONFILE"; return 1
+         then print_line "Failed to create file: $CRONFILE"; return 1
          fi
          
          echo "*/5 * * * * root $INSTALLPATH/duck.sh >/dev/null 2>&1" > "$CRONFILE"
@@ -49,9 +49,9 @@ function configure () {
          
          # Checks for successful run of duck.sh
          if [[ "$SUCCESS" == "OK" ]]
-         then prtln "DuckDNS is enabled"
+         then print_line "DuckDNS is enabled"
          elif [[ "$SUCCESS" == "KO" ]]
-         then prtln "Failed to install DuckDNS, is your information correct?"
+         then print_line "Failed to install DuckDNS, is your information correct?"
          fi
          
     elif [[ "$ACTIVE" == "no" ]]
@@ -59,11 +59,11 @@ function configure () {
          rm --force "$INSTALLPATH"/duck.sh
          rm --force "$INSTALLPATH"/duck.log
          rmdir "$INSTALLPATH"
-         prtln "Disabled: DuckDNS"
+         print_line "Disabled: DuckDNS"
     fi
 }
 
-function install () { :; }
+function install { :; }
 
 # License
 #

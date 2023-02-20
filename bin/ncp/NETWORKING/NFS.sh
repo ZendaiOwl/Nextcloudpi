@@ -8,13 +8,13 @@
 # More at: https://ownyourbits.com
 #
 
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line {
     printf '%s\n' "$@"
 }
 
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     apt-get update  "${ARGS[@]}"
     apt-get install "${ARGS[@]}" nfs-kernel-server 
@@ -22,32 +22,32 @@ function install () {
     systemctl mask nfs-blkmap
 }
 
-function configure () {
+function configure {
     if [[ "$ACTIVE" != "yes" ]]
     then service nfs-kernel-server stop
          systemctl disable nfs-kernel-server
-         prtln "NFS disabled"
+         print_line "NFS disabled"
          return
     fi
     
     # CHECKS
     ################################
-    id    "$USER"  &>/dev/null || { echo "user $USER does not exist"  ; return 1; }
-    id -g "$GROUP" &>/dev/null || { echo "group $GROUP does not exist"; return 1; }
-    [[ -d "$DIR" ]] || { prtln "Directory not found: $DIR. Creating"; mkdir --parents "$DIR"; }
+    id --user  "$USER"  &>/dev/null || { print_line "No such user: $USER"  ; return 1; }
+    id --group "$GROUP" &>/dev/null || { print_line "No such group: $GROUP"; return 1; }
+    [[ -d "$DIR" ]] || { print_line "Directory not found: $DIR. Creating"; mkdir --parents "$DIR"; }
     if [[ "$( stat -fc%d / )" == "$( stat -fc%d "$DIR" )" ]]
-    then prtln "INFO: mounting a in the SD card" "If you want to use an external mount, make sure it is properly set up"
+    then print_line "INFO: mounting a in the SD card" "If you want to use an external mount, make sure it is properly set up"
     fi
     # CONFIG
     ################################
-    cat > /etc/exports <<EOF
+    cat > '/etc/exports' <<EOF
 "$DIR" "$SUBNET"(rw,sync,all_squash,anonuid="$(id -u "$USER")",anongid="$(id -g "$GROUP")",no_subtree_check)
 EOF
 
     systemctl enable rpcbind
     systemctl enable nfs-kernel-server
     service nfs-kernel-server restart
-    prtln "Enabled: NFS"
+    print_line "Enabled: NFS"
 }
 
 # License

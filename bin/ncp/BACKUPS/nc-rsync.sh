@@ -8,23 +8,23 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln () {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     apt-get update  "${ARGS[@]}"
     apt-get install "${ARGS[@]}" rsync openssh-client
 }
 
-function configure () {
+function configure {
     save_maintenance_mode
     
     local DATADIR
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        prtln "Error reading data directory. Is Nextcloud running and configured?"
+        print_line "Error reading data directory. Is Nextcloud running and configured?"
         return 1;
     }
     

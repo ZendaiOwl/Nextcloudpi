@@ -8,19 +8,19 @@
 # More at: https://ownyourbits.com
 #
 
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line {
     printf '%s\n' "$@"
 }
 
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     apt-get update "${ARGS[@]}"
     DEBIAN_FRONTEND=noninteractive apt-get install "${ARGS[@]}" miniupnpc
 }
 
-function configure () {
+function configure {
     local IP
     IP="$(get_ip)"
     upnpc -d "$HTTPSPORT" TCP

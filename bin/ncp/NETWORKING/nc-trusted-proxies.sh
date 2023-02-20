@@ -7,14 +7,14 @@
 #
 #
 
-function configure () {
+function configure {
   [[ "$PROXY1" != "" ]] && ncc config:system:set trusted_proxies 0 --value="$PROXY1"
   [[ "$PROXY2" != "" ]] && ncc config:system:set trusted_proxies 1 --value="$PROXY2"
   [[ "$PROXY3" != "" ]] && ncc config:system:set trusted_proxies 2 --value="$PROXY3"
   exit 0
 }
 
-function install () { :; }
+function install { :; }
 
 # License
 #

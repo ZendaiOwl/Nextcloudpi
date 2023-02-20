@@ -9,21 +9,19 @@
 # Made in Taiwan (Republic of China)
 #
 
-is_active()
-{
+function is_active {
   grep -q enabled <(ncc maintenance:mode)
 }
 
-configure()
-{
+function configure {
   [[ "$ACTIVE" != "yes" ]] && {
     ncc maintenance:mode --off
-    return $?
+    return "$?"
   }
   ncc maintenance:mode --on
 }
 
-install(){ :; }
+function install { :; }
 
 # License
 #

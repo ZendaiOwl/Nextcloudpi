@@ -8,13 +8,13 @@
 #
 
 
-function install () { :; }
+function install { :; }
 
-function is_active () {
+function is_active {
     systemctl -q is-enabled ssh &>/dev/null
 }
 
-function configure () {
+function configure {
     [[ "$ACTIVE" != "yes" ]]  && {
         systemctl stop    ssh
         systemctl disable ssh
@@ -37,7 +37,7 @@ function configure () {
     echo -e "$PASS\n$CONFIRM" | passwd "$USER" || return 1
     
     # Reenable pi user
-    chsh -s /bin/bash "$USER"
+    chsh -s '/bin/bash' "$USER"
     
     [[ "$SUDO" == "yes" ]] && {
         usermod -aG sudo "$USER"

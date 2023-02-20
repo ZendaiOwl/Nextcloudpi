@@ -8,16 +8,16 @@
 # More at: https://ownyourbits.com
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function configure () {
+function configure {
     # update password
-    if prtln "$PASSWORD" "$CONFIRM" | passwd ncp &>/dev/null
-    then prtln "Password updated successfully"
-    else prtln "Passwords do not match"; return 1
+    if print_line "$PASSWORD" "$CONFIRM" | passwd ncp &>/dev/null
+    then print_line "Password updated successfully"
+    else print_line "Passwords do not match"; return 1
     fi
     
     # persist ncp-web password in docker container
@@ -40,7 +40,7 @@ function configure () {
     fi
 }
 
-function install () { :; }
+function install { :; }
 
 # License
 #

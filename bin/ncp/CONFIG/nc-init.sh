@@ -8,58 +8,9 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
-}
-
-# Checks if a given path is a regular file
-# 0: Is a file
-# 1: Not a file
-# 2: Invalid number of arguments
-function is_file {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -f "$1" ]]
-}
-
-# Checks if a given path to a file exists
-# Return codes
-# 0: Path exist
-# 1: No such path
-# 2: Invalid number of arguments
-function is_path {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -e "$1" ]]
-}
-
-# Checks if given path is a directory 
-# Return codes
-# 0: Is a directory
-# 1: Not a directory
-# 2: Invalid number of arguments
-function is_directory {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -d "$1" ]]
-}
-
-# Checks if a given path is a socket
-# Return codes
-# 0: Is a socket
-# 1: Not a socket
-# 2: Invalid number of arguments
-function is_socket {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -S "$1" ]]
-}
-
-# Checks if a given String is zero
-# Return codes
-# 0: Is zero
-# 1: Not zero
-# 2: Invalid number of arguments
-function is_zero {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -z "$1" ]]
 }
 
 DBADMIN='ncadmin'
@@ -67,29 +18,29 @@ DBADMIN='ncadmin'
 function configure {
     local DBPASSWD REDISPASS UPLOADTMPDIR='/var/www/nextcloud/data/tmp' \
           ID NCVER NCPREV
-    prtln "Setting up: Nextcloud"
-    prtln "Wait until you see the message: NC init done"
+    print_line "Setting up: Nextcloud"
+    print_line "Wait until you see the message: NC init done"
     
     # checks
     REDISPASS="$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )"
-    if is_zero "$REDISPASS"
-    then prtln "Redis server is without a password"; return 1
+    if [[ -z "$REDISPASS" ]]
+    then print_line "Redis server is without a password"; return 1
     fi
     
     ## RE-CREATE DATABASE TABLE
     
-    prtln "Setting up: Database"
+    print_line "Setting up: Database"
     
     # launch mariadb if not already running
-    if ! is_file '/run/mysqld/mysqld.pid'
-    then prtln "Starting MariaDB"
+    if [[ ! -f '/run/mysqld/mysqld.pid' ]]
+    then print_line "Starting MariaDB"
          mysqld &
          local db_pid="$!"
     fi
     
     # wait for mariadb
     while :
-    do is_socket '/run/mysqld/mysqld.sock' && break
+    do [[ -S '/run/mysqld/mysqld.sock' ]] && break
        sleep 1
     done
     sleep 1
@@ -119,21 +70,19 @@ EOF
     fi
     
     while :
-    do is_socket '/run/redis/redis.sock' && break
+    do [[ -S '/run/redis/redis.sock' ]] && break
        sleep 1
     done
     
     
-    prtln "Setting up: Nextcloud"
-    if is_directory '/var/www/nextcloud/'
-    then if ! cd '/var/www/nextcloud/'
-         then prtln "Failed to change directory to: /var/www/nextcloud/"
-         fi
+    print_line "Setting up: Nextcloud"
+    if [[ -d '/var/www/nextcloud/' ]]
+    then cd '/var/www/nextcloud/' || print_line "Failed to change directory to: /var/www/nextcloud/"
     fi
 
-    if is_file 'config/config.php'
+    if [[ -f 'config/config.php' ]]
     then if ! rm --force 'config/config.php'
-         then prtln "Failed to remove file: config/config.php"; exit 1
+         then print_line "Failed to remove file: config/config.php"; exit 1
          fi
     fi
     ncc maintenance:install --database 'mysql' \
@@ -183,11 +132,11 @@ EOF
     ncc config:system:set mail_domain       --value='nextcloudpi.com'
     
     # NCP theme
-    is_path '/usr/local/etc/logo' && {
+    [[ -e '/usr/local/etc/logo' ]] && {
         ID="$( grep 'instanceid' 'config/config.php' | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
-        if is_zero "$ID"
-        then prtln "Failed to get ID"; return 1
-        fi
+
+        [[ -z "$ID" ]] || print_line "Failed to get ID"; return 1
+        
         mkdir --parents                data/appdata_"$ID"/theming/images
         cp '/usr/local/etc/background' data/appdata_"$ID"/theming/images
         cp '/usr/local/etc/logo'       data/appdata_"$ID"/theming/images/logo
@@ -229,7 +178,7 @@ EOF
     then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
     else ncc app:install notify_push
          ncc app:enable  notify_push
-         is_file '/.ncp-image' || start_notify_push # don't start during build
+         [[ -f '/.ncp-image' ]] || start_notify_push # don't start during build
          NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
     fi
     ln -snf "$NCPREV"    '/var/www/nextcloud/apps/previewgenerator'
@@ -251,25 +200,25 @@ EOF
     # Bash completion for ncc
     apt_install bash-completion
     ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > '/usr/share/bash-completion/completions/ncp'
-    prtln ". /etc/bash_completion" >> '/etc/bash.bashrc'
-    prtln ". /usr/share/bash-completion/completions/ncp" >> '/etc/bash.bashrc'
+    print_line ". /etc/bash_completion" >> '/etc/bash.bashrc'
+    print_line ". /usr/share/bash-completion/completions/ncp" >> '/etc/bash.bashrc'
     
     # TODO temporary workaround for https://github.com/nextcloud/server/pull/13358
     ncc -n db:convert-filecache-bigint
     ncc db:add-missing-indices
     
     # Default trusted domain (only from ncp-config)
-    if is_file '/usr/local/bin/nextcloud-domain.sh'
-    then is_file '/.ncp-image' || bash '/usr/local/bin/nextcloud-domain.sh'
+    if [[ -f '/usr/local/bin/nextcloud-domain.sh' ]]
+    then [[ -f '/.ncp-image' ]] || bash '/usr/local/bin/nextcloud-domain.sh'
     fi
     
     # dettach mysql during the build
     if [[ "$db_pid" != "" ]]
-    then prtln "Shutting down MariaDB ($db_pid)"
+    then print_line "Shutting down MariaDB ($db_pid)"
          mysqladmin -u root shutdown
          wait "$db_pid"
     fi
-    prtln "NC init done"
+    print_line "NC init done"
 }
 
 function install { :; }

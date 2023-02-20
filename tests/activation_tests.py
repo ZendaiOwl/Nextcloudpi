@@ -45,7 +45,7 @@ class tc:
 
 
 def usage():
-    "prtln usage"
+    "print_line usage"
     print("usage: activation_tests.py [-t|--timeout <timeout>] [-h|--no-gui] [ip [nc-port [admin-port]]]")
 
 

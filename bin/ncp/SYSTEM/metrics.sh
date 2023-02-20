@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-function is_supported () {
+function is_supported {
     [[ "${DOCKERBUILD:-0}" == 1 ]] && [[ "$(lsb_release -r)" =~ .*10 ]] && return 1
     return 0
 }
 
-function is_active () {
+function is_active {
     is_supported || return 1
     
     metrics_services status > /dev/null 2>&1 || return 1
@@ -13,7 +13,7 @@ function is_active () {
     return 0
 }
 
-function tmpl_metrics_enabled () {
+function tmpl_metrics_enabled {
     (
         # shellcheck disable=SC1090
         . '/usr/local/etc/library.sh'
@@ -23,10 +23,10 @@ function tmpl_metrics_enabled () {
     )
 }
 
-function reload_metrics_config () {
+function reload_metrics_config {
     is_supported || return 0
     
-    install_template ncp-metrics.cfg.sh "/usr/local/etc/ncp-metrics.cfg" || {
+    install_template 'ncp-metrics.cfg.sh' '/usr/local/etc/ncp-metrics.cfg' || {
         echo -e "ERROR while generating ncp-metrics.conf!"
         return 1
     }
@@ -40,45 +40,40 @@ function reload_metrics_config () {
     } || return 0
 }
 
-function metrics_services () {
+function metrics_services {
     cmd="${1?}"
     
     if [[ "$cmd" =~ (start|stop|restart|reload|status) ]]
-    then
-        if ! is_docker && [[ "$INIT_SYSTEM" != "systemd" ]]
-        then
-            echo "Probably running in chroot. Ignoring 'metrics_services $cmd'..."
-            return 0
-        fi
-        rc1=0
-        rc2=0
-        service prometheus-node-exporter "$cmd" || rc1="$?"
-        service ncp-metrics-exporter "$cmd" || rc2="$?"
-        [[ "$rc1" > "$rc2" ]] && return "$rc1"
-        return "$rc2"
+    then if ! is_docker && [[ "$INIT_SYSTEM" != "systemd" ]]
+         then echo "Probably running in chroot. Ignoring 'metrics_services $cmd'..."
+              return 0
+         fi
+         rc1=0
+         rc2=0
+         service prometheus-node-exporter "$cmd" || rc1="$?"
+         service ncp-metrics-exporter "$cmd"     || rc2="$?"
+         [[ "$rc1" > "$rc2" ]] && return "$rc1"
+         return "$rc2"
     fi
     
     if ! [[ "$cmd" =~ (en|dis)able ]]
-    then
-        echo -e "ERROR: Invalid command: metrics_services ${cmd}!"
-        exit 1
+    then echo -e "ERROR: Invalid command: metrics_services ${cmd}!"
+         exit 1
     fi
     
     if is_docker
-    then
-        rc1=0
-        rc2=0
-        update-rc.d ncp-metrics-exporter "$cmd" || rc1="$?"
-        update-rc.d prometheus-node-exporter "$cmd" || rc2="$?"
-        [[ "$rc1" > "$rc2" ]] && return "$rc1"
-        return "$rc2"
-    else
-        systemctl "$cmd" prometheus-node-exporter ncp-metrics-exporter
-        return "$?"
+    then rc1=0
+         rc2=0
+         update-rc.d ncp-metrics-exporter "$cmd"     || rc1="$?"
+         update-rc.d prometheus-node-exporter "$cmd" || rc2="$?"
+         [[ "$rc1" > "$rc2" ]] && return "$rc1"
+         return "$rc2"
+    else systemctl "$cmd" prometheus-node-exporter ncp-metrics-exporter
+         return "$?"
     fi
 }
 
-function install () {
+function install {
 
   # Subshell to return on failure  instead of exiting (due to set -e)
   (
@@ -86,34 +81,33 @@ function install () {
   set -e
   set +u
 
-  is_supported || {
-    echo -e "Metrics app is not supported in debian 10 docker containers. Installation will be skipped."
-    return 0
-  }
+  if ! is_supported
+  then echo -e "Metrics app is not supported in debian 10 docker containers. Installation will be skipped."
+       return 0
+  fi
 
-  cat > /etc/default/prometheus-node-exporter <<'EOF'
+  cat > '/etc/default/prometheus-node-exporter' <<'EOF'
 ARGS="--collector.filesystem.ignored-mount-points=\"^/(dev|proc|run|sys|mnt|var/log|var/lib/docker)($|/)\""
 EOF
 
   arch="$(uname -m)"
   [[ "${arch}" =~ ^"arm" ]] && arch="armv7"
 
-  mkdir -p /usr/local/lib/ncp-metrics
+  mkdir -p '/usr/local/lib/ncp-metrics'
   wget -qO "/usr/local/lib/ncp-metrics/ncp-metrics-exporter" \
     "https://github.com/theCalcaholic/ncp-metrics-exporter/releases/download/v1.1.0/ncp-metrics-exporter-${arch}"
-  chmod +x /usr/local/lib/ncp-metrics/ncp-metrics-exporter
+  chmod +x '/usr/local/lib/ncp-metrics/ncp-metrics-exporter'
 
   # Apply fix to init-d-script (https://salsa.debian.org/debian/sysvinit/-/commit/aa40516c)
   # Otherwise the init.d scripts of prometheus-node-exporter won't work
   # shellcheck disable=SC2016
-  sed -i 's|status_of_proc "$DAEMON" "$NAME" ${PIDFILE:="-p ${PIDFILE}"}|status_of_proc ${PIDFILE:+-p "$PIDFILE"} "$DAEMON" "$NAME"|' /lib/init/init-d-script
+  sed -i 's|status_of_proc "$DAEMON" "$NAME" ${PIDFILE:="-p ${PIDFILE}"}|status_of_proc ${PIDFILE:+-p "$PIDFILE"} "$DAEMON" "$NAME"|' '/lib/init/init-d-script'
 
   apt-get update --allow-releaseinfo-change
   install_with_shadow_workaround -o Dpkg::Options::=--force-confdef -o Dpkg::Options::="--force-confold" prometheus-node-exporter
 
   if is_docker
-  then
-    cat > /etc/init.d/ncp-metrics-exporter <<'EOF'
+  then cat > '/etc/init.d/ncp-metrics-exporter' <<'EOF'
 #!/bin/sh
 # Generated by sysd2v v0.3  --  http://www.trek.eu.org/devel/sysd2v
 # kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
@@ -138,10 +132,10 @@ PIDFILE=/var/run/ncp-metrics-exporter.pid
 LOGFILE=/var/log/ncp-metrics.log
 START_ARGS="--background --make-pidfile"
 EOF
-    chmod +x /etc/init.d/ncp-metrics-exporter
+    chmod +x '/etc/init.d/ncp-metrics-exporter'
     update-rc.d ncp-metrics-exporter defaults
 
-    cat > /etc/services-available.d/101ncp-metrics <<EOF
+    cat > '/etc/services-available.d/101ncp-metrics' <<EOF
 #!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
@@ -163,11 +157,11 @@ service prometheus-node-exporter start
 echo "starting ncp-metrics-exporter
 service ncp-metrics-exporter start
 EOF
-  chmod +x /etc/services-available.d/101ncp-metrics
+  chmod +x '/etc/services-available.d/101ncp-metrics'
 
   else #=> if not is_docker
 
-    cat <<EOF > /etc/systemd/system/ncp-metrics-exporter.service
+    cat <<EOF > '/etc/systemd/system/ncp-metrics-exporter.service'
 [Unit]
 Description=NCP Metrics Exporter
 
@@ -192,14 +186,14 @@ EOF
   )
 }
 
-function configure () {
+function configure {
   set +u
 
   if [[ "$ACTIVE" != yes ]]
   then
 
-    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
-      install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
+    install_template 'nextcloud.conf.sh' '/etc/apache2/sites-available/nextcloud.conf' || {
+      install_template 'nextcloud.conf.sh' '/etc/apache2/sites-available/nextcloud.conf' '--allow-fallback'
       echo -e "ERROR while generating nextcloud.conf! Exiting..."
       return 1
     }
@@ -232,7 +226,7 @@ function configure () {
       }
 
       local htpasswd_file="/usr/local/etc/metrics.htpasswd"
-      rm -f "${htpasswd_file}"
+      rm --force "${htpasswd_file}"
       echo "$PASSWORD" | htpasswd -ciB "${htpasswd_file}" "$USER"
     fi
 
@@ -250,8 +244,8 @@ function configure () {
     echo "done."
 
 
-    install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf || {
-      install_template nextcloud.conf.sh /etc/apache2/sites-available/nextcloud.conf --allow-fallback
+    install_template 'nextcloud.conf.sh' '/etc/apache2/sites-available/nextcloud.conf' || {
+      install_template 'nextcloud.conf.sh' '/etc/apache2/sites-available/nextcloud.conf' '--allow-fallback'
       echo -e "ERROR while generating nextcloud.conf! Exiting..."
       return 1
     }

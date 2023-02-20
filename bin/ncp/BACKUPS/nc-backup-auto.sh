@@ -7,33 +7,33 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function tmpl_get_destination () {
+function tmpl_get_destination {
     (
         # shellcheck disable=SC1091
         . /usr/local/etc/library.sh
-        find_app_param nc-backup-auto DESTDIR
+        find_app_param 'nc-backup-auto' 'DESTDIR'
     )
 }
 
-function configure () {
+function configure {
     [[ "$ACTIVE" != "yes" ]] && {
-        rm -f /etc/cron.d/ncp-backup-auto
+        rm --force '/etc/cron.d/ncp-backup-auto'
         service cron restart
-        prtln "Automatic backups disabled"
+        print_line "Automatic backups disabled"
         return 0
     }
 
-    cat > /usr/local/bin/ncp-backup-auto <<EOF
+    cat > '/usr/local/bin/ncp-backup-auto' <<EOF
 #!/usr/bin/env bash
 source /usr/local/etc/library.sh
 failed=
 function run_script () {
-    if [ -x /usr/local/bin/ncp-backup-auto-\$1 ]
+    if [[ -x /usr/local/bin/ncp-backup-auto-\$1 ]]
     then /usr/local/bin/ncp-backup-auto-\$1 || failed="\$failed\${failed:+, } \$1"
     fi
 }
@@ -47,10 +47,10 @@ if [[ -n "\$failed" ]]
 then notify_admin "Auto-backup failed" "The \$failed backup script(s) failed"
 fi
 EOF
-    chmod +x /usr/local/bin/ncp-backup-auto
+    chmod +x '/usr/local/bin/ncp-backup-auto'
     
-    echo "0  3  */$BACKUPDAYS  *  *  root  /usr/local/bin/ncp-backup-auto >> /var/log/ncp.log 2>&1" > /etc/cron.d/ncp-backup-auto
-    chmod 644 /etc/cron.d/ncp-backup-auto
+    echo "0  3  */$BACKUPDAYS  *  *  root  /usr/local/bin/ncp-backup-auto >> /var/log/ncp.log 2>&1" > '/etc/cron.d/ncp-backup-auto'
+    chmod 644 '/etc/cron.d/ncp-backup-auto'
     service cron restart
     
     (
@@ -59,7 +59,7 @@ EOF
         reload_metrics_config
     )
     
-    prtln "Automatic backups enabled"
+    print_line "Automatic backups enabled"
 }
 
 function install () { :; }

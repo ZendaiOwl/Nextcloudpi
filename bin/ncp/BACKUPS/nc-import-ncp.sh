@@ -7,16 +7,16 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function configure () {
-  [[ -f "$FILE" ]] || { prtln "File to export not found: $FILE"; return 1; }
+function configure {
+  [[ -f "$FILE" ]] || { print_line "File to export not found: $FILE"; return 1; }
 
   if ! cd "$CFGDIR"
-  then prtln "Failed to change directory to: $CFGDIR"; return 1
+  then print_line "Failed to change directory to: $CFGDIR"; return 1
   fi
 
   # extract export
@@ -35,13 +35,13 @@ function configure () {
   is_active_app "dnsmasq"     && run_app "dnsmasq"
   is_active_app "letsencrypt" && run_app "letsencrypt"
 
-  prtln "Configuration restored"
+  print_line "Configuration restored"
 
   # delayed in bg so it does not kill the connection, and we get AJAX response
   apachectl -k graceful
 }
 
-function install () { :; }
+function install { :; }
 
 # License
 #

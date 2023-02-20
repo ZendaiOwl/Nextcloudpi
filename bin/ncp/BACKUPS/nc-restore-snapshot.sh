@@ -9,30 +9,30 @@
 # More at nextcloudpi.com
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function install () { :; }
+function install { :; }
 
-function configure () {
-    [[ -d "$SNAPSHOT" ]] || { prtln "Directory not found: $SNAPSHOT"; return 1; }
+function configure {
+    [[ -d "$SNAPSHOT" ]] || { print_line "Directory not found: $SNAPSHOT"; return 1; }
     
     local DATADIR MOUNTPOINT
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        prtln "Error reading data directory. Is Nextcloud running?"; return 1
+        print_line "Error reading data directory. Is Nextcloud running?"; return 1
     }
     
     # file system check
     MOUNTPOINT="$( stat -c "%m" "$DATADIR" )" || return 1
     [[ "$( stat -fc%T "$MOUNTPOINT" )" != "btrfs" ]] && {
-        prtln "Data directory is not in a BTRFS filesystem: $DATADIR"; return 1
+        print_line "Data directory is not in a BTRFS filesystem: $DATADIR"; return 1
     }
     
     # file system check
     btrfs subvolume show "$SNAPSHOT" &>/dev/null || {
-        prtln "Not a BTRFS snapshot: $SNAPSHOT"; return 1
+        print_line "Not a BTRFS snapshot: $SNAPSHOT"; return 1
     }
     
     btrfs-snp "$MOUNTPOINT" autobackup 0 0 ../ncp-snapshots || return 1
@@ -43,7 +43,7 @@ function configure () {
     restore_maintenance_mode
     ncp-scan
     
-    prtln "Snapshot restored: $SNAPSHOT"
+    print_line "Snapshot restored: $SNAPSHOT"
 }
 
 # License

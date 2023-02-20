@@ -14,8 +14,8 @@ VERSION="$(git describe --tags --always)"
 VERSION="${VERSION%-*-*}"
 export VERSION
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -144,16 +144,6 @@ function is_set {
     [[ -v "$1" ]]
 }
 
-# Checks if a given variable has been set and is a name reference
-# Return codes
-# 0: Is set name reference
-# 1: Not set name reference
-# 2: Invalid number of arguments
-function is_reference {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -R "$1" ]]
-}
-
 # Checks if a given String is zero
 # Return codes
 # 0: Is zero
@@ -198,22 +188,6 @@ function has_cmd {
          else return 1
          fi
     else return 2
-    fi
-}
-
-# Checks if a package exists on the system
-# Return status codes
-# 0: Package is installed
-# 1: Package is not installed but is available in apt
-# 2: Package is not installed and is not available in apt
-# 3: Missing package argument to check
-function has_pkg {
-    if [[ "$#" -eq 1 ]]; then declare -r CHECK="$1"
-        if dpkg-query --status "$CHECK" &>/dev/null; then return 0
-        elif apt-cache show "$CHECK" &>/dev/null; then return 1
-        else return 2
-        fi
-    else return 3
     fi
 }
 

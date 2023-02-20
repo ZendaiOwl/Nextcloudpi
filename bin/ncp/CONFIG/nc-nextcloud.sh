@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -35,35 +35,9 @@ function log {
   fi
 }
 
-# Check if user ID executing script is 0 or not
-# Return codes
-# 0: Is root
-# 1: Not root
-# 2: Invalid number of arguments
-function is_root {
-    [[ "$#" -ne 0 ]] && return 2
-    [[ "$EUID" -eq 0 ]]
-}
-
-# Checks if a command exists on the system
-# Return status codes
-# 0: Command exists on the system
-# 1: Command is unavailable on the system
-# 2: Missing command argument to check
-function has_cmd {
-    if [[ "$#" -eq 1 ]]
-    then declare -r CHECK="$1"
-         if command -v "$CHECK" &>/dev/null
-         then log -1 "Available: $CHECK"; return 0
-         else log -1 "Unavailable: $CHECK"; return 1
-         fi
-    else log 2 "Requires: [Command]"; return 2
-    fi
-}
-
 # Update apt list and packages
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
@@ -72,46 +46,44 @@ function update_apt {
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-        if is_root
-        then log -1 "Updating apt lists"
-             if "${ROOTUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
-        else log -1 "Updating apt lists"
-             if "${SUDOUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
-        fi
+         if [[ "$EUID" -eq 0 ]]
+         then log -1 "Updating apt lists"
+              if "${ROOTUPDATE[@]}" &>/dev/null
+              then log 0 "Apt list updated"
+              else log 2 "Couldn't update apt lists"; return 1
+              fi
+         else log -1 "Updating apt lists"
+              if "${SUDOUPDATE[@]}" &>/dev/null
+              then log 0 "Apt list updated"
+              else log 2 "Couldn't update apt lists"; return 1
+              fi
+         fi
     fi
 }
 
-# Installs package(s) using the package manager and pre-configured options
+# Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: Install completed
-# 1: Coudn't update apt list
-# 2: Error during installation
-# 3: Missing package argument
+# 0: install_pkg completed
+# 1: Error during installation
+# 2: Missing package argument
 function install_package {
     if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [PKG(s) to install]"; return 3
+    then log 2 "Requires: [PKG(s)]"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-        if is_root
-        then log -1 "Installing ${PKG[*]}"
-             if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
-             then log 0 "Installation completed"; return 0
-             else log 2 "Something went wrong during installation"; return 2
-             fi
-        else log -1 "Installing ${PKG[*]}"
-             if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"
-             then log 0 "Installation completed"; return 0
-             else log 2 "Something went wrong during installation"; return 1
-             fi
-        fi
+         if [[ "$EUID" -eq 0 ]]
+         then log -1 "install_pkging $*"
+              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
+              then log 0 "install_pkgation complete"; return 0
+              else log 2 "Something went wrong during installation"; return 1
+              fi
+         else log -1 "install_pkging $*"
+              if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
+              then log 0 "install_pkgation complete"; return 0
+              else log 2 "Something went wrong during installation"; return 1
+              fi
+         fi
     fi
 }
 
@@ -132,9 +104,7 @@ function install {
              HTTP_USER='www-data' \
              PROVISIONING_SERVICE='/usr/lib/systemd/system/nc-provisioning.service'
     # During build, this step is run before ncp.sh. Avoid executing twice
-    if is_file "$PROVISIONING_SERVICE"
-    then return 0
-    fi
+    [[ -f "$PROVISIONING_SERVICE" ]] && return 0
 
     # Update
     update_apt
@@ -143,22 +113,22 @@ function install {
     # NOTE: php-smbclient in sury but not in Debian sources, we'll use the binary version
     # https://docs.nextcloud.com/server/latest/admin_manual/configuration_files/external_storage/smb.html
     # smbclient, exfat-fuse, exfat-utils: for external storage
-    # exif: for gallery
-    # bcmath: for LDAP
-    # gmp: for bookmarks
+    # exif:                 for gallery
+    # bcmath:               for LDAP
+    # gmp:                  for bookmarks
     # imagick, ghostscript: for gallery
     install_package jq \
-               wget \
-               lbzip2 \
-               procps \
-               psmisc \
-               binutils \
-               smbclient \
-               exfat-fuse \
-               exfat-utils \
-               iputils-ping \
-               redis-server \
-               php"$PHPVER"-{exif,bcmath,gmp,redis} 
+                    wget \
+                    lbzip2 \
+                    procps \
+                    psmisc \
+                    binutils \
+                    smbclient \
+                    exfat-fuse \
+                    exfat-utils \
+                    iputils-ping \
+                    redis-server \
+                    php"$PHPVER"-{exif,bcmath,gmp,redis} 
     #install_package imagemagick php"$PHPVER"-imagick ghostscript
 
     # POSTFIX
@@ -178,8 +148,8 @@ function install {
     sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'    "$REDIS_CONF"
     sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'   "$REDIS_CONF"
     sed -i "s|^port.*|port $PORT_NR|"                                 "$REDIS_CONF"
-    prtln "maxmemory $REDIS_MEM" >> "$REDIS_CONF"
-    prtln 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
+    print_line "maxmemory $REDIS_MEM"     >> "$REDIS_CONF"
+    print_line 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
 
     if is_lxc
     then mkdir --parents '/etc/systemd/system/redis-server.service.d'
@@ -232,10 +202,9 @@ function configure
              NOTIFYPUSH_SERVICE='/etc/systemd/system/notify_push.service' \
              URL="https://download.nextcloud.com/server/${PREFIX}releases/nextcloud-${NCLATESTVER}.tar.bz2"
     local OPCACHEDIR DBPASSWD DB_PID
+
     ## DOWNLOAD AND (OVER)WRITE NEXTCLOUD
-    if ! cd "$HTPATH"
-    then log 2 "Unable to change directory to: $HTPATH"; exit 1
-    fi
+    cd "$HTPATH" || log 2 "Unable to change directory to: $HTPATH"; exit 1
 
     log -1 "Downloading Nextcloud: $NCLATESTVER"
     if ! wget -q "$URL" -O 'nextcloud.tar.bz2'
@@ -243,7 +212,7 @@ function configure
     fi
 
     log -1 "Checking for existing nextcloud directory"
-    if is_directory 'nextcloud'
+    if [[ -d 'nextcloud' ]]
     then rm --recursive --force 'nextcloud'
          log -1 "Removed directory: nextcloud"
     else log -1 "Directory not found: nextcloud"
@@ -275,11 +244,11 @@ function configure
     chmod +x "$OCPATH"/occ
     
     log -1 "chmod ($HTUSER) & chown (0644): .htaccess"
-    if is_file "$OCPATH"/.htaccess
+    if [[ -f "$OCPATH"/.htaccess ]]
     then chmod 0644 "$OCPATH"/.htaccess
          chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
     fi
-    if is_file "$OCPATH"/data/.htaccess
+    if [[ -f "$OCPATH"/data/.htaccess ]]
     then chmod 0644 "$OCPATH"/data/.htaccess
          chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
     fi
@@ -310,7 +279,7 @@ function configure
     fi
     
     while :
-    do is_socket "$MYSQL_SOCKET" && break
+    do [[ -S "$MYSQL_SOCKET" ]] && break
        sleep 1
     done
     
@@ -368,7 +337,7 @@ EOF
     [[ "$arch" =~ "armv7" ]] && arch='armv7'
     install_template "$NOTIFYPUSH_TEMPLATE" "$NOTIFYPUSH_SERVICE"
 
-    if ! is_file '/.docker-image'
+    if [[ ! -f '/.docker-image' ]]
     then systemctl enable notify_push
     fi
     

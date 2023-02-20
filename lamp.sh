@@ -19,8 +19,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -46,312 +46,13 @@ function log {
   fi
 }
 
-#########################
-# Bash - Test Functions #
-#########################
-
-# Check if user ID executing script is 0 or not
-# Return codes
-# 0: Is root
-# 1: Not root
-# 2: Invalid number of arguments
-function is_root {
-    [[ "$#" -ne 0 ]] && return 2
-    [[ "$EUID" -eq 0 ]]
-}
-
-# Checks if a user exists
-# Return codes
-# 0: Is a user
-# 1: Not a user
-# 2: Invalid number of arguments
-function is_user {
-    [[ "$#" -ne 1 ]] && return 2
-    if id -u "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
-}
-
-# Checks if a given path to a file exists
-# Return codes
-# 0: Path exist
-# 1: No such path
-# 2: Invalid number of arguments
-function is_path {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -e "$1" ]]
-}
-
-# Checks if a given path is a regular file
-# 0: Is a file
-# 1: Not a file
-# 2: Invalid number of arguments
-function is_file {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -f "$1" ]]
-}
-
-# Checks if a given path is a readable file
-# 0: Is readable
-# 1: Not readable
-# 2: Invalid number of arguments
-function is_readable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -r "$1" ]]
-}
-
-# Checks if a given path is a writable file
-# 0: Is writable
-# 1: Not writable
-# 2: Invalid number of arguments
-function is_writeable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -w "$1" ]]
-}
-
-# Checks if a given path is an executable file
-# 0: Is executable
-# 1: Not executable
-# 2: Invalid number of arguments
-function is_executable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -x "$1" ]]
-}
-
-# Checks if given path is a directory 
-# Return codes
-# 0: Is a directory
-# 1: Not a directory
-# 2: Invalid number of arguments
-function is_directory {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -d "$1" ]]
-}
-
-# Checks if given path is a named pipe
-# Return codes
-# 0: Is a named pipe
-# 1: Not a named pipe
-# 2: Invalid number of arguments
-function is_pipe {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -p "$1" ]]
-}
-
-# Checks if the first given digit is greater than the second digit
-# Return codes
-# 0: Is greater
-# 1: Not greater
-# 2: Invalid number of arguments
-function is_greater {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -gt "$2" ]]
-}
-
-# Checks if the first given digit is greater than or equal to the second digit
-# Return codes
-# 0: Is greater than or equal
-# 1: Not greater than or equal
-# 2: Invalid number of arguments
-function is_equal_or_greater {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -ge "$2" ]]
-}
-
-# Checks if the first given digit is less than the second digit
-# Return codes
-# 0: Is less
-# 1: Not less
-# 2: Invalid number of arguments
-function is_less {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -lt "$2" ]]
-}
-
-# Checks if a given variable has been set and is a name reference
-# Return codes
-# 0: Is set name reference
-# 1: Not set name reference
-# 2: Invalid number of arguments
-function is_reference {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -R "$1" ]]
-}
-
-# Checks if a given path is a socket
-# Return codes
-# 0: Is a socket
-# 1: Not a socket
-# 2: Invalid number of arguments
-function is_socket {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -S "$1" ]]
-}
-
-# Checks if a given variable has been set and assigned a value.
-# Return codes
-# 0: Is set
-# 1: Not set 
-# 2: Invalid number of arguments
-function is_set {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -v "$1" ]]
-}
-
-# Checks if a given variable has been set and assigned a value.
-# Return codes
-# 0: Not set
-# 1: Is set 
-# 2: Invalid number of arguments
-function not_set {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ ! -v "$1" ]]
-}
-
-# Checks if 2 given digits are equal
-# Return codes
-# 0: Is equal
-# 1: Not equal
-# 2: Invalid number of arguments
-function is_equal {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -eq "$2" ]]
-}
-
-# Checks if 2 given digits are not equal
-# Return codes
-# 0: Not equal
-# 1: Is equal
-# 2: Invalid number of arguments
-function not_equal {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -ne "$2" ]]
-}
-
-# Checks if 2 given String variables match
-# Return codes
-# 0: Is a match
-# 1: Not a match
-# 2: Invalid number of arguments
-function is_match {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" == "$2" ]]
-}
-
-# Checks if 2 given String variables do not match
-# Return codes
-# 0: Not a match
-# 1: Is a match
-# 2: Invalid number of arguments
-function not_match {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" != "$2" ]]
-}
-
-# Checks if a given String is zero
-# Return codes
-# 0: Is zero
-# 1: Not zero
-# 2: Invalid number of arguments
-function is_zero {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -z "$1" ]]
-}
-
-# Checks if a given String is not zero
-# Return codes
-# 0: Not zero
-# 1: Is zero
-# 2: Invalid number of arguments
-function not_zero {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -n "$1" ]]
-}
-
-# Checks if a given variable is an array or not
-# Return codes
-# 0: Variable is an array
-# 1: Variable is not an array
-# 2: Missing argument: Variable to check
-function is_array {
-    if [[ "$#" -ne 1 ]]
-    then return 2
-    elif ! declare -a "$1" &>/dev/null
-    then return 1
-    else return 0
-    fi
-}
-
-# Test if a function() is available
-# Return codes
-# 0: Available
-# 1: Unvailable
-# 2: Too many/few arguments
-function is_function {
-    if [[ "$#" -eq 1 ]]
-    then declare -r FUNC="$1"
-         if declare -f "$FUNC" &>/dev/null
-         then return 0
-         else return 1
-         fi
-    else return 2
-    fi
-}
-
-# Checks if a given pattern in a String
-# Return codes
-# 0: Has String pattern
-# 1: No String pattern
-# 2: Invalid number of arguments
-function has_text {
-    [[ "$#" -ne 2 ]] && return 2
-    declare -r PATTERN="$1" STRING="$2"
-    [[ "$STRING" == *"$PATTERN"* ]]
-}
-
-# Checks if a command exists on the system
-# Return status codes
-# 0: Command exists on the system
-# 1: Command is unavailable on the system
-# 2: Missing command argument to check
-function has_cmd {
-    if [[ "$#" -eq 1 ]]
-    then declare -r CHECK="$1"
-         if command -v "$CHECK" &>/dev/null
-         then return 0
-         else return 1
-         fi
-    else return 2
-    fi
-}
-
-# Checks if a package exists on the system
-# Return status codes
-# 0: Package is installed
-# 1: Package is not installed but is available in apt
-# 2: Package is not installed and is not available in apt
-# 3: Missing package argument to check
-function has_pkg {
-    if [[ "$#" -eq 1 ]]
-    then declare -r CHECK="$1"
-         if dpkg-query --status "$CHECK" &>/dev/null
-         then return 0
-         elif apt-cache show "$CHECK" &>/dev/null
-         then return 1
-         else return 2
-         fi
-    else return 3
-    fi
-}
-
 ############################
 # Bash - Install Functions #
 ############################
 
 # Update apt list and packages
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
@@ -360,46 +61,44 @@ function update_apt {
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-        if is_root
-        then log -1 "Updating apt lists"
-             if "${ROOTUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
-        else log -1 "Updating apt lists"
-             if "${SUDOUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
-        fi
+         if is_root
+         then log -1 "Updating apt lists"
+              if "${ROOTUPDATE[@]}" &>/dev/null
+              then log 0 "Apt list updated"
+              else log 2 "Couldn't update apt lists"; return 1
+              fi
+         else log -1 "Updating apt lists"
+              if "${SUDOUPDATE[@]}" &>/dev/null
+              then log 0 "Apt list updated"
+              else log 2 "Couldn't update apt lists"; return 1
+              fi
+         fi
     fi
 }
 
-# Installs package(s) using the package manager and pre-configured options
+# Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: Install completed
-# 1: Coudn't update apt list
-# 2: Error during installation
-# 3: Missing package argument
+# 0: install_pkg completed
+# 1: Error during installation
+# 2: Missing package argument
 function install_package {
     if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [PKG(s) to install]"; return 3
+    then log 2 "Requires: [PKG(s)]"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-        if is_root
-        then log -1 "Installing ${PKG[*]}"
-             if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
-             then log 0 "Installation completed"; return 0
-             else log 2 "Something went wrong during installation"; return 2
-             fi
-        else log -1 "Installing ${PKG[*]}"
-             if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"
-             then log 0 "Installation completed"; return 0
-             else log 2 "Something went wrong during installation"; return 1
-             fi
-        fi
+         if is_root
+         then log -1 "install_pkging $*"
+              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
+              then log 0 "install_pkgation complete"; return 0
+              else log 2 "Something went wrong during installation"; return 1
+              fi
+         else log -1 "install_pkging $*"
+              if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
+              then log 0 "install_pkgation complete"; return 0
+              else log 2 "Something went wrong during installation"; return 1
+              fi
+         fi
     fi
 }
 
@@ -420,7 +119,7 @@ function install {
     
     # Setup apt repository for php 8
     wget -O '/etc/apt/trusted.gpg.d/php.gpg' "$PHPREPO_GPGKEY"
-    echo "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
+    print_line "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
     update_apt
     install_package apt-utils cron curl apache2
 
@@ -430,12 +129,12 @@ function install {
     apache2ctl -V || true
 
     # Create systemd users to keep uids persistent between containers
-    if ! is_user systemd-resolve
-    then addgroup --quiet --system systemd-journal
-         adduser  --quiet -u 180 --system --group --no-create-home --home /run/systemd \
-                  --gecos "systemd Network Management" systemd-network
-         adduser  --quiet -u 181 --system --group --no-create-home --home /run/systemd \
-                  --gecos "systemd Resolver" systemd-resolve
+    if ! id --user 'systemd-resolve' &>/dev/null
+    then addgroup --quiet --system 'systemd-journal'
+         adduser  --quiet -u 180 --system --group --no-create-home --home '/run/systemd' \
+                  --gecos "systemd Network Management" 'systemd-network'
+         adduser  --quiet -u 181 --system --group --no-create-home --home '/run/systemd' \
+                  --gecos "systemd Resolver" 'systemd-resolve'
     fi
     
     install_with_shadow_workaround --no-install-recommends systemd
@@ -443,8 +142,8 @@ function install {
 
     mkdir --parents "$PHPDAEMON"
 
-    prtln "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
-    #prtln "[client]" "password=$DBPASSWD" > /root/.my.cnf
+    print_line "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
+    #print_line "[client]" "password=$DBPASSWD" > /root/.my.cnf
     chmod 600 "$MYCNF_FILE"
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
@@ -459,13 +158,13 @@ function install {
     # CONFIGURE APACHE #
     ####################
     
-    install_template "apache2/http2.conf.sh" "/etc/apache2/conf-available/http2.conf" "--defaults"
+    install_template "apache2/http2.conf.sh" "/etc/apache2/conf-available/http2.conf" '--defaults'
 
     ##################
     # CONFIGURE PHP7 #
     ##################
 
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" "--defaults"
+    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
 
     a2enmod http2
     a2enconf http2
@@ -477,7 +176,7 @@ function install {
     a2enmod mime
     a2enmod ssl
 
-    prtln "ServerName localhost" >> '/etc/apache2/apache2.conf'
+    print_line "ServerName localhost" >> '/etc/apache2/apache2.conf'
 
 
     ################################
@@ -487,11 +186,11 @@ function install {
     # Self-signed certificates
     install_package ssl-cert
 
-    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" "--defaults"
-    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" "--defaults"
+    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" '--defaults'
+    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" '--defaults'
 
   # Start MariaDB if it's not already running
-  if ! is_file "$DBPID_FILE"
+  if [[ ! -f "$DBPID_FILE" ]]
   then log -1 "Starting MariaDB"
        mysqld &
        declare -x DBPID="$!"
@@ -499,11 +198,11 @@ function install {
 
   # Wait for MariaDB to start
   while :
-  do is_socket "$DBSOCKET" && break
+  do [[ -S "$DBSOCKET" ]] && break
      sleep 1
   done
 
-  if ! cd /tmp
+  if ! cd '/tmp'
   then log 2 "Failed to change directory to: /tmp"; exit 1
   fi
   

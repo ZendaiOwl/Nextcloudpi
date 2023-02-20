@@ -8,28 +8,28 @@
 # More at: https://ownyourbits.com
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function is_active () {
+function is_active {
     a2query -s ncp &>/dev/null
 }
 
-function configure ()  {
+function configure {
     if [[ "$ACTIVE" != "yes" ]]
     then a2dissite ncp
-         prtln "Disabled: ncp-web"
+         print_line "Disabled: ncp-web"
     else a2ensite ncp
-         prtln "Enabled: ncp-web"
+         print_line "Enabled: ncp-web"
     fi
     
     # delayed in bg so it does not kill the connection, and we get AJAX response
     bash -c "sleep 2 && service apache2 reload" &>/dev/null &
 }
 
-function install () { :; }
+function install { :; }
 
 # License
 #

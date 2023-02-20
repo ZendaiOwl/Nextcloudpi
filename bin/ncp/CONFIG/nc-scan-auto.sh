@@ -8,16 +8,16 @@
 # More at: https://ownyourbits.com
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function configure () {
+function configure {
     [[ "$ACTIVE" != "yes" ]] && {
-        rm --force /etc/cron.d/ncp-scan-auto
+        rm --force '/etc/cron.d/ncp-scan-auto'
         service cron restart
-        prtln "Automatic scans disabled"
+        print_line "Automatic scans disabled"
         return 0
     }
 
@@ -30,17 +30,17 @@ function configure () {
          HOUR="$(( "$SCANINTERVAL" / 60 ))"
          MINS="$(( "$SCANINTERVAL" % 60 ))"
          MINS="*/$MINS"
-         if [[ "$HOUR" == 0 ]]
+         if [[ "$HOUR" == "0" ]]
          then HOUR="*"
          else HOUR="*/$HOUR"
               MINS="15"
          fi
     
-    [[ "$RECURSIVE"   == no  ]] && RECURSIVE=--shallow
+    [[ "$RECURSIVE"   == "no"  ]] && RECURSIVE='--shallow'
     # shellcheck disable=SC2153
-    [[ "$NONEXTERNAL" == yes ]] && NON_EXTERNAL=--home-only
+    [[ "$NONEXTERNAL" == "yes" ]] && NON_EXTERNAL='--home-only'
     
-    cat > /usr/local/bin/ncp-scan-auto <<EOF
+    cat > '/usr/local/bin/ncp-scan-auto' <<EOF
 #!/usr/bin/env bash
 (
 
@@ -54,17 +54,17 @@ function configure () {
 
 ) 2>&1 >>/var/log/ncp.log
 EOF
-chmod +x /usr/local/bin/ncp-scan-auto
+chmod +x '/usr/local/bin/ncp-scan-auto'
 
-    echo "$MINS  $HOUR  $DAYS  *  *  root /usr/local/bin/ncp-scan-auto" > /etc/cron.d/ncp-scan-auto
-    chmod 644 /etc/cron.d/ncp-scan-auto
+    echo "$MINS  $HOUR  $DAYS  *  *  root /usr/local/bin/ncp-scan-auto" > '/etc/cron.d/ncp-scan-auto'
+    chmod 644 '/etc/cron.d/ncp-scan-auto'
     service cron restart
     
-    prtln "Automatic scans enabled"
+    print_line "Automatic scans enabled"
 fi
 }
 
-function install () { :; }
+function install { :; }
 
 # License
 #

@@ -15,12 +15,12 @@ function add_build_variables {
   fi
 }
 
-if [[ -v "$DBG" ]]
+if [[ -v DBG ]] && [[ -n "$DBG" ]]
 then set -e"$DBG"
 else set -e
 fi
 
-BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"; add_build_variables BUILDLIBRARY
+BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"; add_build_variables 'BUILDLIBRARY'
 
 if [[ ! -f "$BUILDLIBRARY" ]]
 then printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"; exit 1
@@ -36,11 +36,14 @@ SIZE=4G                     # Raspbian image size
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
 IMG="${IMG:-NextcloudPi_RPi_$( date  "+%m-%d-%y" ).img}"
 TAR=output/"$( basename "$IMG" .img ).tar.bz2"
-declare -x ROOTDIR='raspbian_root'
-declare -x BUILD_DIR='tmp/ncp-build'
-declare -x BOOTDIR='raspbian_boot'
-declare -x DSHELL='/bin/bash'
+
+export ROOTDIR='raspbian_root'
+export BUILD_DIR='tmp/ncp-build'
+export BOOTDIR='raspbian_boot'
+export DSHELL='/bin/bash'
+
 add_build_variables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
+
 ##############################################################################
 
 function clean_build_sd_rpi {

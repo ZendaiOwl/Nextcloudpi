@@ -9,21 +9,20 @@
 #
 
 
-configure()
-{
+function configure {
   pgrep -af preview:pre-generate &>/dev/null || pgrep -af preview:generate-all &>/dev/null && {
-    echo "nc-previews is already running"
+    printf '%s\n' "nc-previews is already running"
     return 1
   }
 
   [[ "$CLEAN" == "yes" ]] && {
     local datadir
-    datadir=$( get_nc_config_value datadirectory ) || {
-      echo "data directory not found";
+    datadir="$( get_nc_config_value 'datadirectory' )" || {
+      printf '%s\n' "Data directory not found";
       return 1;
     }
 
-    rm -r "$datadir"/appdata_*/preview/* &>/dev/null
+    rm --recursive "$datadir"/appdata_*/preview/* &>/dev/null
     mysql nextcloud <<<"delete from oc_filecache where path like \"appdata_%/preview/%\""
     ncc files:scan-app-data -n
   }
@@ -38,12 +37,12 @@ configure()
 
   for i in $(seq 1 $(nproc)); do
     [[ "$PATH1" != "" ]] && PATH_ARG=(-p "$PATH1")
-    ncc preview:generate-all -n -v ${PATH_ARG[@]} &
+    ncc preview:generate-all -n -v "${PATH_ARG[@]}" &
   done
   wait
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

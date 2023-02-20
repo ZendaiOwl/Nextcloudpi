@@ -2,8 +2,8 @@
 
 # Update to the latest NextcloudPi code from GitHub
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -40,19 +40,12 @@ function clean_ncp_update {
     if ! cd /
     then log 2 "Failed to change directory to: /"
          log -1 "Attempting to remove tmp directory nonetheless"
-         if ! remove_tmp_directory
-         then exit 1
-         fi
-    else
-         if ! remove_tmp_directory
-         then exit 1
-         fi
+         remove_tmp_directory || exit 1
+    else remove_tmp_directory || exit 1
     fi
 }
 
-if [[ -n "$DBG" ]]
-then set -"$DBG"
-fi
+[[ -n "$DBG" ]] && set -"$DBG"
 
 if [[ -f '/.dockerenv' ]] \
 || [[ -f '/.docker-image' ]] \
@@ -91,51 +84,37 @@ fi
     # shellcheck disable=SC2164
     if [[ ! -f '/.ncp-image' ]]
     then # Update locally during build
-         if ! cd "$TMPDIR"
-         then log 2 "Failed to change directory to: $TMPDIR"; exit 1
-         fi
+         cd "$TMPDIR" || log 2 "Failed to change directory to: $TMPDIR"; exit 1
          if [[ -n "$2" ]]
-         then if ! git fetch origin "$2"
-              then log 2 "Could not fetch: $2"; exit 1
-              fi
-              if ! git checkout FETCH_HEAD
-              then log 2 "Failed to git checkout: FETCH_HEAD"; exit 1
-              fi
-        fi
+         then git fetch origin "$2"   || log 2 "Could not fetch: $2"; exit 1
+              git checkout FETCH_HEAD || log 2 "Failed to git checkout: FETCH_HEAD"; exit 1
+         fi
     fi
     
     log -1 "Performing updates"
-    if ! ./update.sh
-    then log 2 "Update failed"; exit "$?"
-    fi
+    ./update.sh  || log 2 "Update failed"; exit "$?"
+    cd "$TMPDIR" || log 2 "Failed to change directory to: $TMPDIR"; exit 1
     
-    if ! cd "$TMPDIR"
-    then log 2 "Failed to change directory to: $TMPDIR"; exit 1
-    fi
     git describe --always --tags --abbrev=0 2>/dev/null | grep -qoP "v\d+\.\d+\.\d+" || git fetch --unshallow --tags -q
     VER="$(git describe --always --tags --abbrev=0 | grep -oP "v\d+\.\d+\.\d+")"
     
     # check format
-    grep -qP "v\d+\.\d+\.\d+" <<< "$VER" || {
-        if ! git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
-        then log 2 "Failed to clone repository to: $TMPDIR/temporary"; exit 1
-        fi
-        
-        if ! cd "$TMPDIR"/temporary
-        then log 2 "Failed to change directory to: $TMPDIR/temporary"; exit 1
-        fi
-        
-        VER="$(git describe --tags "$(git rev-list --tags --max-count=1)" | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; } )"
-        prtln "$VER" > "$TMPDIR"/version
-
-        if ! cd "$TMPDIR"
-        then log 2 "FAiled to change directory to: $TMPDIR"; exit 1
-        fi
-        
-        if ! rm --recursive --force "$TMPDIR"/temporary
-        then log 2 "Failed to remove directory: $TMPDIR/temporary"; exit 1
-        fi
-    }
+    if ! grep -qP "v\d+\.\d+\.\d+" <<< "$VER"
+    then if ! git clone --bare https://github.com/nextcloud/"$REPO".git "$TMPDIR"/temporary
+         then log 2 "Failed to clone repository to: $TMPDIR/temporary"; exit 1
+         fi
+         
+         cd "$TMPDIR"/temporary || log 2 "Failed to change directory to: $TMPDIR/temporary"; exit 1
+         
+         VER="$(git describe --tags "$(git rev-list --tags --max-count=1)" | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; } )"
+         print_line "$VER" > "$TMPDIR"/version
+         
+         cd "$TMPDIR" || log 2 "Failed to change directory to: $TMPDIR"; exit 1
+         
+         if ! rm --recursive --force "$TMPDIR"/temporary
+         then log 2 "Failed to remove directory: $TMPDIR/temporary"; exit 1
+         fi
+    fi
     
     cat "$TMPDIR"/version > '/usr/local/etc/ncp-version'
     cat "$TMPDIR"/version > '/var/run/.ncp-latest-version'

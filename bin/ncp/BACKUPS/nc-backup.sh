@@ -7,21 +7,21 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-function tmpl_get_destination () {
+function tmpl_get_destination {
     (
         # shellcheck disable=SC1091
         . /usr/local/etc/library.sh
-        find_app_param nc-backup DESTDIR
+        find_app_param 'nc-backup' 'DESTDIR'
     )
 }
 
-function install () {
+function install {
     declare -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     apt-get update "${ARGS[@]}"
     apt-get install "${ARGS[@]}" pigz
 }
 
-function configure () {
+function configure {
     (
         # shellcheck disable=SC1090
         . "${BINDIR}/SYSTEM/metrics.sh"

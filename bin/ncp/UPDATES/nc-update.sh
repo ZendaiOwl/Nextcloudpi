@@ -9,12 +9,11 @@
 #
 
 
-configure()
-{
+function configure {
   /usr/local/bin/ncp-update
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

@@ -9,19 +9,17 @@
 #
 
 
-install()
-{
-  apt-get update
-  apt-get install -y --no-install-recommends unattended-upgrades
-  rm -f /etc/apt/apt.conf.d/20auto-upgrades /etc/apt/apt.conf.d/02-armbian-periodic
+function install {
+  apt-get update --assume-yes
+  apt-get install --assume-yes --no-install-recommends unattended-upgrades
+  rm --force '/etc/apt/apt.conf.d/20auto-upgrades' '/etc/apt/apt.conf.d/02-armbian-periodic'
 }
 
-configure()
-{
-  [[ $ACTIVE     == "yes" ]] && local AUTOUPGRADE=1   || local AUTOUPGRADE=0
-  [[ $AUTOREBOOT == "yes" ]] && local AUTOREBOOT=true || local AUTOREBOOT=false
+function configure {
+  [[ "$ACTIVE"     == "yes" ]] && local AUTOUPGRADE=1   || local AUTOUPGRADE=0
+  [[ "$AUTOREBOOT" == "yes" ]] && local AUTOREBOOT='true' || local AUTOREBOOT='false'
 
-  cat > /etc/apt/apt.conf.d/20ncp-upgrades <<EOF
+  cat > '/etc/apt/apt.conf.d/20ncp-upgrades' <<EOF
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "$AUTOUPGRADE";
 APT::Periodic::MaxAge "14";

@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -18,8 +18,8 @@ get_total_mem() {
     total_mem="$(free -b | sed -n 2p | awk '{ print $2 }')"
     MAX_32BIT=4096000000
     if [[ "$ARCH" == 'armv7' ]] && [[ "$MAX_32BIT" -lt "$total_mem" ]]
-    then prtln "$MAX_32BIT"
-    else prtln "$total_mem"
+    then print_line "$MAX_32BIT"
+    else print_line "$total_mem"
     fi
 }
 
@@ -44,7 +44,10 @@ tmpl_php_max_memory() {
 tmpl_php_max_filesize() {
   local FILESIZE
   FILESIZE="$(find_app_param nc-limits MAXFILESIZE)"
-  [[ "$FILESIZE" == "0" ]] && echo -n "10G" || echo -n "$FILESIZE"
+  if [[ "$FILESIZE" == "0" ]]
+  then echo -n "10G"
+  else echo -n "$FILESIZE"
+  fi
 }
 
 tmpl_php_threads() {
@@ -61,7 +64,7 @@ configure()
     # Set auto memory limit to 75% of the total memory
     TOTAL_MEM="$(get_total_mem)"
     # special case of 32bit emulation (e.g. 32bit-docker on 64bit hardware)
-    file /bin/bash | grep 64-bit > /dev/null || TOTAL_MEM="$(( 1024 * 1024 * 1024 * 4 ))"
+    file '/bin/bash' | grep 64-bit > /dev/null || TOTAL_MEM="$(( 1024 * 1024 * 1024 * 4 ))"
     AUTOMEM=$(( "$TOTAL_MEM" * 75 / 100 ))
     
     # MAX FILESIZE
@@ -70,7 +73,7 @@ configure()
     require_fpm_restart=false
     CONF=/etc/php/"$PHPVER"/fpm/conf.d/90-ncp.ini
     CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
-    prtln "Using $(tmpl_php_max_memory) for PHP max memory"
+    print_line "Using $(tmpl_php_max_memory) for PHP max memory"
     install_template "php/90-ncp.ini.sh" "$CONF"
     [[ "$CONF_VALUE" == "$(cat "$CONF")" ]] || require_fpm_restart=true
     
@@ -81,7 +84,7 @@ configure()
     install_template "php/pool.d.www.conf.sh" "$CONF"
     [[ "$CONF_VALUE"  == "$(cat "$CONF")"   ]] || require_fpm_restart=true
     
-    CONF=/etc/mysql/mariadb.conf.d/91-ncp.cnf
+    CONF='/etc/mysql/mariadb.conf.d/91-ncp.cnf'
     CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
     install_template "mysql/91-ncp.cnf.sh" "$CONF"
     [[ "$CONF_VALUE" == "$(cat "$CONF")" ]] || service mariadb restart
@@ -92,7 +95,7 @@ configure()
     }
     
     # redis max memory
-    local CONF=/etc/redis/redis.conf
+    local CONF='/etc/redis/redis.conf'
     local CURRENT_REDIS_MEM
     CURRENT_REDIS_MEM="$( grep "^maxmemory" "$CONF" | awk '{ print $2 }' )"
     [[ "$REDISMEM" != "$CURRENT_REDIS_MEM" ]] && {
@@ -102,7 +105,7 @@ configure()
     }
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

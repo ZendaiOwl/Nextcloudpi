@@ -10,20 +10,20 @@
 #
 # More at https://ownyourbits.com
 #
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln {
+function print_line {
     printf '%s\n' "$@"
 }
 
 function code_block () {
-    prtln '
+    print_line '
 ```
 '
 }
 
 function open_summary () {
-    prtln "
+    print_line "
 <details>
 <summary>$*</summary>
 "
@@ -32,7 +32,7 @@ function open_summary () {
 
 function close_summary () {
     code_block
-    prtln "
+    print_line "
 </details>
 "
 }
@@ -42,7 +42,7 @@ then printf "Must be run as root. Try 'sudo $0'\n"
      exit 1
 fi
 
-prtln "<!-- Paste this in GitHub report -->"
+print_line "<!-- Paste this in GitHub report -->"
 
 ##
 

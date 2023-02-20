@@ -8,13 +8,13 @@
 # More at: https://ownyourbits.com/2017/03/09/dnsmasq-as-dns-cache-server-for-nextcloudpi-and-raspbian/
 #
 
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line {
     printf '%s\n' "$@"
 }
 
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     local RC
     set -x
@@ -26,7 +26,7 @@ function install () {
     && [[ "$RC" -eq 3 ]] \
     && [[ ! "$INIT_SYSTEM" =~ ^("chroot"|"unknown")$ ]]
     then {
-            prtln "Applying workaround for dnsmasq bug (compare issue #1446)"
+            print_line "Applying workaround for dnsmasq bug (compare issue #1446)"
             service systemd-resolved stop || true
             service dnsmasq start
             service dnsmasq status
@@ -40,26 +40,26 @@ function install () {
     update-rc.d dnsmasq disable || rm '/etc/systemd/system/multi-user.target.wants/dnsmasq.service'
     
     [[ "$DOCKERBUILD" == 1 ]] && {
-        cat > /etc/services-available.d/100dnsmasq <<EOF
+        cat > '/etc/services-available.d/100dnsmasq' <<EOF
 #!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
 
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line () {
     printf '%s\n' "$@"
 }
 
 [[ "\$1" == "stop" ]] && {
-    prtln "Stopping: dnsmasq"
+    print_line "Stopping: dnsmasq"
     service dnsmasq stop
     exit 0
 }
 
 persistent_cfg '/etc/dnsmasq.conf'
 
-prtln "Starting: dnsmasq"
+print_line "Starting: dnsmasq"
 service dnsmasq start
 
 exit 0
@@ -69,11 +69,11 @@ EOF
     return 0
 }
 
-function configure () {
+function configure {
     if [[ "$ACTIVE" != "yes" ]]
     then service dnsmasq stop
          update-rc.d dnsmasq disable
-         prtln "Disabled: dnmasq"
+         print_line "Disabled: dnmasq"
          return
     fi
     
@@ -85,7 +85,7 @@ function configure () {
     fi
     
     if [[ "$IP" == "" ]]
-    then prtln "Failed to detect IP-address"
+    then print_line "Failed to detect IP-address"
          return 1
     fi
     
@@ -102,7 +102,7 @@ EOF
 
     # required to run in container
     if [[ -d '/data' ]]
-    then prtln "user=root" >> '/etc/dnsmasq.conf'
+    then print_line "user=root" >> '/etc/dnsmasq.conf'
     fi
 
     sed -i 's|#\?IGNORE_RESOLVCONF=.*|IGNORE_RESOLVCONF=yes|' '/etc/default/dnsmasq'
@@ -112,7 +112,7 @@ EOF
     service dnsmasq restart
     ncc config:system:set trusted_domains 2 --value="$DOMAIN"
     set_nc_domain "$DOMAIN" --no-trusted-domain
-    prtln "Enabled: dnsmasq"
+    print_line "Enabled: dnsmasq"
 }
 
 # License

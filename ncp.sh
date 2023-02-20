@@ -8,152 +8,11 @@
 # More at https://nextcloudpi.com
 #
 
-# Checks if a given path is a regular file
-# 0: Is a file
-# 1: Not a file
-# 2: Invalid number of arguments
-function is_file {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -f "$1" ]]
-}
-
-# Checks if a user exists
-# Return codes
-# 0: Is a user
-# 1: Not a user
-# 2: Invalid number of arguments
-function is_user {
-    [[ "$#" -ne 1 ]] && return 2
-    if id -u "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
-}
-
-# Checks if 2 given digits are equal
-# Return codes
-# 0: Is equal
-# 1: Not equal
-# 2: Invalid number of arguments
-function is_equal {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -eq "$2" ]]
-}
-
-function is_docker {
-    is_file /.dockerenv || is_file /.docker-image || is_equal "$DOCKERBUILD" 1
-}
-
-function is_lxc {
-    grep -q container=lxc /proc/1/environ &>/dev/null
-}
-
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
-    printf '%s\n' "$@"
-}
-
-# A log that uses log levels for logging different outputs
-# Log levels  | Colour
-# -2: Debug   | CYAN='\e[1;36m'
-# -1: Info    | BLUE='\e[1;34m'
-#  0: Success | GREEN='\e[1;32m'
-#  1: Warning | YELLOW='\e[1;33m'
-#  2: Error   | RED='\e[1;31m'
-function log {
-    if [[ "$#" -gt 0 ]]
-    then if [[ "$1" =~ [(-2)-2] ]]
-         then case "$1" in
-                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
-                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
-                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
-                   1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
-                   2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
-              esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
-         fi
-  fi
-}
-
-# Checks if a command exists on the system
-# Return status codes
-# 0: Command exists on the system
-# 1: Command is unavailable on the system
-# 2: Missing command argument to check
-function has_cmd {
-    if [[ "$#" -eq 1 ]]
-    then declare -r CHECK="$1"
-         if command -v "$CHECK" &>/dev/null
-         then return 0
-         else return 1
-         fi
-    else return 2
-    fi
-}
-
-############################
-# Bash - Install Functions #
-############################
-
-# Update apt list and packages
-# Return codes
-# 0: Install completed
-# 1: Coudn't update apt list
-# 2: Invalid number of arguments
-function update_apt {
-    if [[ "$#" -ne 0 ]]
-    then log 2 "Invalid number of arguments, requires none"; return 2
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-                    ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-         if is_root
-         then log -1 "Updating apt lists"
-              if "${ROOTUPDATE[@]}" &>/dev/null
-              then log 0 "Apt list updated"
-              else log 2 "Couldn't update apt lists"; return 1
-              fi
-         else log -1 "Updating apt lists"
-              if "${SUDOUPDATE[@]}" &>/dev/null
-              then log 0 "Apt list updated"
-              else log 2 "Couldn't update apt lists"; return 1
-              fi
-         fi
-    fi
-}
-
-# Installs package(s) using the package manager and pre-configured options
-# Return codes
-# 0: Install completed
-# 1: Coudn't update apt list
-# 2: Error during installation
-# 3: Missing package argument
-function install_package {
-    if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [PKG(s) to install]"; return 3
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-                    ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-         if is_root
-         then log -1 "Installing ${PKG[*]}"
-              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
-              then log 0 "Installation completed"; return 0
-              else log 2 "Something went wrong during installation"; return 2
-              fi
-         else log -1 "Installing ${PKG[*]}"
-              if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"
-              then log 0 "Installation completed"; return 0
-              else log 2 "Something went wrong during installation"; return 1
-              fi
-         fi
-    fi
-}
-
 #########################
 
-if is_file 'etc/library.sh'
+if [[ -f 'etc/library.sh' ]]
 then LIBRARY='etc/library.sh'
-elif is_file '/usr/local/etc/library.sh'
+elif [[ -f '/usr/local/etc/library.sh' ]]
 then LIBRARY='/usr/local/etc/library.sh'
 else log 2 "File not found: library.sh"; return 1
 fi
@@ -185,7 +44,7 @@ function install {
     # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
     # The raspi-config layout and options have also changed
     # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-    if is_file "$RASPI_CONFIG"
+    if [[ -f "$RASPI_CONFIG" ]]
     then # shellcheck disable=SC1003
         sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' "$RASPI_CONFIG"
         sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             "$RASPI_CONFIG"
@@ -281,7 +140,8 @@ Listen 4443
 </Directory>
 EOF
 
-    install_package libapache2-mod-authnz-external pwauth
+    install_package libapache2-mod-authnz-external \
+                    pwauth
     a2enmod authnz_external \
             authn_core \
             auth_basic
@@ -289,10 +149,10 @@ EOF
     a2ensite ncp-activation
     
     ## NCP USER FOR AUTHENTICATION
-    if ! is_user "$WEBADMIN"
+    if ! id --user "$WEBADMIN" &>/dev/null
     then useradd --home-dir '/nonexistent' "$WEBADMIN"
     fi
-    prtln "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
+    print_line "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" root
     
@@ -343,7 +203,7 @@ fi
 tar $PIGZ -tf "$FILE" data &>/dev/null
 EOF
   chmod 700 "$BACKUP_LAUNCHER"
-  prtln "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
+  print_line "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
 
   # NCP AUTO TRUSTED DOMAIN
   mkdir --parents '/usr/lib/systemd/system'
@@ -378,7 +238,7 @@ EOF
   ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || exit "$?"
 
   # LIMIT LOG SIZE
-  grep -q maxsize '/etc/logrotate.d/apache2' || sed -i /weekly/amaxsize2M '/etc/logrotate.d/apache2'
+  grep -q 'maxsize' '/etc/logrotate.d/apache2' || sed -i '/weekly/amaxsize2M' '/etc/logrotate.d/apache2'
   cat > '/etc/logrotate.d/ncp' <<'EOF'
 /var/log/ncp.log
 {
@@ -393,7 +253,7 @@ EOF
 
   # ONLY FOR IMAGE BUILDS
   # If-statement closes at the end of the install function()
-  if is_file '/.ncp-image'
+  if [[ -f '/.ncp-image' ]]
   then rm --recursive --force '/var/log/ncp.log'
        ## NEXTCLOUDPI MOTD
        rm --recursive --force '/etc/update-motd.d'
@@ -412,17 +272,17 @@ EOF
        chmod a+x /etc/update-motd.d/*
 
        ## HOSTNAME AND mDNS
-       if ! is_file '/.docker-image'
+       if [[ ! -f '/.docker-image' ]]
        then install_package avahi-daemon
             sed -i '/^127.0.1.1/d'                        '/etc/hosts'
             sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" '/etc/hosts'
        fi
-       prtln 'nextcloudpi' > '/etc/hostname'
+       print_line 'nextcloudpi' > '/etc/hostname'
        
        ## tag image
        is_docker && local DOCKER_TAG="_docker"
        is_lxc && local DOCKER_TAG="_lxc"
-       prtln "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > /usr/local/etc/ncp-baseimage
+       print_line "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > '/usr/local/etc/ncp-baseimage'
        
        ## SSH hardening
        if [[ -f '/etc/ssh/sshd_config' ]]

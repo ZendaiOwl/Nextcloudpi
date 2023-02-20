@@ -67,7 +67,7 @@ class tc:
 
 
 def usage():
-    "prtln usage"
+    "print_line usage"
     print("usage: system_tests.py [user@ip]")
 
 

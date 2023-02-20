@@ -8,12 +8,11 @@
 # More at: https://ownyourbits.com
 #
 
-configure()
-{
-  local cronfile=/etc/cron.daily/ncp-autoupdate-apps
+function configure {
+  local cronfile='/etc/cron.daily/ncp-autoupdate-apps'
 
   [[ "$ACTIVE" != "yes" ]] && {
-    rm -f "$cronfile"
+    rm --force "$cronfile"
     echo "automatic app updates disabled"
     return 0
   }
@@ -26,7 +25,7 @@ echo "[ nc-update-nc-apps-auto ]"
 echo "checking for updates..."
 /usr/local/bin/ncc app:update --all -n
 )"
-echo "\$OUT" >> /var/log/ncp.log
+echo "\$OUT" >> '/var/log/ncp.log'
 
 APPS=\$( echo "\$OUT" | grep 'updated\$' | awk '{ print \$1 }')
 [[ "\$APPS" == "" ]] && exit 0
@@ -36,7 +35,7 @@ EOF
   echo "automatic app updates enabled"
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

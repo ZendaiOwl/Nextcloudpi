@@ -8,28 +8,28 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line {
     printf '%s\n' "$@"
 }
 
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     apt-get update  "${ARGS[@]}"
     apt-get install "${ARGS[@]}" rsync
 }
 
-function configure () {
+function configure {
     [[ "$ACTIVE" != "yes" ]] && {
-        rm --force /etc/cron.d/ncp-rsync-auto
-        prtln "Automatic rsync disabled"
+        rm --force '/etc/cron.d/ncp-rsync-auto'
+        print_line "Automatic rsync disabled"
         return 0
     }
     
     local DATADIR NET SSH
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        prtln "Error reading data directory. Is Nextcloud running and configured?"
+        print_line "Error reading data directory. Is Nextcloud running and configured?"
         return 1
     }
     
@@ -39,14 +39,14 @@ function configure () {
         NET="${DESTINATION//:.*/}"
         #NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
         SSH=(ssh -o "BatchMode=yes" -p "$PORTNUMBER" "$NET")
-        "${SSH[@]}" echo || { prtln "SSH non-interactive not properly configured"; return 1; }
+        "${SSH[@]}" echo || { print_line "SSH non-interactive not properly configured"; return 1; }
     }
     
-    echo "0  5  */$SYNCDAYS  *  *  root  /usr/bin/rsync -ax -e \"ssh -p $PORTNUMBER\" --delete \"$DATADIR\" \"$DESTINATION\"" > /etc/cron.d/ncp-rsync-auto
-    chmod 644 /etc/cron.d/ncp-rsync-auto
+    echo "0  5  */$SYNCDAYS  *  *  root  /usr/bin/rsync -ax -e \"ssh -p $PORTNUMBER\" --delete \"$DATADIR\" \"$DESTINATION\"" > '/etc/cron.d/ncp-rsync-auto'
+    chmod 644 '/etc/cron.d/ncp-rsync-auto'
     service cron restart
     
-    prtln "Automatic rsync enabled"
+    print_line "Automatic rsync enabled"
 }
 
 # License

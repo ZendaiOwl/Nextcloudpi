@@ -7,9 +7,9 @@
 #
 # More at https://ownyourbits.com/2017/03/17/lets-encrypt-installer-for-apache/
 
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -18,34 +18,34 @@ NC_VHOSTCFG="${NC_VHOSTCFG:-/etc/apache2/sites-available/nextcloud.conf}"
 NCP_VHOSTCFG="${NCP_VHOSTCFG:-/etc/apache2/sites-available/ncp.conf}"
 LETSENCRYPT="${LETSENCRYPT:-/usr/bin/letsencrypt}"
 
-function is_active () {
+function is_active {
     [[ "$ACTIVE" == "yes" ]] \
     && [[ "$( find /etc/letsencrypt/live/ -maxdepth 0 -empty | wc -l )" == 0 ]]
 }
 
-function tmpl_letsencrypt_domain () {
+function tmpl_letsencrypt_domain {
     (
         # shellcheck disable=SC1091
         . /usr/local/etc/library.sh
-        if is_active_app letsencrypt
-        then find_app_param letsencrypt DOMAIN
+        if is_active_app 'letsencrypt'
+        then find_app_param 'letsencrypt' 'DOMAIN'
         fi
     )
 }
 
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-    if ! cd /etc
-    then prtln "Failed to change directory to: /etc"; return 1
+    if ! cd '/etc'
+    then print_line "Failed to change directory to: /etc"; return 1
     fi
     apt-get update  "${ARGS[@]}"
     apt-get install "${ARGS[@]}" letsencrypt
-    rm --force      /etc/cron.d/certbot
-    mkdir --parents /etc/letsencrypt/live
+    rm --force      '/etc/cron.d/certbot'
+    mkdir --parents '/etc/letsencrypt/live'
     
     is_docker && {
         # execute before lamp stack
-        cat > /etc/services-available.d/009letsencrypt <<EOF
+        cat > '/etc/services-available.d/009letsencrypt' <<EOF
 #!/usr/bin/env bash
 
 source /usr/local/etc/library.sh
@@ -53,17 +53,17 @@ persistent_cfg /etc/letsencrypt
 
 exit 0
 EOF
-        chmod +x /etc/services-available.d/009letsencrypt
+        chmod +x '/etc/services-available.d/009letsencrypt'
     }
     return 0
 }
 
-function configure () {
+function configure {
     local CERT_PATH KEY_PATH DOMAIN_STRING DOMAIN_INDEX
     [[ "$ACTIVE" != "yes" ]] && {
-        rm --recursive --force /etc/letsencrypt/live/*
-        rm --force             /etc/cron.weekly/letsencrypt-ncp
-        rm --force             /etc/letsencrypt/renewal-hooks/deploy/ncp
+        rm --recursive --force  /etc/letsencrypt/live/*
+        rm --force             '/etc/cron.weekly/letsencrypt-ncp'
+        rm --force             '/etc/letsencrypt/renewal-hooks/deploy/ncp'
         [[ "$DOCKERBUILD" == 1 ]] && update-rc.d letsencrypt disable
         install_template nextcloud.conf.sh "$NC_VHOSTCFG"
         CERT_PATH="$(grep SSLCertificateFile   "$NC_VHOSTCFG" | awk '{ print $2 }')"
@@ -71,13 +71,13 @@ function configure () {
         sed -i "s|SSLCertificateFile.*|SSLCertificateFile $CERT_PATH|"      "$NCP_VHOSTCFG"
         sed -i "s|SSLCertificateKeyFile.*|SSLCertificateKeyFile $KEY_PATH|" "$NCP_VHOSTCFG"
         apachectl -k graceful
-        prtln "Letsencrypt certificates disabled. Using self-signed certificates instead."
+        print_line "Letsencrypt certificates disabled. Using self-signed certificates instead."
         exit 0
     }
     
     # shellcheck disable=SC2153
     if [[ -z "$DOMAIN" ]]
-    then prtln "Empty domain"; return 1
+    then print_line "Empty domain"; return 1
     fi
     
     # Do it
@@ -100,7 +100,7 @@ function configure () {
         -m "$EMAIL" \
         -d "$DOMAIN_STRING" && {
             # Set up auto-renewal
-            cat > /etc/cron.weekly/letsencrypt-ncp <<EOF
+            cat > '/etc/cron.weekly/letsencrypt-ncp' <<EOF
 #!/usr/bin/env bash
 source /usr/local/etc/library.sh
 
@@ -115,10 +115,10 @@ source /usr/local/etc/library.sh
 # cleanup
 rm --recursive --force "$NCDIR"/.well-known
 EOF
-            chmod 755 /etc/cron.weekly/letsencrypt-ncp
+            chmod 755 '/etc/cron.weekly/letsencrypt-ncp'
             
-            mkdir -p /etc/letsencrypt/renewal-hooks/deploy
-            cat > /etc/letsencrypt/renewal-hooks/deploy/ncp <<EOF
+            mkdir --parents '/etc/letsencrypt/renewal-hooks/deploy'
+            cat > '/etc/letsencrypt/renewal-hooks/deploy/ncp' <<EOF
 #!/usr/bin/env bash
 source /usr/local/etc/library.sh
 notify_admin \
@@ -126,10 +126,10 @@ notify_admin \
   "Your SSL certificate(s) \$RENEWED_DOMAINS has been renewed for another 90 days"
 exit 0
 EOF
-            chmod +x /etc/letsencrypt/renewal-hooks/deploy/ncp
+            chmod +x '/etc/letsencrypt/renewal-hooks/deploy/ncp'
             
             # Configure Apache
-            install_template nextcloud.conf.sh     "$NC_VHOSTCFG"
+            install_template 'nextcloud.conf.sh'   "$NC_VHOSTCFG"
             CERT_PATH="$(grep SSLCertificateFile   "$NC_VHOSTCFG" | awk '{ print $2 }')"
             KEY_PATH="$(grep SSLCertificateKeyFile "$NC_VHOSTCFG" | awk '{ print $2 }')"
             sed -i "s|SSLCertificateFile.*|SSLCertificateFile $CERT_PATH|"      "$NCP_VHOSTCFG"
@@ -140,8 +140,8 @@ EOF
             for DOM in "$DOMAIN" "${OTHER_DOMAINS_ARRAY[@]}"
             do if [[ "$DOM" != "" ]]
                then if [[ ! "$DOMAIN_INDEX" -lt 20 ]]
-                    then prtln "WARNING: $DOM will not be included in trusted domains for Nextcloud (maximum reached)."
-                         prtln "It will still be included in the SSL certificate"
+                    then print_line "WARNING: $DOM will not be included in trusted domains for Nextcloud (maximum reached)."
+                         print_line "It will still be included in the SSL certificate"
                          continue
                     else ncc config:system:set trusted_domains "$DOMAIN_INDEX" --value="$DOM"
                          DOMAIN_INDEX="$(( "$DOMAIN_INDEX" + 1 ))"
@@ -159,7 +159,7 @@ EOF
     rm --recursive --force "$NCDIR"/.well-known; return 1
 }
 
-function cleanup () {
+function cleanup {
     apt-get purge -y \
             augeas-lenses \
             libpython-dev \

@@ -6,30 +6,30 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function is_active () {
+function is_active {
     [[ -f "/etc/cron.d/nc-previews-auto" ]]
 }
 
-function configure () {
+function configure {
     [[ "$ACTIVE" != "yes" ]] && {
-        rm -f /etc/cron.d/nc-previews-auto
+        rm --force '/etc/cron.d/nc-previews-auto'
         service cron restart
         echo "Automatic preview generation disabled"
         return 0
     }
     
-    grep -qP "^\d+$" <<<"$RUNTIME" || { prtln "Invalid RUNTIME value: $RUNTIME"; return 1; }
+    grep -qP "^\d+$" <<<"$RUNTIME" || { print_line "Invalid RUNTIME value: $RUNTIME"; return 1; }
     RUNTIME="$(( "$RUNTIME" * 60 ))"
     
-    echo "0  2  *  *  *  root  /usr/local/bin/nc-previews" >  /etc/cron.d/ncp-previews-auto
-    chmod 644 /etc/cron.d/ncp-previews-auto
+    echo "0  2  *  *  *  root  /usr/local/bin/nc-previews" >  '/etc/cron.d/ncp-previews-auto'
+    chmod 644 '/etc/cron.d/ncp-previews-auto'
     
-    cat > /usr/local/bin/nc-previews <<EOF
+    cat > '/usr/local/bin/nc-previews' <<EOF
 #!/usr/bin/env bash
 echo -e "\n[ nc-previews-auto ]" >> /var/log/ncp.log
 (
@@ -50,14 +50,14 @@ PID=\$!
 }
 wait "\$PID"
 EOF
-    chmod +x /usr/local/bin/nc-previews
+    chmod +x '/usr/local/bin/nc-previews'
 
     service cron restart
-    prtln "Automatic preview generation enabled"
+    print_line "Automatic preview generation enabled"
     return 0
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

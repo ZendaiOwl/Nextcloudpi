@@ -7,12 +7,12 @@
 #
 # More at: https://ownyourbits.com
 #
-# prtlns a line using printf instead of using echo
+# print_lines a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function prtln () {
+function print_line {
     printf '%s\n' "$@"
 }
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     apt-get update  "${ARGS[@]}"
     apt-get install "${ARGS[@]}" samba
@@ -20,26 +20,26 @@ function install () {
     update-rc.d nmbd disable
     
     # the directory needs to be recreated if we are using nc-ramlogs
-    grep -q mkdir /etc/init.d/smbd || sed -i "/\<start)/amkdir -p /var/log/samba" /etc/init.d/smbd
+    grep -q mkdir '/etc/init.d/smbd' || sed -i "/\<start)/amkdir -p /var/log/samba" '/etc/init.d/smbd'
     
     # disable SMB1 and SMB2
-    grep -q SMB3 /etc/samba/smb.conf || sed -i '/\[global\]/aprotocol = SMB3' /etc/samba/smb.conf
+    grep -q SMB3 '/etc/samba/smb.conf' || sed -i '/\[global\]/aprotocol = SMB3' '/etc/samba/smb.conf'
     
     # disable the [homes] share by default
-    sed -i /\[homes\]/s/homes/homes_disabled_ncp/ /etc/samba/smb.conf
+    sed -i /\[homes\]/s/homes/homes_disabled_ncp/ '/etc/samba/smb.conf'
     
-    cat >> /etc/samba/smb.conf <<EOF
+    cat >> '/etc/samba/smb.conf' <<EOF
 
 # NextcloudPi automatically generated from here. Do not remove this comment
 EOF
 }
 
-function configure () {
+function configure {
     [[ "$ACTIVE" != "yes" ]] && {
         service smbd stop
         update-rc.d smbd disable
         update-rc.d nmbd disable
-        prtln "Disabled: SMB"
+        print_line "Disabled: SMB"
         return
     }
     
@@ -47,19 +47,19 @@ function configure () {
     ################################
     local DATADIR USERS DIR
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        prtln "Error reading data directory. Is Nextcloud running and configured?"
+        print_line "Error reading data directory. Is Nextcloud running and configured?"
         return 1
     }
-    [[ -d "$DATADIR" ]] || { prtln "Directory not found: $DATADIR"; return 1; }
+    [[ -d "$DATADIR" ]] || { print_line "Directory not found: $DATADIR"; return 1; }
     
     # CONFIG
     ################################
     
     # remove files from this line to the end
-    sed -i '/# NextcloudPi automatically/,/\$/d' /etc/samba/smb.conf
+    sed -i '/# NextcloudPi automatically/,/\$/d' '/etc/samba/smb.conf'
     
     # restore this line
-    cat >> /etc/samba/smb.conf <<EOF
+    cat >> '/etc/samba/smb.conf' <<EOF
 # NextcloudPi automatically generated from here. Do not remove this comment
 EOF
 
@@ -73,15 +73,15 @@ EOF
     do # Exclude users not matching group filter (if enabled)
         if [[ -n "$FILTER_BY_GROUP" ]] \
         && [[ -z "$(ncc user:info "$user" --output=json | jq ".groups[] | select( . == \"${FILTER_BY_GROUP}\" )")" ]]
-        then prtln "Omitting user $user (not in group ${FILTER_BY_GROUP})"
+        then print_line "Omitting user $user (not in group ${FILTER_BY_GROUP})"
              continue
         fi
     
-    prtln "adding SAMBA share for user $user"
+    print_line "adding SAMBA share for user $user"
     DIR="${DATADIR}/${user}/files"
-    [[ -d "$DIR" ]] || { prtln "Directory not found: $DIR"; return 1; }
+    [[ -d "$DIR" ]] || { print_line "Directory not found: $DIR"; return 1; }
     
-    cat >> /etc/samba/smb.conf <<EOF
+    cat >> '/etc/samba/smb.conf' <<EOF
     
 [ncp-$user]
     path = $DIR
@@ -98,8 +98,8 @@ EOF
 EOF
 
     ## create user with no login if it doesn't exist
-    id "$user" &>/dev/null || adduser --disabled-password --force-badname --gecos "" "$user" || return 1
-    prtln "$PWD" "$PWD" | smbpasswd -s -a "$user"
+    id --user "$user" &>/dev/null || adduser --disabled-password --force-badname --gecos "" "$user" || return 1
+    print_line "$PWD" "$PWD" | smbpasswd -s -a "$user"
 
     usermod -aG www-data "$user"
     sudo chmod g+w "$DIR"
@@ -112,7 +112,7 @@ EOF
   update-rc.d nmbd enable
   service nmbd restart
 
-  prtln "Enabled: SMB"
+  print_line "Enabled: SMB"
 }
 
 # License

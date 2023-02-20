@@ -9,7 +9,7 @@
 #
 
 
-function install () {
+function install {
     apt-get update
     apt-get install -y --no-install-recommends udiskie inotify-tools
     
@@ -78,7 +78,7 @@ EOF
     chmod +x '/usr/local/etc/nc-automount-links-mon'
 }
 
-function configure () {
+function configure {
     if [[ "$ACTIVE" != "yes" ]]
     then systemctl disable --now nc-automount
          systemctl disable --now nc-automount-links

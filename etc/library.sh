@@ -10,8 +10,8 @@
 # Bash - Utility Functions #
 ############################
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -213,7 +213,7 @@ function has_cmd {
 
 # Update apt list and packages
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
@@ -222,46 +222,44 @@ function update_apt {
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-        if is_root
-        then log -1 "Updating apt lists"
-             if "${ROOTUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
-        else log -1 "Updating apt lists"
-             if "${SUDOUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
-        fi
+         if is_root
+         then log -1 "Updating apt lists"
+              if "${ROOTUPDATE[@]}" &>/dev/null
+              then log 0 "Apt list updated"
+              else log 2 "Couldn't update apt lists"; return 1
+              fi
+         else log -1 "Updating apt lists"
+              if "${SUDOUPDATE[@]}" &>/dev/null
+              then log 0 "Apt list updated"
+              else log 2 "Couldn't update apt lists"; return 1
+              fi
+         fi
     fi
 }
 
-# Installs package(s) using the package manager and pre-configured options
+# Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: Install completed
-# 1: Coudn't update apt list
-# 2: Error during installation
-# 3: Missing package argument
+# 0: install_pkg completed
+# 1: Error during installation
+# 2: Missing package argument
 function install_package {
     if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [PKG(s) to install]"; return 3
+    then log 2 "Requires: [PKG(s)]"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-        if is_root
-        then log -1 "Installing ${PKG[*]}"
-             if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
-             then log 0 "Installation completed"; return 0
-             else log 2 "Something went wrong during installation"; return 2
-             fi
-        else log -1 "Installing ${PKG[*]}"
-             if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"
-             then log 0 "Installation completed"; return 0
-             else log 2 "Something went wrong during installation"; return 1
-             fi
-        fi
+         if is_root
+         then log -1 "install_pkging $*"
+              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
+              then log 0 "install_pkgation complete"; return 0
+              else log 2 "Something went wrong during installation"; return 1
+              fi
+         else log -1 "install_pkging $*"
+              if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
+              then log 0 "install_pkgation complete"; return 0
+              else log 2 "Something went wrong during installation"; return 1
+              fi
+         fi
     fi
 }
 
@@ -428,7 +426,7 @@ function configure_app {
         esac
     done
     
-    prtln "$CFG" > "$CFG_FILE"
+    print_line "$CFG" > "$CFG_FILE"
     printf '\033[2J' && tput cup 0 0             # clear screen, don't clear scroll, cursor on top
     log 0 "Configured app: $NCP_APP"; return "$RET"
 }
@@ -489,7 +487,7 @@ function clear_password_fields {
        fi
        CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
     done
-    prtln "$CFG" > "$CFG_FILE"
+    print_line "$CFG" > "$CFG_FILE"
 }
 
 # Return codes
@@ -722,7 +720,7 @@ function run_app_unsafe {
     log -1 "Executing configure: $NCP_APP"
     ( configure ) 2>&1 | tee -a "$LOG"; RET="${PIPESTATUS[0]}"
     
-    prtln "" >> "$LOG"
+    print_line "" >> "$LOG"
     
     if is_file "$CFG_FILE"
     then log -1 "Clearing password fields: $NCP_APP"
@@ -791,7 +789,7 @@ function set_app_param {
     if not_match "$PARAM_FOUND" "true"
     then log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"; return 1
     fi
-    prtln "$CFG" > "$CFG_FILE"
+    print_line "$CFG" > "$CFG_FILE"
 }
 
 # Return codes
@@ -862,7 +860,7 @@ function needs_decrypt
 function set_ncpcfg {
     local NAME="${1}" VALUE="${2}" CFG
     CFG="$(jq ".$NAME = \"$VALUE\"" "$NCPCFG")"
-    prtln "$CFG" > "$NCPCFG"
+    print_line "$CFG" > "$NCPCFG"
 }
 
 function get_ncpcfg

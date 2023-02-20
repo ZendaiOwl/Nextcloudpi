@@ -17,8 +17,8 @@
 # - failure at each test point
 # -> must pass basic NC in tests.py ( meaning it's not in a broken state )
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -44,288 +44,24 @@ function log {
   fi
 }
 
-#########################
-# Bash - Test Functions #
-#########################
-
-# Check if user ID executing script is 0 or not
-# Return codes
-# 0: Is root
-# 1: Not root
-# 2: Invalid number of arguments
-function is_root {
-    [[ "$#" -ne 0 ]] && return 2
-    [[ "$EUID" -eq 0 ]]
-}
-
-# Checks if a user exists
-# Return codes
-# 0: Is a user
-# 1: Not a user
-# 2: Invalid number of arguments
-function is_user {
-    [[ "$#" -ne 1 ]] && return 2
-    if id -u "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
-}
-
-# Checks if a given path to a file exists
-# Return codes
-# 0: Path exist
-# 1: No such path
-# 2: Invalid number of arguments
-function is_path {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -e "$1" ]]
-}
-
-# Checks if a given path is a regular file
-# 0: Is a file
-# 1: Not a file
-# 2: Invalid number of arguments
-function is_file {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -f "$1" ]]
-}
-
-# Checks if a given path is a readable file
-# 0: Is readable
-# 1: Not readable
-# 2: Invalid number of arguments
-function is_readable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -r "$1" ]]
-}
-
-# Checks if a given path is a writable file
-# 0: Is writable
-# 1: Not writable
-# 2: Invalid number of arguments
-function is_writeable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -w "$1" ]]
-}
-
-# Checks if a given path is an executable file
-# 0: Is executable
-# 1: Not executable
-# 2: Invalid number of arguments
-function is_executable {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -x "$1" ]]
-}
-
-# Checks if given path is a directory 
-# Return codes
-# 0: Is a directory
-# 1: Not a directory
-# 2: Invalid number of arguments
-function is_directory {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -d "$1" ]]
-}
-
-# Checks if given path is a named pipe
-# Return codes
-# 0: Is a named pipe
-# 1: Not a named pipe
-# 2: Invalid number of arguments
-function is_pipe {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -p "$1" ]]
-}
-
-# Checks if the first given digit is greater than the second digit
-# Return codes
-# 0: Is greater
-# 1: Not greater
-# 2: Invalid number of arguments
-function is_greater {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -gt "$2" ]]
-}
-
-# Checks if the first given digit is greater than or equal to the second digit
-# Return codes
-# 0: Is greater than or equal
-# 1: Not greater than or equal
-# 2: Invalid number of arguments
-function is_equal_or_greater {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -ge "$2" ]]
-}
-
-# Checks if the first given digit is less than the second digit
-# Return codes
-# 0: Is less
-# 1: Not less
-# 2: Invalid number of arguments
-function is_less {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -lt "$2" ]]
-}
-
-# Checks if a given variable has been set and is a name reference
-# Return codes
-# 0: Is set name reference
-# 1: Not set name reference
-# 2: Invalid number of arguments
-function is_reference {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -R "$1" ]]
-}
-
-# Checks if a given path is a socket
-# Return codes
-# 0: Is a socket
-# 1: Not a socket
-# 2: Invalid number of arguments
-function is_socket {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -S "$1" ]]
-}
-
-# Checks if a given variable has been set and assigned a value.
-# Return codes
-# 0: Is set
-# 1: Not set 
-# 2: Invalid number of arguments
-function is_set {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -v "$1" ]]
-}
-
-# Checks if a given variable has been set and assigned a value.
-# Return codes
-# 0: Not set
-# 1: Is set 
-# 2: Invalid number of arguments
-function not_set {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ ! -v "$1" ]]
-}
-
-# Checks if 2 given digits are equal
-# Return codes
-# 0: Is equal
-# 1: Not equal
-# 2: Invalid number of arguments
-function is_equal {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -eq "$2" ]]
-}
-
-# Checks if 2 given digits are not equal
-# Return codes
-# 0: Not equal
-# 1: Is equal
-# 2: Invalid number of arguments
-function not_equal {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" -ne "$2" ]]
-}
-
-# Checks if 2 given String variables match
-# Return codes
-# 0: Is a match
-# 1: Not a match
-# 2: Invalid number of arguments
-function is_match {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" == "$2" ]]
-}
-
-# Checks if 2 given String variables do not match
-# Return codes
-# 0: Not a match
-# 1: Is a match
-# 2: Invalid number of arguments
-function not_match {
-    [[ "$#" -ne 2 ]] && return 2
-    [[ "$1" != "$2" ]]
-}
-
-# Checks if a given String is zero
-# Return codes
-# 0: Is zero
-# 1: Not zero
-# 2: Invalid number of arguments
-function is_zero {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -z "$1" ]]
-}
-
-# Checks if a given String is not zero
-# Return codes
-# 0: Not zero
-# 1: Is zero
-# 2: Invalid number of arguments
-function not_zero {
-    [[ "$#" -ne 1 ]] && return 2
-    [[ -n "$1" ]]
-}
-
-# Checks if a given variable is an array or not
-# Return codes
-# 0: Variable is an array
-# 1: Variable is not an array
-# 2: Missing argument: Variable to check
-function is_array {
-    if [[ "$#" -ne 1 ]]
-    then return 2
-    elif ! declare -a "$1" &>/dev/null
-    then return 1
-    else return 0
-    fi
-}
-
-# Test if a function() is available
-# Return codes
-# 0: Available
-# 1: Unvailable
-# 2: Too many/few arguments
-function is_function {
-    if [[ "$#" -eq 1 ]]
-    then declare -r FUNC="$1"
-         if declare -f "$FUNC" &>/dev/null
-         then return 0
-         else return 1
-         fi
-    else return 2
-    fi
-}
-
-# Checks if a given pattern in a String
-# Return codes
-# 0: Has String pattern
-# 1: No String pattern
-# 2: Invalid number of arguments
-function has_text {
-    [[ "$#" -ne 2 ]] && return 2
-    declare -r PATTERN="$1" STRING="$2"
-    [[ "$STRING" == *"$PATTERN"* ]]
-}
-
 VER="$1"
 BIN="${0##*/}"
 
 # shellcheck disable=SC1091
-if is_file '/usr/local/etc/library.sh' 
+if [[ -f '/usr/local/etc/library.sh' ]]
 then source '/usr/local/etc/library.sh' 
-elif is_file 'etc/library.sh'
-then source '/usr/local/etc/library.sh'
+elif [[ -f 'etc/library.sh' ]]
+then source 'etc/library.sh'
 fi
 
 # pre-checks
 ####################
-if is_zero "$VER"
+if [[ -z "$VER" ]]
 then log 2 "Usage: $BIN <version>"
      exit 1
 fi
 
-if is_file '/.docker-image'
+if [[ -f '/.docker-image' ]]
 then BASEDIR='/data'
 else BASEDIR='/var/www'
 fi
@@ -339,12 +75,10 @@ fi
 
 DATADIR="$(get_nc_config_value datadirectory)"
 
-if ! ncc status &>/dev/null
-then if [[ "$DBG" == "x" ]]
-     then ncc status
-          log 2 "Nextcloud is currently down"
-          exit 1
-     fi
+if ! ncc status &>/dev/null && [[ "$DBG" == "x" ]]
+then ncc status
+     log 2 "Nextcloud is currently down"
+     exit 1
 fi
 
 if [[ -d '/var/www/nextcloud-old' ]]
@@ -365,7 +99,7 @@ fi
 # check version
 ####################
 
-if is_root
+if [[ "$EUID" -eq 0 ]]
 then SUDO=(sudo -u www-data)
 fi
 
@@ -382,11 +116,11 @@ then log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 1
 fi
 
 if ! grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT"
-then prtln "Invalid version: $CURRENT"; exit 1
+then print_line "Invalid version: $CURRENT"; exit 1
 fi
 
 if ! grep -qP "\d+\.\d+\.\d+" <<<"$VER"
-then prtln "Invalid version: $VER"; exit 1
+then print_line "Invalid version: $VER"; exit 1
 fi
 
 log -1 "Current Nextcloud version: $CURRENT"
@@ -400,13 +134,13 @@ fi
 if ! is_more_recent_than '25.0.0' "$VER" \
   && is_more_recent_than "8.1.0" "${PHPVER}.0" \
   && is_docker
-then log 2 'You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+'; exit 1
+then log 2 "You need to upgrade to a later docker image in order to upgrade to Nextcloud 25+"; exit 1
 fi
 
 # make sure that cron.php is not running and there are no pending jobs
 # https://github.com/nextcloud/server/issues/10949
 pgrep -cf cron.php &>/dev/null && { pkill -f cron.php; sleep 3; }
-pgrep -cf cron.php &>/dev/null && { prtln "cron.php running. Abort"; exit 1; }
+pgrep -cf cron.php &>/dev/null && { print_line "cron.php running. Abort"; exit 1; }
 mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 
 # cleanup
@@ -414,7 +148,7 @@ mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 function cleanup {
     local RET="$?"
     set +eE
-    prtln "Cleanup"
+    print_line "Cleanup"
     if ! rm --recursive --force "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
     then log 2 "Failed to remove: $BASEDIR/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
     fi
@@ -440,7 +174,7 @@ WITH_DATA='no'
 COMPRESSED='yes'
 LIMIT=0
 
-prtln "Creating backup"
+print_line "Creating backup"
 set +eE
 ncp-backup "$BKPDIR" "$WITH_DATA" "$COMPRESSED" "$LIMIT" # && false # test point
 RET="$?"
@@ -465,7 +199,7 @@ then rm --force "$BKP_"
 fi
 
 BKP="$(dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
-prtln "Storing backup at: $BKP"
+print_line "Storing backup at: $BKP"
 mv "$BKP_" "$BKP"
 
 # simple restore if anything fails from here
@@ -473,7 +207,7 @@ mv "$BKP_" "$BKP"
 function rollback_simple () {
     set +eE
     trap "" INT TERM HUP ERR
-    prtln "Abort" "Simple rollback"
+    print_line "Abort" "Simple rollback"
     if ! rm --recursive --force "$BASEDIR"/nextcloud
     then log 2 "Failed to remove: $BASEDIR/nextcloud"
     fi
@@ -487,7 +221,7 @@ trap 'rollback_simple' INT TERM HUP ERR
 
 # replace code
 ####################
-prtln "Installing Nextcloud: $VER"
+print_line "Installing Nextcloud: $VER"
 mv -T                  'nextcloud nextcloud-old'
 tar -xf                'nextcloud.tar.bz2'     # && false # test point
 rm --recursive --force '/var/www/nextcloud.tar.bz2'
@@ -513,7 +247,7 @@ done
 # copy data if it was at the default location
 ####################
 if [[ "$DATADIR" == "/var/www/nextcloud/data" ]] || [[ "$DATADIR" == "/data/nextcloud/data" ]]
-then prtln "Restoring data"
+then print_line "Restoring data"
      if ! mv -T 'nextcloud-old/data' 'nextcloud/data'
      then log 2 "Failed to move nextcloud-old/data to nextcloud/data"
           exit 1
@@ -525,7 +259,7 @@ fi
 function rollback () {
     set +eE
     trap "" INT TERM HUP ERR EXIT
-    prtln "Abort" "Doing cleanup"
+    print_line "Abort" "Doing cleanup"
     
     if ! rm --recursive --force '/var/www/nextcloud.tar.bz2' "$BASEDIR"/nextcloud-old
     then log 2 "Failed to remove: /var/www/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
@@ -615,12 +349,12 @@ else
      NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
 fi
 
-if ! rm --recursive --force '/var/www/nextcloud/apps/previewgenerator'
+if ! rm --recursive --force  '/var/www/nextcloud/apps/previewgenerator'
 then log 2 "Failed to remove: /var/www/nextcloud/apps/previewgenerator"
      exit 1
 fi
 
-ln -snf "$NCPREV"      '/var/www/nextcloud/apps/previewgenerator'
+ln -snf "$NCPREV"            '/var/www/nextcloud/apps/previewgenerator'
 
 if ! is_docker \
 && ! is_more_recent_than "24.0.0" "$NCVER" \
@@ -659,7 +393,7 @@ then (
 
         # Setup apt repository for php 8
         wget -O '/etc/apt/trusted.gpg.d/php.gpg' 'https://packages.sury.org/php/apt.gpg'
-        prtln "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > '/etc/apt/sources.list.d/php.list'
+        print_line "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > '/etc/apt/sources.list.d/php.list'
         apt-get update --assume-yes
         clear_opcache
 
@@ -687,7 +421,7 @@ then (
 
         a2enconf php"$PHPVER_NEW"-fpm
         
-        prtln "Starting apache and php-fpm"
+        print_line "Starting apache and php-fpm"
         service php"$PHPVER_NEW"-fpm start
         service apache2 start
         "${ncc[@]}" status

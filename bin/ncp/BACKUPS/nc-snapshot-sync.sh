@@ -8,33 +8,33 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln () {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
-function tmpl_get_destination () {
+function tmpl_get_destination {
     (
         # shellcheck disable=SC1091
         . /usr/local/etc/library.sh
-        find_app_param nc-snapshot-sync DESTINATION
+        find_app_param 'nc-snapshot-sync' 'DESTINATION'
     )
 }
 
-function tmpl_is_destination_local () {
+function tmpl_is_destination_local {
     (
         # shellcheck disable=SC1091
         . /usr/local/etc/library.sh
-        is_active_app nc-snapshot-sync || exit 1
+        is_active_app 'nc-snapshot-sync' || exit 1
         ! [[ "$(find_app_param nc-snapshot-sync DESTINATION)" =~ .*"@".*":".* ]]
     )
 }
 
-function is_active () {
+function is_active {
     [[ "$ACTIVE" == "yes" ]]
 }
 
-function install () {
+function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     local -r URL='https://raw.githubusercontent.com/nachoparker/btrfs-sync/master/btrfs-sync'
     local -r FILE='/usr/local/bin/btrfs-sync'
@@ -46,16 +46,16 @@ function install () {
 
 function configure () {
     [[ "$ACTIVE" != "yes" ]] && {
-        rm --force /etc/cron.d/ncp-snapsync-auto
+        rm --force '/etc/cron.d/ncp-snapsync-auto'
         service cron restart
-        prtln "Snapshot sync disabled"
+        print_line "Snapshot sync disabled"
         return 0
     }
     local NET DST SSH
     # checks
-    [[ -d "$SNAPDIR" ]] || { prtln "Directory not found: $SNAPDIR"; return 1; }
-    if ! [[ -f /root/.ssh/id_rsa ]]
-    then ssh-keygen -N "" -f /root/.ssh/id_rsa
+    [[ -d "$SNAPDIR" ]] || { print_line "Directory not found: $SNAPDIR"; return 1; }
+    if ! [[ -f '/root/.ssh/id_rsa' ]]
+    then ssh-keygen -N "" -f '/root/.ssh/id_rsa'
     fi
     
     [[ "$DESTINATION" =~ : ]] && {
@@ -64,25 +64,25 @@ function configure () {
         #NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
         #DST="$( sed 's|.*:||' <<<"$DESTINATION" )"
         SSH=(ssh -o "BatchMode=yes" "$NET")
-        "${SSH[@]}" : || { prtln "SSH non-interactive not properly configured"; return 1; }
+        "${SSH[@]}" : || { print_line "SSH non-interactive not properly configured"; return 1; }
     } || DST="$DESTINATION"
 
     [[ "$( "${SSH[@]}" stat -fc%T "$DST" )" != "btrfs" ]] && {
-        prtln "Not a BTRFS filesystem: $DESTINATION"
+        print_line "Not a BTRFS filesystem: $DESTINATION"
         return 1
     }
     
     [[ "$COMPRESSION" == "yes" ]] && ZIP="-z"
     
-    echo "30  4  */$SYNCDAYS  *  *  root  /usr/local/bin/btrfs-sync -qd $ZIP \"$SNAPDIR\" \"$DESTINATION\"" > /etc/cron.d/ncp-snapsync-auto
-    chmod 644 /etc/cron.d/ncp-snapsync-auto
+    echo "30  4  */$SYNCDAYS  *  *  root  /usr/local/bin/btrfs-sync -qd $ZIP \"$SNAPDIR\" \"$DESTINATION\"" > '/etc/cron.d/ncp-snapsync-auto'
+    chmod 644 '/etc/cron.d/ncp-snapsync-auto'
     service cron restart
     (
         # shellcheck disable=SC1090
         . "${BINDIR}/SYSTEM/metrics.sh"
         reload_metrics_config
     )
-    prtln "Snapshot sync enabled"
+    print_line "Snapshot sync enabled"
 }
 
 # License

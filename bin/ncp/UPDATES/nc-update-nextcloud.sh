@@ -10,13 +10,12 @@
 
 LATEST="$NCLATESTVER"
 
-configure()
-{
+function configure {
   [[ "$VERSION" == "0" ]] && VERSION="$LATEST"
-  bash /usr/local/bin/ncp-update-nc "$VERSION"
+  bash '/usr/local/bin/ncp-update-nc' "$VERSION"
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

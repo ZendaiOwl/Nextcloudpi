@@ -10,34 +10,33 @@
 
 # just change NCLATESTVER and re-activate in update.sh to upgrade users
 
-configure()
-{
+function configure {
   [[ "$ACTIVE" != "yes" ]] && {
-    rm -f /etc/cron.daily/ncp-autoupdate-nc
+    rm --force '/etc/cron.daily/ncp-autoupdate-nc'
     echo "automatic Nextcloud updates disabled"
     return 0
   }
 
-  cat > /etc/cron.daily/ncp-autoupdate-nc <<EOF
+  cat > '/etc/cron.daily/ncp-autoupdate-nc' <<EOF
 #!/usr/bin/env bash
 source /usr/local/etc/library.sh
 
-echo -e "[ncp-update-nc]"                              >> /var/log/ncp.log
-/usr/local/bin/ncp-update-nc "$NCLATESTVER" 2>&1 | tee -a /var/log/ncp.log
+echo -e "[ncp-update-nc]"                              >> '/var/log/ncp.log'
+/usr/local/bin/ncp-update-nc "$NCLATESTVER" 2>&1 | tee -a '/var/log/ncp.log'
 
 if [[ \${PIPESTATUS[0]} -eq 0 ]]; then
 
   VER="\$( /usr/local/bin/ncc status | grep "version:" | awk '{ print \$3 }' )"
 
-  notify_admin "NextcloudPi" "Nextcloud was updated to \$VER"
+  notify_admin "NextcloudPi" "Nextcloud was updated to: \$VER"
 fi
-echo "" >> /var/log/ncp.log
+echo "" >> '/var/log/ncp.log'
 EOF
-  chmod 755 /etc/cron.daily/ncp-autoupdate-nc
+  chmod 755 '/etc/cron.daily/ncp-autoupdate-nc'
   echo "automatic Nextcloud updates enabled"
 }
 
-install() { :; }
+function install { :; }
 
 # License
 #

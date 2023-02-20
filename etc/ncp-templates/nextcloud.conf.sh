@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# prtlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function prtln {
+# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function print_line {
     printf '%s\n' "$@"
 }
 
@@ -25,18 +25,18 @@ fi
 [[ -z "$LETSENCRYPT_DOMAIN" ]] || log -1 "Letsencrypt domain is ${LETSENCRYPT_DOMAIN}" >&2
 
 # skip during build
-if ! [[ -f /.ncp-image ]] && [[ "$1" != "--defaults" ]] && [[ -f "${BINDIR}/SYSTEM/metrics.sh" ]]
+if ! [[ -f '/.ncp-image' ]] && [[ "$1" != "--defaults" ]] && [[ -f "${BINDIR}/SYSTEM/metrics.sh" ]]
 then METRICS_IS_ENABLED="$(
   source "${BINDIR}/SYSTEM/metrics.sh"
   tmpl_metrics_enabled && echo yes || echo no
   )"
-else METRICS_IS_ENABLED=no
+else METRICS_IS_ENABLED='no'
 fi
 
 log -1 "Metrics enabled: ${METRICS_IS_ENABLED}" >&2
 
-prtln "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
-prtln ""
+print_line "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
+print_line ""
 
 cat <<EOF
 <IfModule mod_ssl.c>
@@ -45,7 +45,7 @@ cat <<EOF
 EOF
 
 if [[ "$1" != "--defaults" ]] && [[ -n "$LETSENCRYPT_DOMAIN" ]]; then
-    prtln "    ServerName ${LETSENCRYPT_DOMAIN}"
+    print_line "    ServerName ${LETSENCRYPT_DOMAIN}"
     
     # try the obvious path first
     LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/${LETSENCRYPT_DOMAIN,,}"
@@ -61,7 +61,7 @@ if [[ "$1" != "--defaults" ]] && [[ -n "$LETSENCRYPT_DOMAIN" ]]; then
         then LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/ncp-nextcloud"
         fi
     } # Make sure the default snakeoil cert exists
-else [[ -f /etc/ssl/certs/ssl-cert-snakeoil.pem ]] || make-ssl-cert generate-default-snakeoil --force-overwrite
+else [[ -f '/etc/ssl/certs/ssl-cert-snakeoil.pem' ]] || make-ssl-cert generate-default-snakeoil --force-overwrite
      unset LETSENCRYPT_DOMAIN
 fi
 
@@ -85,7 +85,7 @@ cat <<EOF
     ProxyPassReverse /push/ http://127.0.0.1:7867/
 EOF
 
-if [[ "$1" != "--defaults" ]] && [[ "$METRICS_IS_ENABLED" == yes ]]
+if [[ "$1" != "--defaults" ]] && [[ "$METRICS_IS_ENABLED" == "yes" ]]
 then cat <<EOF
     <Location /metrics/system>
       ProxyPass http://localhost:9100/metrics
@@ -139,7 +139,7 @@ cat <<EOF
 </IfModule>
 EOF
 
-if ! [[ -f /.ncp-image ]]
+if ! [[ -f '/.ncp-image' ]]
 then log -1 "Apache self check" >&2
      apache2ctl -t 1>&2
 fi

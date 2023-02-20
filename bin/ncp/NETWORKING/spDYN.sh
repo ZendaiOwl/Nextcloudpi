@@ -14,9 +14,9 @@ INSTALLDIR='spdnsupdater'
 INSTALLPATH="/usr/local/etc/$INSTALLDIR"
 CRONFILE='/etc/cron.d/spdnsupdater'
 
-function install () {
+function install {
     # Create the spdnsUpdater.sh
-    mkdir -p "$INSTALLPATH"
+    mkdir --parents "$INSTALLPATH"
     # Write the script to file
     cat > "$INSTALLPATH"/spdnsUpdater.sh <<'EOF' 
 #!/usr/bin/env bash
@@ -88,7 +88,7 @@ EOF
 
 }
 
-function configure ()  {
+function configure {
   if [[ "$ACTIVE" == "yes" ]]; then
     
     # Adds file to cron to run script for DNS record updates and change permissions
