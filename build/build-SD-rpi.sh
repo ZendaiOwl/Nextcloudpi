@@ -15,16 +15,14 @@ function add_build_variables {
   fi
 }
 
-if [[ -v DBG ]] && [[ -n "$DBG" ]]
+if [[ -v DBG && -n "$DBG" ]]
 then set -e"$DBG"
 else set -e
 fi
 
 BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"; add_build_variables 'BUILDLIBRARY'
 
-if [[ ! -f "$BUILDLIBRARY" ]]
-then printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"; exit 1
-fi
+[[ ! -f "$BUILDLIBRARY" ]] && { printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"; exit 1; }
 
 # shellcheck disable=SC1090
 source "$BUILDLIBRARY"
@@ -53,17 +51,9 @@ function clean_build_sd_rpi {
 
 ##############################################################################
 
-if is_file "$TAR"
-then log 1 "File exists: $TAR"; exit 0
-fi
-
-if find_full_process qemu-arm-static
-then log 2 "qemu-arm-static already running"; exit 1
-fi
-
-if find_full_process qemu-aarch64-static
-then log 2 "qemu-aarch64-static already running"; exit 1
-fi
+is_file "$TAR"                          && { log 1 "File exists: $TAR"; exit 0; }
+find_full_process 'qemu-arm-static'     && { log 2 "qemu-arm-static already running"; exit 1; }
+find_full_process 'qemu-aarch64-static' && { log 2 "qemu-aarch64-static already running"; exit 1; }
 
 # # # # # # # # #
 # Preparations  #

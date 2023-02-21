@@ -46,7 +46,7 @@ LOCAL_LIBRARY='/usr/local/etc/library.sh'
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
 
-if [[ -v DBG ]]
+if [[ -v DBG && -n "$DBG" ]]
 then set -e"$DBG"
 else set -e
 fi
@@ -104,9 +104,7 @@ if pgrep -x "apt|apt-get" &>/dev/null
 then log 2 "Apt is currently running. Try again later"; exit 1
 fi
 
-if ! cp "$ETC_LIBRARY" "$LOCAL_LIBRARY"
-then log 2 "Failed to copy file: $ETC_LIBRARY"; exit 1
-fi
+cp "$ETC_LIBRARY" "$LOCAL_LIBRARY" || { log 2 "Failed to copy file: $ETC_LIBRARY"; exit 1; }
 
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
@@ -128,10 +126,10 @@ cp --recursive  'etc/ncp-templates' '/usr/local/etc/'
 
 # install new entries of ncp-config and update others
 for FILE in etc/ncp-config.d/* # Skip directories
-do [[ -d "$FILE" ]] && continue
-   [[ ! -f "$FILE" ]] && continue
+do [[ -d "$FILE" ]]   && { continue; }
+   [[ ! -f "$FILE" ]] && { continue; }
    # Install new NextcloudPi apps
-   [[ ! -f /usr/local/"$FILE" ]] && install_app "$(basename "$FILE" .cfg)"
+   [[ ! -f /usr/local/"$FILE" ]] && { install_app "$(basename "$FILE" .cfg)"; }
 
    # keep saved cfg values
    if [[ -f /usr/local/"$FILE" ]]
@@ -154,16 +152,11 @@ do [[ -d "$FILE" ]] && continue
    if [[ ! -f /usr/local/"$FILE" ]]
    then if [[ "$(jq -r ".params[0].id" "$FILE")" == "ACTIVE" && \
            [[ "$(jq -r ".params[0].value" "$FILE")" == "yes" ]]
-        then if ! cp "$FILE" /usr/local/"$FILE"
-             then log 2 "Failed to copy file: $FILE"; exit 1
-             fi
-         run_app "$(basename "$FILE" .cfg)"
-         fi
+        then cp "$FILE" /usr/local/"$FILE" || { log 2 "Failed to copy file: $FILE"; exit 1; }
+             run_app "$(basename "$FILE" .cfg)"
+        fi
    fi
-   
-   if ! cp "$FILE" /usr/local/"$FILE"
-   then log 2 "Failed to copy file: $FILE"; exit 1
-   fi
+   cp "$FILE" /usr/local/"$FILE" || { log 2 "Failed to copy file: $FILE"; exit 1; }
 done
 
 # update NCVER in ncp.cfg and nc-nextcloud.cfg (for nc-autoupdate-nc and nc-update-nextcloud)
@@ -179,15 +172,15 @@ CFG="$(jq ".params[0].value = \"$NC_VERSION\"" "$NEXTCLOUD_CONFIG")"
 print_line "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
-cp -rT 'etc/ncp-config.d/l10n' "$CONFDIR"/l10n
+cp -rT 'etc/ncp-config.d/l10n'      "$CONFDIR"/l10n
 
 # these files can contain sensitive information, such as passwords
-chown -R 'root':'www-data' "$CONFDIR"
+chown --recursive 'root':'www-data' "$CONFDIR"
 chmod 660 "$CONFDIR"/*
 chmod 750 "$CONFDIR"/l10n
 
 # install web interface
-cp --recursive ncp-web              '/var/www/'
+cp --recursive 'ncp-web'            '/var/www/'
 chown -R 'www-data':'www-data'      '/var/www/ncp-web'
 chmod 770                           '/var/www/ncp-web'
 
@@ -198,12 +191,12 @@ cp --recursive 'ncp-app'            '/var/www/'
 # install ncp-previewgenerator
 rm --recursive --force              '/var/www/ncp-previewgenerator'
 cp --recursive ncp-previewgenerator '/var/www/'
-chown -R 'www-data':                '/var/www/ncp-previewgenerator'
+chown --recursive 'www-data':       '/var/www/ncp-previewgenerator'
 
 # copy NC app to nextcloud directory and enable it
 rm --recursive --force              '/var/www/nextcloud/apps/nextcloudpi'
 cp --recursive '/var/www/ncp-app'   '/var/www/nextcloud/apps/nextcloudpi'
-chown -R 'www-data':                '/var/www/nextcloud/apps/nextcloudpi'
+chown --recursive 'www-data':       '/var/www/nextcloud/apps/nextcloudpi'
 
 # remove unwanted ncp-apps for containerized versions
 if is_docker || is_lxc
@@ -219,13 +212,13 @@ then cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} '/
 fi
 
 # only live updates from here
-[[ -f '/.ncp-image' ]] && exit 0
+[[ -f '/.ncp-image' ]] && { exit 0; }
 
 # update old images
 ./run_update_history.sh "$UPDATESDIR"
 
 # update to the latest NC version
-is_active_app 'nc-autoupdate-nc' && run_app 'nc-autoupdate-nc'
+is_active_app 'nc-autoupdate-nc' && { run_app 'nc-autoupdate-nc'; }
 
 start_notify_push
 

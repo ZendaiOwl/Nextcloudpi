@@ -55,7 +55,7 @@ function is_root {
 # 1: Not a user
 # 2: Invalid number of arguments
 function is_user {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     if id --user "$1" &>/dev/null
     then return 0
     else return 1
@@ -68,7 +68,7 @@ function is_user {
 # 1: No such path
 # 2: Invalid number of arguments
 function is_path {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     [[ -e "$1" ]]
 }
 
@@ -77,7 +77,7 @@ function is_path {
 # 1: Not a file
 # 2: Invalid number of arguments
 function is_file {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     [[ -f "$1" ]]
 }
 
@@ -87,7 +87,7 @@ function is_file {
 # 1: Not a directory
 # 2: Invalid number of arguments
 function is_directory {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     [[ -d "$1" ]]
 }
 
@@ -97,7 +97,7 @@ function is_directory {
 # 1: Not greater
 # 2: Invalid number of arguments
 function is_greater {
-    [[ "$#" -ne 2 ]] && return 2
+    [[ "$#" -ne 2 ]] && { return 2; }
     [[ "$1" -gt "$2" ]]
 }
 
@@ -107,7 +107,7 @@ function is_greater {
 # 1: Not greater than or equal
 # 2: Invalid number of arguments
 function is_equal_or_greater {
-    [[ "$#" -ne 2 ]] && return 2
+    [[ "$#" -ne 2 ]] && { return 2; }
     [[ "$1" -ge "$2" ]]
 }
 
@@ -117,7 +117,7 @@ function is_equal_or_greater {
 # 1: Not a socket
 # 2: Invalid number of arguments
 function is_socket {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     [[ -S "$1" ]]
 }
 
@@ -127,7 +127,7 @@ function is_socket {
 # 1: Not set 
 # 2: Invalid number of arguments
 function is_set {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     [[ -v "$1" ]]
 }
 
@@ -137,7 +137,7 @@ function is_set {
 # 1: Not equal
 # 2: Invalid number of arguments
 function is_equal {
-    [[ "$#" -ne 2 ]] && return 2
+    [[ "$#" -ne 2 ]] && { return 2; }
     [[ "$1" -eq "$2" ]]
 }
 
@@ -147,7 +147,7 @@ function is_equal {
 # 1: Not a match
 # 2: Invalid number of arguments
 function is_match {
-    [[ "$#" -ne 2 ]] && return 2
+    [[ "$#" -ne 2 ]] && { return 2; }
     [[ "$1" == "$2" ]]
 }
 
@@ -157,7 +157,7 @@ function is_match {
 # 1: Is a match
 # 2: Invalid number of arguments
 function not_match {
-    [[ "$#" -ne 2 ]] && return 2
+    [[ "$#" -ne 2 ]] && { return 2; }
     [[ "$1" != "$2" ]]
 }
 
@@ -167,7 +167,7 @@ function not_match {
 # 1: Not zero
 # 2: Invalid number of arguments
 function is_zero {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     [[ -z "$1" ]]
 }
 
@@ -177,7 +177,7 @@ function is_zero {
 # 1: Is zero
 # 2: Invalid number of arguments
 function not_zero {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     [[ -n "$1" ]]
 }
 
@@ -188,8 +188,9 @@ function not_zero {
 # 2: Invalid number of arguments
 # $1: [Pattern]
 # $2: [String]
+# Pattern has to be the right-hand variable in the test expression
 function has_text {
-    [[ "$#" -ne 2 ]] && return 2
+    [[ "$#" -ne 2 ]] && { return 2; }
     [[ "$2" == *"$1"* ]]
 }
 
@@ -200,7 +201,7 @@ function has_text {
 # 2: Invalid argument(s)
 # $1: Command
 function has_cmd {
-    [[ "$#" -ne 1 ]] && return 2
+    [[ "$#" -ne 1 ]] && { return 2; }
     if command -v "$1" &>/dev/null
     then return 0
     else return 1
@@ -241,7 +242,7 @@ function update_apt {
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
-    [[ "$#" -eq 0 ]] && log 2 "Requires: [PKG(s)]"; return 2
+    [[ "$#" -eq 0 ]] && { log 2 "Requires: [PKG(s)]"; return 2; }
     declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
@@ -275,7 +276,7 @@ function install_package {
 # Return codes
 # 1: Command not found: sudo
 function ncc {
-    ! has_cmd 'sudo' && return 1
+    ! has_cmd 'sudo' && { return 1; }
     declare -r -a SUDO=(sudo -E -u www-data)
     "${SUDO[@]}" php /var/www/nextcloud/occ "$@"
 }
@@ -375,10 +376,10 @@ function configure_app {
          fi
     fi
 
-    ! is_file "$CFG_FILE" && log 1 "No configuration file for: $NCP_APP"; return 0
+    ! is_file "$CFG_FILE" && { log 1 "No configuration file for: $NCP_APP"; return 0; }
     
     LENGTH="$(jq  '.params | length' "$CFG_FILE")"
-    is_equal "$LENGTH" 0 && return
+    is_equal "$LENGTH" 0 && { return; }
     
     # Read config parameters
     for (( i = 0; i < "$LENGTH"; i++ ))
@@ -411,9 +412,9 @@ function configure_app {
                     done
                     RET=0
                     break ;;
-            "$DIALOG_ERROR") log  2 "$VALUE"; break ;;
-              "$DIALOG_ESC") log -1 "ESC pressed."; break ;;
-                          *) log -1 "Return code was: $RES"; break ;;
+            "$DIALOG_ERROR") { log  2 "$VALUE"; break; } ;;
+              "$DIALOG_ESC") { log -1 "ESC pressed."; break; } ;;
+                          *) { log -1 "Return code was: $RES"; break; } ;;
         esac
     done
     
@@ -427,9 +428,9 @@ function persistent_cfg {
     local SRC="$1" DST="${2:-/data/etc/$( basename "$SRC" )}"
     log -1 "Persisting configuration"
     # Trick to disable in dev docker
-    is_path '/changelog.md' && return
+    is_path '/changelog.md' && { return; }
     mkdir --parents "$(dirname "$DST")"
-    ! is_path "$DST" && log -1 "Making $SRC persistent"; mv "$SRC" "$DST"
+    ! is_path "$DST" && { log -1 "Making $SRC persistent"; mv "$SRC" "$DST"; }
     rm --recursive --force "$SRC"
     ln -s "$DST" "$SRC"; log 0 "Persist configuration is complete"
 }
@@ -480,7 +481,7 @@ function clear_password_fields {
 # Return codes
 # 1: Missing command: a2query
 function is_ncp_activated {
-    if has_cmd a2query
+    if has_cmd 'a2query'
     then (! a2query -s ncp-activation -q)
     else log 2 "Missing command: a2query"; return 1
     fi
@@ -492,8 +493,8 @@ function is_active_app {
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local LENGTH VAL VAR ID VALUE
     
-    ! is_file "$SCRIPT" && SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
-    ! is_file "$SCRIPT" && log 2 "File not found: $NCP_APP"; return 1
+    ! is_file "$SCRIPT" && { SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"; }
+    ! is_file "$SCRIPT" && { log 2 "File not found: $NCP_APP"; return 1; }
     
     # Function
     unset is_active
@@ -513,7 +514,7 @@ function is_active_app {
     fi
     
     # Config
-    ! is_file "$CFG_FILE" && log 2 "File not found: $CFG_FILE"; return 1
+    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 1; }
     
     ID="$(jq -r ".params[0].id" "$CFG_FILE")"
     VALUE="$(jq -r ".params[0].value" "$CFG_FILE")"
@@ -532,7 +533,7 @@ function is_app_enabled {
 # Return codes
 # 1: Invalid number of arguments
 function info_app {
-    [[ "$#" -ne 1 ]] && return 1
+    [[ "$#" -ne 1 ]] && { return 1; }
     local -r NCP_APP="$1"
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local INFO INFOTITLE
@@ -580,7 +581,7 @@ function is_lxc {
 # Return codes
 # 1: Missing command: ncc
 function nc_version {
-    ! has_cmd 'ncc' && log 2 "Missing command: ncc"; return 1
+    ! has_cmd 'ncc' && { log 2 "Missing command: ncc"; return 1; }
     ncc status | grep "version:" | awk '{ print $3 }'
 }
 
@@ -605,7 +606,7 @@ function set_nc_domain {
     URL="${PROTOCOL}://${DOMAIN%*/}"
 
     if not_match "$2" "--no-trusted-domain"
-    then ! has_cmd 'ncc' && log 2 "Missing command: ncc"; return 2
+    then ! has_cmd 'ncc' && { log 2 "Missing command: ncc"; return 2; }
          ncc config:system:set trusted_domains 3 --value="${DOMAIN%*/}"
          ncc config:system:set overwrite.cli.url --value="${URL}/"
          if is_ncp_activated && is_app_enabled notify_push
@@ -637,7 +638,7 @@ function start_notify_push {
 function notify_admin {
     local HEADER="$1" MSG="$2" ADMINS
     ADMINS="$(mysql -u root nextcloud -Nse "select uid from oc_group_user where gid='admin';")"
-    is_zero "$ADMINS" && log 2 "Admin user(s) not found" >&2; return 0
+    is_zero "$ADMINS" && { log 2 "Admin user(s) not found" >&2; return 0; }
     while read -r ADMIN
     do if ! ncc notification:generate "$ADMIN" "$HEADER" -l "$MSG"
        then true
@@ -649,7 +650,7 @@ function notify_admin {
 function run_app {
     local NCP_APP="$1" SCRIPT
     SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
-    ! is_file "$SCRIPT" && log 2 "File not found: $SCRIPT"; return 1
+    ! is_file "$SCRIPT" && { log 2 "File not found: $SCRIPT"; return 1; }
     run_app_unsafe "$SCRIPT"
 }
 
@@ -661,7 +662,7 @@ function run_app_unsafe {
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     
-    ! is_file "$SCRIPT" && log 2 "File not found: $SCRIPT"; return 1
+    ! is_file "$SCRIPT" && { log 2 "File not found: $SCRIPT"; return 1; }
     
     touch                       "$LOG"
     change_permissions 640      "$LOG"
@@ -708,11 +709,11 @@ function find_app_param_num {
                          LENGTH VAL VAR P_ID
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-    ! is_file "$CFG_FILE" && log 2 "File not found: $SCRIPT"; return 1
+    ! is_file "$CFG_FILE" && { log 2 "File not found: $SCRIPT"; return 1; }
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0 ; i < "$LENGTH" ; i++ ))
     do P_ID="$(jq -r ".params[$i].id" "$CFG_FILE")"
-       is_match "$PARAM_ID" "$P_ID" && echo "$i"; return 0
+       is_match "$PARAM_ID" "$P_ID" && { echo "$i"; return 0; }
     done
 }
 
@@ -725,7 +726,7 @@ function find_app_param {
     if ! P_NUM="$(find_app_param_num "$SCRIPT" "$PARAM_ID")"
     then log 2 "Parameter index not found: $SCRIPT"; return 1
     fi
-    ! is_file "$CFG_FILE" && log 2 "File not found: $CFG_FILE"; return 2
+    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 2; }
     jq -r ".params[$P_NUM].value" "$CFG_FILE"
 }
 
@@ -739,7 +740,7 @@ function set_app_param {
     then log 2 "Invalid characters in field ${VARIABLES[$i]}"; return 1
     fi
 
-    ! is_file "$CFG_FILE" && log 2 "File not found: $CFG_FILE"; return 2
+    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 2; }
     
     LENGTH="$(jq  '.params | length' "$CFG_FILE")"
     PARAM_FOUND='false'
@@ -824,7 +825,7 @@ function set_ncpcfg {
 
 function get_ncpcfg {
     local NAME="${1}"
-    ! is_file "$NCPCFG" && log 2 "File not found: $NCPCFG"; return 1
+    ! is_file "$NCPCFG" && { log 2 "File not found: $NCPCFG"; return 1; }
     jq -r ".$NAME" "$NCPCFG"
 }
 
@@ -868,10 +869,6 @@ export NCDIR
 ncc="${ncc:-/usr/local/bin/ncc}"
 export ncc
 
-# if is_file "$ncc"; then
-#   ncc="$ncc"
-# fi
-
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
 if is_file "$NCPCFG"
 then NCPCFG="$NCPCFG"
@@ -884,10 +881,9 @@ fi
 
 export NCPCFG
 
-if ! has_cmd 'dpkg'
-then log 2 "Missing command: dpkg"; return 1
-else ARCH="$(dpkg --print-architecture)"
-fi
+! has_cmd 'dpkg' && { log 2 "Missing command: dpkg"; return 1; }
+ARCH="$(dpkg --print-architecture)"
+
 
 if [[ "$ARCH" =~ ^(armhf|arm)$ ]]
 then ARCH='armv7'
@@ -911,9 +907,7 @@ fi
 
 unset DETECT_DOCKER
 
-if ! has_cmd 'jq'
-then install_package 'jq' || return 1
-fi
+! has_cmd 'jq' && { install_package 'jq' || return 1; }
 
 NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
 PHPVER="$(     jq -r '.php_version'       "$NCPCFG")"

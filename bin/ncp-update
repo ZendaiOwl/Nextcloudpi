@@ -40,12 +40,12 @@ function clean_ncp_update {
     if ! cd /
     then log 2 "Failed to change directory to: /"
          log -1 "Attempting to remove tmp directory nonetheless"
-         remove_tmp_directory || exit 1
-    else remove_tmp_directory || exit 1
+         remove_tmp_directory || { exit 1; }
+    else remove_tmp_directory || { exit 1; }
     fi
 }
 
-[[ -n "$DBG" ]] && set -"$DBG"
+[[ -n "$DBG" ]] && { set -"$DBG"; }
 
 if [[ -f '/.dockerenv' ]] \
 || [[ -f '/.docker-image' ]] \
@@ -54,24 +54,18 @@ then log 1 "Docker images should be updated by replacing the container from the 
 Refer to the documentation for instructions: https://docs.nextcloudpi.com
 If you are sure that you know what you are doing, you can still execute the update script by running it like this:
 ALLOW_UPDATE_SCRIPT=1 ncp-update"
-     if [[ "$ALLOW_UPDATE_SCRIPT" != "1" ]]
-     then exit 1
-     fi
+     [[ "$ALLOW_UPDATE_SCRIPT" != "1" ]] && { exit 1; }
 fi
 
 {
-    if [[ "$EUID" -ne 0 ]]
-    then log 2 "Must be run as root or with sudo, try: sudo ${BASH_SOURCE[0]}"; exit 1
-    fi
+    [[ "$EUID" -ne 0 ]] && { log 2 "Must be run as root or with sudo, try: sudo ${BASH_SOURCE[0]}"; exit 1; }
     
     #OWNER="${OWNER:-nextcloud}"
     OWNER="${OWNER:-ZendaiOwl}"
     REPO="${REPO:-nextcloudpi}"
     BRANCH="${1:-master}"
     
-    if [[ "$BRANCH" != "master" ]]
-    then log -1 "Updating to development branch: $BRANCH"
-    fi
+    [[ "$BRANCH" != "master" ]] && { log -1 "Updating to development branch: $BRANCH"; }
     
     TMPDIR="$(mktemp -d /tmp/ncp-update.XXXXXX || {( log 2 "Failed to create temp dir. Exiting"; exit 1; )})"
     trap 'clean_ncp_update' EXIT SIGHUP SIGILL SIGABRT SIGINT
@@ -84,16 +78,16 @@ fi
     # shellcheck disable=SC2164
     if [[ ! -f '/.ncp-image' ]]
     then # Update locally during build
-         cd "$TMPDIR" || log 2 "Failed to change directory to: $TMPDIR"; exit 1
+         cd "$TMPDIR" || { log 2 "Failed to change directory to: $TMPDIR"; exit 1; }
          if [[ -n "$2" ]]
-         then git fetch origin "$2"   || log 2 "Could not fetch: $2"; exit 1
-              git checkout FETCH_HEAD || log 2 "Failed to git checkout: FETCH_HEAD"; exit 1
+         then git fetch origin "$2"   || { log 2 "Could not fetch: $2"; exit 1; }
+              git checkout FETCH_HEAD || { log 2 "Failed to git checkout: FETCH_HEAD"; exit 1; }
          fi
     fi
     
     log -1 "Performing updates"
-    ./update.sh  || log 2 "Update failed"; exit "$?"
-    cd "$TMPDIR" || log 2 "Failed to change directory to: $TMPDIR"; exit 1
+    ./update.sh  || { log 2 "Update failed"; exit "$?"; }
+    cd "$TMPDIR" || { log 2 "Failed to change directory to: $TMPDIR"; exit 1; }
     
     git describe --always --tags --abbrev=0 2>/dev/null | grep -qoP "v\d+\.\d+\.\d+" || git fetch --unshallow --tags -q
     VER="$(git describe --always --tags --abbrev=0 | grep -oP "v\d+\.\d+\.\d+")"
@@ -104,16 +98,14 @@ fi
          then log 2 "Failed to clone repository to: $TMPDIR/temporary"; exit 1
          fi
          
-         cd "$TMPDIR"/temporary || log 2 "Failed to change directory to: $TMPDIR/temporary"; exit 1
+         cd "$TMPDIR"/temporary || { log 2 "Failed to change directory to: $TMPDIR/temporary"; exit 1; }
          
          VER="$(git describe --tags "$(git rev-list --tags --max-count=1)" | grep -oP "v\d+\.\d+\.\d+" || { log 2 "Missing version"; exit 1; } )"
          print_line "$VER" > "$TMPDIR"/version
          
-         cd "$TMPDIR" || log 2 "Failed to change directory to: $TMPDIR"; exit 1
+         cd "$TMPDIR" || { log 2 "Failed to change directory to: $TMPDIR"; exit 1; }
          
-         if ! rm --recursive --force "$TMPDIR"/temporary
-         then log 2 "Failed to remove directory: $TMPDIR/temporary"; exit 1
-         fi
+         rm --recursive --force "$TMPDIR"/temporary || { log 2 "Failed to remove directory: $TMPDIR/temporary"; exit 1; }
     fi
     
     cat "$TMPDIR"/version > '/usr/local/etc/ncp-version'

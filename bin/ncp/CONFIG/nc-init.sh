@@ -40,7 +40,7 @@ function configure {
     
     # wait for mariadb
     while :
-    do [[ -S '/run/mysqld/mysqld.sock' ]] && break
+    do [[ -S '/run/mysqld/mysqld.sock' ]] && { break; }
        sleep 1
     done
     sleep 1
@@ -70,20 +70,18 @@ EOF
     fi
     
     while :
-    do [[ -S '/run/redis/redis.sock' ]] && break
+    do [[ -S '/run/redis/redis.sock' ]] && { break; }
        sleep 1
     done
     
     
     print_line "Setting up: Nextcloud"
     if [[ -d '/var/www/nextcloud/' ]]
-    then cd '/var/www/nextcloud/' || print_line "Failed to change directory to: /var/www/nextcloud/"
+    then cd '/var/www/nextcloud/' || { print_line "Failed to change directory to: /var/www/nextcloud/"; }
     fi
 
     if [[ -f 'config/config.php' ]]
-    then if ! rm --force 'config/config.php'
-         then print_line "Failed to remove file: config/config.php"; exit 1
-         fi
+    then rm --force 'config/config.php' || { print_line "Failed to remove file: config/config.php"; exit 1; }
     fi
     ncc maintenance:install --database 'mysql' \
                             --database-name 'nextcloud'  \
@@ -135,7 +133,7 @@ EOF
     [[ -e '/usr/local/etc/logo' ]] && {
         ID="$( grep 'instanceid' 'config/config.php' | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
 
-        [[ -z "$ID" ]] || print_line "Failed to get ID"; return 1
+        [[ -z "$ID" ]] || { print_line "Failed to get ID"; return 1; }
         
         mkdir --parents                data/appdata_"$ID"/theming/images
         cp '/usr/local/etc/background' data/appdata_"$ID"/theming/images
@@ -153,8 +151,8 @@ replace into  oc_appconfig values ( 'theming', 'backgroundMime', "image/png"    
 EOF
 
     # NCP app
-    cp --recursive '/var/www/ncp-app' '/var/www/nextcloud/apps/nextcloudpi'
-    chown -R 'www-data':              '/var/www/nextcloud/apps/nextcloudpi'
+    cp    --recursive '/var/www/ncp-app' '/var/www/nextcloud/apps/nextcloudpi'
+    chown --recursive 'www-data':        '/var/www/nextcloud/apps/nextcloudpi'
     ncc app:enable nextcloudpi
     
     # Install some default apps, will be enabled by installation
@@ -178,7 +176,7 @@ EOF
     then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
     else ncc app:install notify_push
          ncc app:enable  notify_push
-         [[ -f '/.ncp-image' ]] || start_notify_push # don't start during build
+         [[ -f '/.ncp-image' ]] || { start_notify_push; } # don't start during build
          NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
     fi
     ln -snf "$NCPREV"    '/var/www/nextcloud/apps/previewgenerator'
@@ -209,7 +207,7 @@ EOF
     
     # Default trusted domain (only from ncp-config)
     if [[ -f '/usr/local/bin/nextcloud-domain.sh' ]]
-    then [[ -f '/.ncp-image' ]] || bash '/usr/local/bin/nextcloud-domain.sh'
+    then [[ -f '/.ncp-image' ]] || { bash '/usr/local/bin/nextcloud-domain.sh'; }
     fi
     
     # dettach mysql during the build

@@ -140,8 +140,7 @@ Listen 4443
 </Directory>
 EOF
 
-    install_package libapache2-mod-authnz-external \
-                    pwauth
+    install_package libapache2-mod-authnz-external pwauth
     a2enmod authnz_external \
             authn_core \
             auth_basic
@@ -167,9 +166,9 @@ grep -q '[\\&#;`|*?~<>^()[{}$&[:space:]]' <<< "$*" && exit 1
 source /usr/local/etc/library.sh
 run_app "$1"
 EOF
-  chmod 700 "$NCP_LAUNCHER"
+    chmod 700 "$NCP_LAUNCHER"
 
-  cat > "$BACKUP_LAUNCHER" <<'EOF'
+    cat > "$BACKUP_LAUNCHER" <<'EOF'
 #!/usr/bin/env bash
 ACTION="${1}"
 FILE="${2}"
@@ -202,12 +201,12 @@ fi
 [[ "$COMPRESSED" != "" ]] && PIGZ="-I pigz"
 tar $PIGZ -tf "$FILE" data &>/dev/null
 EOF
-  chmod 700 "$BACKUP_LAUNCHER"
-  print_line "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
-
-  # NCP AUTO TRUSTED DOMAIN
-  mkdir --parents '/usr/lib/systemd/system'
-  cat > '/usr/lib/systemd/system/nextcloud-domain.service' <<'EOF'
+    chmod 700 "$BACKUP_LAUNCHER"
+    print_line "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
+    
+    # NCP AUTO TRUSTED DOMAIN
+    mkdir --parents '/usr/lib/systemd/system'
+    cat > '/usr/lib/systemd/system/nextcloud-domain.service' <<'EOF'
 [Unit]
 Description=Register Current IP as Nextcloud trusted domain
 Requires=network.target
@@ -222,24 +221,24 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 
-  [[ "$DOCKERBUILD" != 1 ]] && systemctl enable nextcloud-domain
-
-  # NEXTCLOUDPI UPDATES
-  cat > '/etc/cron.daily/ncp-check-version' <<EOF
+    [[ "$DOCKERBUILD" != 1 ]] && { systemctl enable nextcloud-domain; }
+    
+    # NEXTCLOUDPI UPDATES
+    cat > '/etc/cron.daily/ncp-check-version' <<EOF
 #!/bin/sh
 /usr/local/bin/ncp-check-version
 EOF
-  chmod a+x '/etc/cron.daily/ncp-check-version'
-  touch               '/var/run/.ncp-latest-version'
-  chown root:www-data '/var/run/.ncp-latest-version'
-  chmod g+w           '/var/run/.ncp-latest-version'
-
-  # Install all ncp-apps
-  ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || exit "$?"
-
-  # LIMIT LOG SIZE
-  grep -q 'maxsize' '/etc/logrotate.d/apache2' || sed -i '/weekly/amaxsize2M' '/etc/logrotate.d/apache2'
-  cat > '/etc/logrotate.d/ncp' <<'EOF'
+    chmod a+x '/etc/cron.daily/ncp-check-version'
+    touch                   '/var/run/.ncp-latest-version'
+    chown 'root':'www-data' '/var/run/.ncp-latest-version'
+    chmod g+w               '/var/run/.ncp-latest-version'
+    
+    # Install all ncp-apps
+    ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || { exit "$?"; }
+    
+    # LIMIT LOG SIZE
+    grep -q 'maxsize' '/etc/logrotate.d/apache2' || sed -i '/weekly/amaxsize2M' '/etc/logrotate.d/apache2'
+    cat > '/etc/logrotate.d/ncp' <<'EOF'
 /var/log/ncp.log
 {
         rotate 4
@@ -249,18 +248,18 @@ EOF
         compress
 }
 EOF
-  chmod 0444 '/etc/logrotate.d/ncp'
-
-  # ONLY FOR IMAGE BUILDS
-  # If-statement closes at the end of the install function()
-  if [[ -f '/.ncp-image' ]]
-  then rm --recursive --force '/var/log/ncp.log'
-       ## NEXTCLOUDPI MOTD
-       rm --recursive --force '/etc/update-motd.d'
-       mkdir '/etc/update-motd.d'
-       rm '/etc/motd'
-       ln -s '/var/run/motd' '/etc/motd'
-       cat > '/etc/update-motd.d/10logo' <<EOF
+    chmod 0444 '/etc/logrotate.d/ncp'
+    
+    # ONLY FOR IMAGE BUILDS
+    # If-statement closes at the end of the install function()
+    if [[ -f '/.ncp-image' ]]
+    then rm --recursive --force '/var/log/ncp.log'
+         ## NEXTCLOUDPI MOTD
+         rm --recursive --force '/etc/update-motd.d'
+         mkdir '/etc/update-motd.d'
+         rm '/etc/motd'
+         ln -s '/var/run/motd' '/etc/motd'
+         cat > '/etc/update-motd.d/10logo' <<EOF
 #!/bin/sh
 echo
 cat /usr/local/etc/ncp-ascii.txt
@@ -280,8 +279,8 @@ EOF
        print_line 'nextcloudpi' > '/etc/hostname'
        
        ## tag image
-       is_docker && local DOCKER_TAG="_docker"
-       is_lxc && local DOCKER_TAG="_lxc"
+       is_docker && { local DOCKER_TAG="_docker"; }
+       is_lxc    && { local DOCKER_TAG="_lxc"; }
        print_line "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > '/usr/local/etc/ncp-baseimage'
        
        ## SSH hardening

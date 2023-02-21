@@ -99,9 +99,7 @@ fi
 # check version
 ####################
 
-if [[ "$EUID" -eq 0 ]]
-then SUDO=(sudo -u www-data)
-fi
+[[ "$EUID" -eq 0 ]] && { SUDO=(sudo -u www-data); }
 
 CURRENT="$("${SUDO[@]}" php /var/www/nextcloud/occ status | grep "version:" | awk '{ print $3 }')"
 MAJOR_CUR="$( cut -d. -f1 <<<"$CURRENT" )"
@@ -127,7 +125,7 @@ log -1 "Current Nextcloud version: $CURRENT"
 log -1 "Available Nextcloud version: $VER"
 
 if ! is_more_recent_than "$VER" "$CURRENT" 
-then log -1 "Nothing to update"; exit 1 # we want `exit 1` so the autoupdate doesn't notify success in this case
+then { log -1 "Nothing to update"; exit 1; } # we want `exit 1` so the autoupdate doesn't notify success in this case
 fi
 
 

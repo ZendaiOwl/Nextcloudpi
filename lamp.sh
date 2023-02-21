@@ -189,24 +189,22 @@ function install {
     install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" '--defaults'
     install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" '--defaults'
 
-  # Start MariaDB if it's not already running
-  if [[ ! -f "$DBPID_FILE" ]]
-  then log -1 "Starting MariaDB"
-       mysqld &
-       declare -x DBPID="$!"
-  fi
+    # Start MariaDB if it's not already running
+    if [[ ! -f "$DBPID_FILE" ]]
+    then log -1 "Starting MariaDB"
+         mysqld &
+         declare -x DBPID="$!"
+    fi
+    
+    # Wait for MariaDB to start
+    while :
+    do [[ -S "$DBSOCKET" ]] && { break; }
+       sleep 1
+    done
 
-  # Wait for MariaDB to start
-  while :
-  do [[ -S "$DBSOCKET" ]] && break
-     sleep 1
-  done
-
-  if ! cd '/tmp'
-  then log 2 "Failed to change directory to: /tmp"; exit 1
-  fi
+    cd '/tmp' || { log 2 "Failed to change directory to: /tmp"; exit 1; }
   
-  mysql_secure_installation <<EOF
+    mysql_secure_installation <<EOF
 $DBPASSWD
 y
 $DBPASSWD

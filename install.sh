@@ -90,7 +90,7 @@ function install_package {
 function add_install_variable
 {
   declare -x -a INSTALL_VARIABLES; INSTALL_VARIABLES+=("$@")
-  if [[ "${INSTALL_VARIABLES[@]}" != *'INSTALL_VARIABLES'* ]]
+  if [[ "${INSTALL_VARIABLES[*]}" != *'INSTALL_VARIABLES'* ]]
   then add_install_variable INSTALL_VARIABLES
   fi
 }
@@ -101,15 +101,10 @@ function clean_install_variables
 }
 
 function clean_install_tmp {
-    if [[ ! -v TMPDIR ]]
-    then log 2 "Variable not set: TMPDIR"; return 1
-    fi
-
-    cd - || log 2 "Unable to change directory to: -"; return 1
-    
-    if ! [[ -d "$TMPDIR" ]]
-    then log 2 "Directory not found: TMPDIR"; return 1
-    elif [[ "$EUID" -eq 0 ]]
+    [[ ! -v TMPDIR ]]    && { log 2 "Variable not set: TMPDIR"; return 1; }
+    cd -                 || { log 2 "Unable to change directory to: -"; return 1; }
+    ! [[ -d "$TMPDIR" ]] && { log 2 "Directory not found: TMPDIR"; return 1; }
+    if [[ "$EUID" -eq 0 ]]
     then rm --recursive --force "$TMPDIR"
     else sudo rm --recursive --force "$TMPDIR"
     fi
@@ -117,11 +112,12 @@ function clean_install_tmp {
 
 function clean_install_script {
   log -1 "Cleaning up from install script"
-  if [[ -v TMPDIR ]] && [[ -d "$TMP" ]]
-  then clean_install_tmp
-  fi
-  [[ -v INSTALL_VARIABLES ]] && clean_install_variables
-  [[ -f '/.ncp-image' ]] && rm '/.ncp-image'
+  [[ -v TMPDIR && -d "$TMP" ]]    && { clean_install_tmp; }
+  [[ -v INSTALL_VARIABLES ]]      && { clean_install_variables; }
+  [[ -f '/.ncp-image' ]]          && { rm '/.ncp-image'; }
+  [[ -v DBPID && -n "$DBPID" ]]   && { log -1 "Shutting down MariaDB [$DBPID]";  mysqladmin -u root shutdown; wait "$DBPID"; }
+  [[ -v DB_PID && -n "$DB_PID" ]] && { log -1 "Shutting down MariaDB [$DB_PID]"; mysqladmin -u root shutdown; wait "$DB_PID"; }
+  [[ -v db_pid && -n "$db_pid" ]] && { log -1 "Shutting down MariaDB [$db_pid]"; mysqladmin -u root shutdown; wait "$db_pid"; }
   
   log 0 "Cleaned up from install script"
 }
@@ -132,11 +128,9 @@ function clean_install_script {
 ########################
 
 
-if [[ "$EUID" -ne 0 ]]
-then log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"; exit 1
-fi
+[[ "$EUID" -ne 0 ]] && { log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"; exit 1; }
 
-if [[ -v DBG ]] && [[ -n "$DBG" ]]
+if [[ -v DBG && -n "$DBG" ]]
 then set -e"$DBG"
 else set -e
 fi
@@ -173,7 +167,15 @@ TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "Failed to create temp direc
 
 # Add variables to be unset during cleanup to free up memory
 # allocation and not leave dangling variables in the system environment
-add_install_variable OWNER REPO BRANCH URL LIBRARY NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
+add_install_variable 'OWNER' \
+                     'REPO' \
+                     'BRANCH' \
+                     'URL' \
+                     'LIBRARY' \
+                     'NCPCFG' \
+                     'DBNAME' \
+                     'NCP_TEMPLATES_DIR' \
+                     'TMPDIR'
 
 # Trap cleanup function() for install.sh
 trap 'clean_install_script' EXIT SIGHUP SIGILL SIGABRT SIGINT
@@ -203,7 +205,7 @@ then log 1 "Existing MySQL configuration will be changed"
      fi
 fi
 
-if [[ -v APT_IS_UPDATED ]] && [[ "$APT_IS_UPDATED" -eq 1 ]]
+if [[ -v APT_IS_UPDATED && "$APT_IS_UPDATED" -eq 1 ]]
 then log -2 "Skipping apt update"
 else update_apt # Update apt list
 fi
@@ -220,7 +222,7 @@ install_package git \
                 apt-transport-https
 
 # Get installation/build code from repository
-if [[ -z "$CODE_DIR" ]] || [[ ! -v CODE_DIR ]]
+if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]
 then CODE_DIR="$TMPDIR"/"$REPO"
      log -1 "Fetching build code to: $CODE_DIR"
      if ! git clone -b "$BRANCH" "$URL" "$CODE_DIR"
@@ -230,8 +232,8 @@ then CODE_DIR="$TMPDIR"/"$REPO"
 fi
 
 # Change directory to the code directory in the temporary directory
-if [[ -v CODE_DIR ]] && [[ -d "$CODE_DIR" ]]
-then cd "$CODE_DIR" || log 2 "Failed changing directory to: $CODE_DIR"; exit 1
+if [[ -v CODE_DIR && -d "$CODE_DIR" ]]
+then cd "$CODE_DIR" || { log 2 "Failed changing directory to: $CODE_DIR"; exit 1; }
 fi
 
 # Install NextcloudPi
@@ -246,17 +248,14 @@ fi
 if [[ -f "$NCPCFG" ]] # Check so NextcloudPi configuration file exists
 then if ! check_distro "$NCPCFG" # Check so the distribution is supported by the script
      then log 2 "Distro not supported"
-          if ! cat '/etc/issue'
-          then log 2 "Failed to read file: /etc/issue"
-          fi; exit 1
+          cat '/etc/issue' || { log 2 "Failed to read file: /etc/issue"; }
+          exit 1
      fi
 else log 2 "File not found: $NCPCFG"; exit 1
 fi
 
 # Mark the build as an image build for other scripts in the installation/build flow
-if ! touch '/.ncp-image'
-then log 2 "Failed to create file: /.ncp-image"; exit 1
-fi
+touch '/.ncp-image' || { log 2 "Failed to create file: /.ncp-image"; exit 1; }
 
 # Create the local NextcloudPi configuration directory
 if ! mkdir --parents '/usr/local/etc/ncp-config.d'
@@ -377,9 +376,7 @@ then if [[ -f '/usr/local/bin/ncp-provisioning.sh' ]]
      fi
 fi
 
-if ! cd -
-then log 2 "Failed to change directory to: -"; exit 1
-fi
+cd - || { log 2 "Failed to change directory to: -"; exit 1; }
 
 if [[ -d "$TMPDIR" ]]
 then rm --recursive --force "$TMPDIR"
