@@ -27,7 +27,7 @@ source build/buildlib.sh          # initializes $IMGNAME
 sleep 5
 
 # make sure we don't accidentally include this
-rm -f ncp-web/wizard.cfg
+rm --force ncp-web/wizard.cfg
 
 # LXD
 build/build-LXD.sh
@@ -66,7 +66,7 @@ build/build-SD-armbian.sh odroidc2 OdroidC2
 #build/build-SD-armbian.sh orangepizeroplus2-h5 OrangePiZeroPlus2
 
 # Uploads
-[[ "$FTPPASS" == "" ]] && exit
+[[ "$FTPPASS" == "" ]] && { exit; }
 upload_docker
 upload_images
 

@@ -131,9 +131,9 @@ function install {
     # Create systemd users to keep uids persistent between containers
     if ! id --user 'systemd-resolve' &>/dev/null
     then addgroup --quiet --system 'systemd-journal'
-         adduser  --quiet -u 180 --system --group --no-create-home --home '/run/systemd' \
+         adduser  --quiet --uid 180 --system --group --no-create-home --home '/run/systemd' \
                   --gecos "systemd Network Management" 'systemd-network'
-         adduser  --quiet -u 181 --system --group --no-create-home --home '/run/systemd' \
+         adduser  --quiet --uid 181 --system --group --no-create-home --home '/run/systemd' \
                   --gecos "systemd Resolver" 'systemd-resolve'
     fi
     
@@ -158,13 +158,13 @@ function install {
     # CONFIGURE APACHE #
     ####################
     
-    install_template "apache2/http2.conf.sh" "/etc/apache2/conf-available/http2.conf" '--defaults'
+    install_template 'apache2/http2.conf.sh' '/etc/apache2/conf-available/http2.conf' '--defaults'
 
     ##################
     # CONFIGURE PHP7 #
     ##################
 
-    install_template "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
+    install_template 'php/opcache.ini.sh' "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
 
     a2enmod http2
     a2enconf http2
@@ -186,8 +186,8 @@ function install {
     # Self-signed certificates
     install_package ssl-cert
 
-    install_template "mysql/90-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/90-ncp.cnf" '--defaults'
-    install_template "mysql/91-ncp.cnf.sh" "/etc/mysql/mariadb.conf.d/91-ncp.cnf" '--defaults'
+    install_template 'mysql/90-ncp.cnf.sh' '/etc/mysql/mariadb.conf.d/90-ncp.cnf' '--defaults'
+    install_template 'mysql/91-ncp.cnf.sh' '/etc/mysql/mariadb.conf.d/91-ncp.cnf' '--defaults'
 
     # Start MariaDB if it's not already running
     if [[ ! -f "$DBPID_FILE" ]]
