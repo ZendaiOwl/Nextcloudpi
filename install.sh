@@ -228,7 +228,7 @@ then CODE_DIR="$TMPDIR"/"$REPO"
      if ! git clone -b "$BRANCH" "$URL" "$CODE_DIR"
      then log 2 "Failed to clone repository: $URL"; exit 1
      fi
-     add_install_variable CODE_DIR
+     add_install_variable 'CODE_DIR'
 fi
 
 # Change directory to the code directory in the temporary directory
