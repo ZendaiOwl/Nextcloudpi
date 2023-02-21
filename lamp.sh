@@ -90,12 +90,12 @@ function install_package {
          if is_root
          then log -1 "install_pkging $*"
               if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
-              then log 0 "install_pkgation complete"; return 0
+              then log 0 "Installation complete"; return 0
               else log 2 "Something went wrong during installation"; return 1
               fi
          else log -1 "install_pkging $*"
               if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
-              then log 0 "install_pkgation complete"; return 0
+              then log 0 "Installation complete"; return 0
               else log 2 "Something went wrong during installation"; return 1
               fi
          fi
