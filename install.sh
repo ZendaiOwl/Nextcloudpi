@@ -102,7 +102,7 @@ function clean_install_variables
 
 function clean_install_tmp {
     [[ ! -v TMPDIR ]]    && { log 2 "Variable not set: TMPDIR"; return 1; }
-    cd -                 || { log 2 "Unable to change directory to: -"; return 1; }
+    cd - || { log 2 "Unable to change directory to: -"; return 1; }
     ! [[ -d "$TMPDIR" ]] && { log 2 "Directory not found: TMPDIR"; return 1; }
     if [[ "$EUID" -eq 0 ]]
     then rm --recursive --force "$TMPDIR"
