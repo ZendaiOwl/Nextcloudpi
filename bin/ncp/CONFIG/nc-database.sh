@@ -8,9 +8,9 @@
 # More at https://ownyourbits.com/
 #
 
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 
@@ -30,17 +30,17 @@ function configure () {
     local SRCDIR BASEDIR
     SRCDIR="$(grep 'datadir' '/etc/mysql/mariadb.conf.d/90-ncp.cnf' | awk -F "= " '{ print $2 }')"
     if [[ ! -d "$SRCDIR" ]]
-    then print_line "Database directory not found: $SRCDIR"
+    then println "Database directory not found: $SRCDIR"
          return 1
     fi
 
     if [[ -d "$DBDIR" ]]
     then if [[ "$( find "$DBDIR" -maxdepth 0 -empty | wc -l )" -eq 0 ]]
-         then print_line "Directory is not empty: $DBDIR"
+         then println "Directory is not empty: $DBDIR"
               return 1
          fi
          if ! rmdir "$DBDIR"
-         then print_line "Failed to remove database directory: $DBDIR"
+         then println "Failed to remove database directory: $DBDIR"
               return 1
          fi
     fi
@@ -49,22 +49,22 @@ function configure () {
     mkdir --parents "$BASEDIR"
     
     if ! grep -q -e ext -e btrfs <(stat -fc%T "$BASEDIR")
-    then print_line "Only ext/btrfs filesystems can hold the data directory. (Found: '$(stat -fc%T "${BASEDIR}")"
+    then println "Only ext/btrfs filesystems can hold the data directory. (Found: '$(stat -fc%T "${BASEDIR}")"
          return 1
     fi
     if ! sudo -u mysql test -x "$BASEDIR"
-    then print_line "ERROR: MySQL user does not have permissions to execute in: $BASEDIR"
+    then println "ERROR: MySQL user does not have permissions to execute in: $BASEDIR"
          return 1
     fi
 
     if [[ "$(stat -fc%d /)" == "$(stat -fc%d "$BASEDIR")" ]]
-    then print_line "Moving database to the SD card"
-         print_line "If you want to use an external mount make sure to set it up properly"
+    then println "Moving database to the SD card"
+         println "If you want to use an external mount make sure to set it up properly"
     fi
     
     save_maintenance_mode
     
-    print_line "Moving database to: $DBDIR"
+    println "Moving database to: $DBDIR"
     service mysql stop
     mv "$SRCDIR" "$DBDIR"
     install_template 'mysql/90-ncp.cnf.sh' '/etc/mysql/mariadb.conf.d/90-ncp.cnf'

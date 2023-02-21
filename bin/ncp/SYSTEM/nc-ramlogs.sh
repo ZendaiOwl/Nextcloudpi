@@ -8,9 +8,9 @@
 # More at https://ownyourbits.com/
 #
 
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 
@@ -21,22 +21,22 @@ function is_active {
 function install {
     VERSION='1.5.2'
     if [[ -d '/var/log.hdd' ]] || [[ -d '/var/hdd.log' ]]
-    then print_line "log2ram detected, not installing"
+    then println "log2ram detected, not installing"
          return
     fi
     if ! cd '/tmp'
-    then print_line "Failed to change directory to: /tmp"; return 1
+    then println "Failed to change directory to: /tmp"; return 1
     fi
     curl -Lo log2ram.tar.gz https://github.com/azlux/log2ram/archive/"$VERSION".tar.gz
     tar xf 'log2ram.tar.gz'
     if ! cd log2ram-"$VERSION"
-    then print_line "Failed to change directory to: log2ram-$VERSION"; return 1
+    then println "Failed to change directory to: log2ram-$VERSION"; return 1
     fi
     sed -i '/systemctl -q is-active log2ram/d' 'install.sh'
     sed -i '/systemctl enable log2ram/d'       'install.sh'
     chmod +x 'install.sh' && sudo './install.sh'
     if ! cd ..
-    then print_line "Failed to change directory to: .."; return 1
+    then println "Failed to change directory to: .."; return 1
     fi
     rm --recursive log2ram-"$VERSION" 'log2ram.tar.gz'
     rm '/etc/cron.daily/log2ram' '/usr/local/bin/uninstall-log2ram.sh'
@@ -51,14 +51,14 @@ function configure {
     if [[ "$ACTIVE" != "yes" ]]
     then systemctl disable "$RAMLOG"
          systemctl stop    "$RAMLOG"
-         print_line "Logs in SD. Reboot to take effect"
+         println "Logs in SD. Reboot to take effect"
          return
     fi
     
     systemctl enable "$RAMLOG"
     systemctl start  "$RAMLOG"
     
-    print_line "Logs in RAM. Reboot to take effect"
+    println "Logs in RAM. Reboot to take effect"
 }
 
 # License

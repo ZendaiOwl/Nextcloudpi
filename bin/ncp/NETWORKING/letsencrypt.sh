@@ -7,9 +7,9 @@
 #
 # More at https://ownyourbits.com/2017/03/17/lets-encrypt-installer-for-apache/
 
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 
@@ -36,7 +36,7 @@ function tmpl_letsencrypt_domain {
 function install {
     local -r ARGS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     if ! cd '/etc'
-    then print_line "Failed to change directory to: /etc"; return 1
+    then println "Failed to change directory to: /etc"; return 1
     fi
     apt-get update  "${ARGS[@]}"
     apt-get install "${ARGS[@]}" letsencrypt
@@ -71,13 +71,13 @@ function configure {
         sed -i "s|SSLCertificateFile.*|SSLCertificateFile $CERT_PATH|"      "$NCP_VHOSTCFG"
         sed -i "s|SSLCertificateKeyFile.*|SSLCertificateKeyFile $KEY_PATH|" "$NCP_VHOSTCFG"
         apachectl -k graceful
-        print_line "Letsencrypt certificates disabled. Using self-signed certificates instead."
+        println "Letsencrypt certificates disabled. Using self-signed certificates instead."
         exit 0
     }
     
     # shellcheck disable=SC2153
     if [[ -z "$DOMAIN" ]]
-    then print_line "Empty domain"; return 1
+    then println "Empty domain"; return 1
     fi
     
     # Do it
@@ -140,8 +140,8 @@ EOF
             for DOM in "$DOMAIN" "${OTHER_DOMAINS_ARRAY[@]}"
             do if [[ "$DOM" != "" ]]
                then if [[ ! "$DOMAIN_INDEX" -lt 20 ]]
-                    then print_line "WARNING: $DOM will not be included in trusted domains for Nextcloud (maximum reached)."
-                         print_line "It will still be included in the SSL certificate"
+                    then println "WARNING: $DOM will not be included in trusted domains for Nextcloud (maximum reached)."
+                         println "It will still be included in the SSL certificate"
                          continue
                     else ncc config:system:set trusted_domains "$DOMAIN_INDEX" --value="$DOM"
                          DOMAIN_INDEX="$(( "$DOMAIN_INDEX" + 1 ))"

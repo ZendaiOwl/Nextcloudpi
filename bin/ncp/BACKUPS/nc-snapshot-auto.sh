@@ -9,8 +9,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -24,7 +24,7 @@ function install {
 function configure {
     [[ "$ACTIVE" != "yes" ]] && {
         rm --force '/etc/cron.hourly/btrfs-snp'
-        print_line "Automatic snapshots disabled"
+        println "Automatic snapshots disabled"
         return 0
     }
     
@@ -33,20 +33,20 @@ function configure {
 
 source /usr/local/etc/library.sh
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
 DATADIR="\$(get_nc_config_value datadirectory)" || {
-    print_line "Error reading data directory. Is Nextcloud running and configured?"
+    println "Error reading data directory. Is Nextcloud running and configured?"
     exit 1
 }
 
 # file system check
 MOUNTPOINT="\$(stat -c "%m" "\$DATADIR")" || return 1
 [[ "\$( stat -fc%T "\$MOUNTPOINT" )" != "btrfs" ]] && {
-    print_line "Not a BTRFS filesystem: \$MOUNTPOINT"
+    println "Not a BTRFS filesystem: \$MOUNTPOINT"
     exit 1
 }
 
@@ -56,7 +56,7 @@ MOUNTPOINT="\$(stat -c "%m" "\$DATADIR")" || return 1
 /usr/local/bin/btrfs-snp \$MOUNTPOINT monthly 12 2592000 ../ncp-snapshots
 EOF
     chmod 755 '/etc/cron.hourly/btrfs-snp'
-    print_line "Automatic snapshots enabled"
+    println "Automatic snapshots enabled"
 }
 
 

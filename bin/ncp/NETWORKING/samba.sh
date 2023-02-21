@@ -7,9 +7,9 @@
 #
 # More at: https://ownyourbits.com
 #
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 function install {
@@ -39,7 +39,7 @@ function configure {
         service smbd stop
         update-rc.d smbd disable
         update-rc.d nmbd disable
-        print_line "Disabled: SMB"
+        println "Disabled: SMB"
         return
     }
     
@@ -47,10 +47,10 @@ function configure {
     ################################
     local DATADIR USERS DIR
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        print_line "Error reading data directory. Is Nextcloud running and configured?"
+        println "Error reading data directory. Is Nextcloud running and configured?"
         return 1
     }
-    [[ -d "$DATADIR" ]] || { print_line "Directory not found: $DATADIR"; return 1; }
+    [[ -d "$DATADIR" ]] || { println "Directory not found: $DATADIR"; return 1; }
     
     # CONFIG
     ################################
@@ -73,13 +73,13 @@ EOF
     do # Exclude users not matching group filter (if enabled)
         if [[ -n "$FILTER_BY_GROUP" ]] \
         && [[ -z "$(ncc user:info "$user" --output=json | jq ".groups[] | select( . == \"${FILTER_BY_GROUP}\" )")" ]]
-        then print_line "Omitting user $user (not in group ${FILTER_BY_GROUP})"
+        then println "Omitting user $user (not in group ${FILTER_BY_GROUP})"
              continue
         fi
     
-    print_line "adding SAMBA share for user $user"
+    println "adding SAMBA share for user $user"
     DIR="${DATADIR}/${user}/files"
-    [[ -d "$DIR" ]] || { print_line "Directory not found: $DIR"; return 1; }
+    [[ -d "$DIR" ]] || { println "Directory not found: $DIR"; return 1; }
     
     cat >> '/etc/samba/smb.conf' <<EOF
     
@@ -99,7 +99,7 @@ EOF
 
     ## create user with no login if it doesn't exist
     id --user "$user" &>/dev/null || adduser --disabled-password --force-badname --gecos "" "$user" || return 1
-    print_line "$PWD" "$PWD" | smbpasswd -s -a "$user"
+    println "$PWD" "$PWD" | smbpasswd -s -a "$user"
 
     usermod -aG www-data "$user"
     sudo chmod g+w "$DIR"
@@ -112,7 +112,7 @@ EOF
   update-rc.d nmbd enable
   service nmbd restart
 
-  print_line "Enabled: SMB"
+  println "Enabled: SMB"
 }
 
 # License

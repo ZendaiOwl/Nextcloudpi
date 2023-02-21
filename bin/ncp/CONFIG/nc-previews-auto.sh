@@ -6,8 +6,8 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -23,7 +23,7 @@ function configure {
         return 0
     }
     
-    grep -qP "^\d+$" <<<"$RUNTIME" || { print_line "Invalid RUNTIME value: $RUNTIME"; return 1; }
+    grep -qP "^\d+$" <<<"$RUNTIME" || { println "Invalid RUNTIME value: $RUNTIME"; return 1; }
     RUNTIME="$(( "$RUNTIME" * 60 ))"
     
     echo "0  2  *  *  *  root  /usr/local/bin/nc-previews" >  '/etc/cron.d/ncp-previews-auto'
@@ -53,7 +53,7 @@ EOF
     chmod +x '/usr/local/bin/nc-previews'
 
     service cron restart
-    print_line "Automatic preview generation enabled"
+    println "Automatic preview generation enabled"
     return 0
 }
 

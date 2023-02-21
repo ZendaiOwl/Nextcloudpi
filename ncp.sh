@@ -151,7 +151,7 @@ EOF
     if ! id --user "$WEBADMIN" &>/dev/null
     then useradd --home-dir '/nonexistent' "$WEBADMIN"
     fi
-    print_line "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
+    println "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" root
     
@@ -202,7 +202,7 @@ fi
 tar $PIGZ -tf "$FILE" data &>/dev/null
 EOF
     chmod 700 "$BACKUP_LAUNCHER"
-    print_line "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
+    println "www-data ALL = NOPASSWD: /home/www/ncp-launcher.sh , /home/www/ncp-backup-launcher.sh, /sbin/halt, /sbin/reboot" > '/etc/sudoers.d/www-data'
     
     # NCP AUTO TRUSTED DOMAIN
     mkdir --parents '/usr/lib/systemd/system'
@@ -276,12 +276,12 @@ EOF
             sed -i '/^127.0.1.1/d'                        '/etc/hosts'
             sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" '/etc/hosts'
        fi
-       print_line 'nextcloudpi' > '/etc/hostname'
+       println 'nextcloudpi' > '/etc/hostname'
        
        ## tag image
        is_docker && { local DOCKER_TAG="_docker"; }
        is_lxc    && { local DOCKER_TAG="_lxc"; }
-       print_line "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > '/usr/local/etc/ncp-baseimage'
+       println "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > '/usr/local/etc/ncp-baseimage'
        
        ## SSH hardening
        if [[ -f '/etc/ssh/sshd_config' ]]

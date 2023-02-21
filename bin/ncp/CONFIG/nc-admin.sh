@@ -8,15 +8,15 @@
 # More at: https://ownyourbits.com
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
 function configure {
-    [[ "$PASSWORD" == "" ]] && { print_line "Empty password"; return 1; }
-    [[ "$USER"     == "" ]] && { print_line "Empty username"    ; return 1; }
-    [[ "$PASSWORD" == "$CONFIRM" ]] || { print_line "Passwords do not match"; return 1; }
+    [[ "$PASSWORD" == "" ]] && { println "Empty password"; return 1; }
+    [[ "$USER"     == "" ]] && { println "Empty username"    ; return 1; }
+    [[ "$PASSWORD" == "$CONFIRM" ]] || { println "Passwords do not match"; return 1; }
     
     OC_PASS="$PASSWORD" \
         sudo -E -u www-data php /var/www/nextcloud/occ \

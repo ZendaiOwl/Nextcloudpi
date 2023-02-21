@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -18,8 +18,8 @@ get_total_mem() {
     total_mem="$(free -b | sed -n 2p | awk '{ print $2 }')"
     MAX_32BIT=4096000000
     if [[ "$ARCH" == 'armv7' ]] && [[ "$MAX_32BIT" -lt "$total_mem" ]]
-    then print_line "$MAX_32BIT"
-    else print_line "$total_mem"
+    then println "$MAX_32BIT"
+    else println "$total_mem"
     fi
 }
 
@@ -73,7 +73,7 @@ configure()
     require_fpm_restart=false
     CONF=/etc/php/"$PHPVER"/fpm/conf.d/90-ncp.ini
     CONF_VALUE="$(cat "$CONF" 2> /dev/null || true)"
-    print_line "Using $(tmpl_php_max_memory) for PHP max memory"
+    println "Using $(tmpl_php_max_memory) for PHP max memory"
     install_template "php/90-ncp.ini.sh" "$CONF"
     [[ "$CONF_VALUE" == "$(cat "$CONF")" ]] || require_fpm_restart=true
     

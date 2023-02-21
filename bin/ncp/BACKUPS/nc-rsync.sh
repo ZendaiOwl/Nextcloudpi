@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -24,7 +24,7 @@ function configure {
     
     local DATADIR
     DATADIR="$( get_nc_config_value datadirectory )" || {
-        print_line "Error reading data directory. Is Nextcloud running and configured?"
+        println "Error reading data directory. Is Nextcloud running and configured?"
         return 1;
     }
     

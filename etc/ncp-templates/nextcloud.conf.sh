@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -35,8 +35,8 @@ fi
 
 log -1 "Metrics enabled: ${METRICS_IS_ENABLED}" >&2
 
-print_line "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
-print_line ""
+println "### DO NOT EDIT! THIS FILE HAS BEEN AUTOMATICALLY GENERATED. CHANGES WILL BE OVERWRITTEN ###"
+println ""
 
 cat <<EOF
 <IfModule mod_ssl.c>
@@ -45,7 +45,7 @@ cat <<EOF
 EOF
 
 if [[ "$1" != "--defaults" ]] && [[ -n "$LETSENCRYPT_DOMAIN" ]]; then
-    print_line "    ServerName ${LETSENCRYPT_DOMAIN}"
+    println "    ServerName ${LETSENCRYPT_DOMAIN}"
     
     # try the obvious path first
     LETSENCRYPT_CERT_BASE_PATH="/etc/letsencrypt/live/${LETSENCRYPT_DOMAIN,,}"

@@ -8,8 +8,8 @@
 # More at: https://ownyourbits.com
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -20,9 +20,9 @@ function is_active {
 function configure {
     if [[ "$ACTIVE" != "yes" ]]
     then a2dissite ncp
-         print_line "Disabled: ncp-web"
+         println "Disabled: ncp-web"
     else a2ensite ncp
-         print_line "Enabled: ncp-web"
+         println "Enabled: ncp-web"
     fi
     
     # delayed in bg so it does not kill the connection, and we get AJAX response

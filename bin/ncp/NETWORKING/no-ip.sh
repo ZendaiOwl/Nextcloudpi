@@ -8,9 +8,9 @@
 # More at https://ownyourbits.com/2017/03/05/dynamic-dns-for-raspbian-with-no-ip-org-installer/
 #
 
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 
@@ -23,21 +23,21 @@ function install {
     
     TMPDIR="$( mktemp -d /tmp/noip.XXXXXX )"
     if ! cd "$TMPDIR"
-    then print_line "Failed to change directory to: $TMPDIR"; return 1
+    then println "Failed to change directory to: $TMPDIR"; return 1
     fi
     if ! wget -O- --content-disposition "$URL" | tar -xz
-    then print_line "Failed to download: $URL"; return 1
+    then println "Failed to download: $URL"; return 1
     fi
     if ! cd -
-    then print_line "Failed to change directory to: -"; return 1
+    then println "Failed to change directory to: -"; return 1
     else
          if ! cd "$OLDPWD"/noip-DDNS-master/
-         then print_line "Failed to change directory to: $OLDPWD/noip-DDNS-master/"; return 1
+         then println "Failed to change directory to: $OLDPWD/noip-DDNS-master/"; return 1
          fi
     fi
     make
     if ! cp noip2 '/usr/local/bin/'
-    then print_line "Failed to copy file: noip2"; return 1
+    then println "Failed to copy file: noip2"; return 1
     fi
     
     cat > '/etc/init.d/noip2' <<'EOF'
@@ -58,10 +58,10 @@ EOF
     
     chmod +x '/etc/init.d/noip2'
     if ! cd -
-    then print_line "Failed to change directory to: -"; return 1
+    then println "Failed to change directory to: -"; return 1
     fi
     if ! rm --recursive "$TMPDIR"
-    then print_line "Failed to remove directory: $TMPDIR"; return 1
+    then println "Failed to remove directory: $TMPDIR"; return 1
     fi
     
     update-rc.d noip2 defaults
@@ -72,22 +72,22 @@ EOF
     [[ "$DOCKERBUILD" == 1 ]] && {
     cat > '/etc/services-available.d/100noip' <<EOF
 #!/usr/bin/env bash
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line () {
+function println () {
     printf '%s\n' "$@"
 }
 source /usr/local/etc/library.sh
 
 [[ "\$1" == "stop" ]] && {
-    print_line "Stopping: noip"
+    println "Stopping: noip"
     service noip2 stop
     exit 0
 }
 
 persistent_cfg /usr/local/etc/noip2 /data/etc/noip2
 
-print_line "Starting: noip"
+println "Starting: noip"
 service noip2 start
 
 exit 0
@@ -111,7 +111,7 @@ function configure {
     update-rc.d noip2 enable
     service noip2 restart
     set_nc_domain "$DOMAIN"
-    print_line "Enabled: noip DDNS"
+    println "Enabled: noip DDNS"
 }
 
 function cleanup {

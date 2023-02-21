@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -18,22 +18,22 @@ DBADMIN='ncadmin'
 function configure {
     local DBPASSWD REDISPASS UPLOADTMPDIR='/var/www/nextcloud/data/tmp' \
           ID NCVER NCPREV
-    print_line "Setting up: Nextcloud"
-    print_line "Wait until you see the message: NC init done"
+    println "Setting up: Nextcloud"
+    println "Wait until you see the message: NC init done"
     
     # checks
     REDISPASS="$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )"
     if [[ -z "$REDISPASS" ]]
-    then print_line "Redis server is without a password"; return 1
+    then println "Redis server is without a password"; return 1
     fi
     
     ## RE-CREATE DATABASE TABLE
     
-    print_line "Setting up: Database"
+    println "Setting up: Database"
     
     # launch mariadb if not already running
     if [[ ! -f '/run/mysqld/mysqld.pid' ]]
-    then print_line "Starting MariaDB"
+    then println "Starting MariaDB"
          mysqld &
          local db_pid="$!"
     fi
@@ -75,13 +75,13 @@ EOF
     done
     
     
-    print_line "Setting up: Nextcloud"
+    println "Setting up: Nextcloud"
     if [[ -d '/var/www/nextcloud/' ]]
-    then cd '/var/www/nextcloud/' || { print_line "Failed to change directory to: /var/www/nextcloud/"; }
+    then cd '/var/www/nextcloud/' || { println "Failed to change directory to: /var/www/nextcloud/"; }
     fi
 
     if [[ -f 'config/config.php' ]]
-    then rm --force 'config/config.php' || { print_line "Failed to remove file: config/config.php"; exit 1; }
+    then rm --force 'config/config.php' || { println "Failed to remove file: config/config.php"; exit 1; }
     fi
     ncc maintenance:install --database 'mysql' \
                             --database-name 'nextcloud'  \
@@ -133,7 +133,7 @@ EOF
     [[ -e '/usr/local/etc/logo' ]] && {
         ID="$( grep 'instanceid' 'config/config.php' | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
 
-        [[ -z "$ID" ]] || { print_line "Failed to get ID"; return 1; }
+        [[ -z "$ID" ]] || { println "Failed to get ID"; return 1; }
         
         mkdir --parents                data/appdata_"$ID"/theming/images
         cp '/usr/local/etc/background' data/appdata_"$ID"/theming/images
@@ -198,8 +198,8 @@ EOF
     # Bash completion for ncc
     apt_install bash-completion
     ncc _completion -g --shell-type bash -p ncc | sed 's|/var/www/nextcloud/occ|ncc|g' > '/usr/share/bash-completion/completions/ncp'
-    print_line ". /etc/bash_completion" >> '/etc/bash.bashrc'
-    print_line ". /usr/share/bash-completion/completions/ncp" >> '/etc/bash.bashrc'
+    println ". /etc/bash_completion" >> '/etc/bash.bashrc'
+    println ". /usr/share/bash-completion/completions/ncp" >> '/etc/bash.bashrc'
     
     # TODO temporary workaround for https://github.com/nextcloud/server/pull/13358
     ncc -n db:convert-filecache-bigint
@@ -212,11 +212,11 @@ EOF
     
     # dettach mysql during the build
     if [[ "$db_pid" != "" ]]
-    then print_line "Shutting down MariaDB ($db_pid)"
+    then println "Shutting down MariaDB ($db_pid)"
          mysqladmin -u root shutdown
          wait "$db_pid"
     fi
-    print_line "NC init done"
+    println "NC init done"
 }
 
 function install { :; }

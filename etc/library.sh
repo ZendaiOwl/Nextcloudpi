@@ -10,13 +10,17 @@
 # Bash - Utility Functions #
 ############################
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# Prints a line using printf instead of using echo
+# For compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
 # A log that uses log levels for logging different outputs
-# Log levels  | Colour
+# Return codes
+# 1: Invalid log level
+# 2: Invalid number of arguments
+# Log level   | colour
 # -2: Debug   | CYAN='\e[1;36m'
 # -1: Info    | BLUE='\e[1;34m'
 #  0: Success | GREEN='\e[1;32m'
@@ -32,9 +36,10 @@ function log {
                    1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
                    2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; return 1
          fi
-  fi
+    else log 2 "Invalid number of arguments"; return 2 
+    fi
 }
 
 #########################
@@ -106,7 +111,7 @@ function is_greater {
 # 0: Is greater than or equal
 # 1: Not greater than or equal
 # 2: Invalid number of arguments
-function is_equal_or_greater {
+function equal_or_greater {
     [[ "$#" -ne 2 ]] && { return 2; }
     [[ "$1" -ge "$2" ]]
 }
@@ -291,8 +296,8 @@ function install_with_shadow_workaround {
     (
         RESTORE_SHADOW=true
         [[ -L '/etc/shadow' ]] || RESTORE_SHADOW=false
-        if ! [[ "$RESTORE_SHADOW" == "false" ]]
-        then trap "mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow" EXIT SIGINT SIGABRT SIGHUP
+        if [[ "$RESTORE_SHADOW" != "false" ]]
+        then trap 'mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow' EXIT SIGINT SIGABRT SIGHUP
              rm '/etc/shadow'
              cp '/data/etc/shadow' '/etc/shadow'
         fi
@@ -325,12 +330,12 @@ function is_more_recent_than {
     # Returns a 1 if B is greater than A
     if is_greater "$MAJOR_B" "$MAJOR_A"
     then return 1
-    elif is_equal "$MAJOR_B" "$MAJOR_A" && \
-         is_greater "$MINOR_B" "$MINOR_A"
+    elif is_equal "$MAJOR_B" "$MAJOR_A" \
+      && is_greater "$MINOR_B" "$MINOR_A"
     then return 1
-    elif is_equal "$MAJOR_B" "$MAJOR_A" && \
-         is_equal "$MINOR_B" "$MINOR_A" && \
-         is_equal_or_greater "$PATCH_B" "$PATCH_A"
+    elif is_equal "$MAJOR_B" "$MAJOR_A" \
+      && is_equal "$MINOR_B" "$MINOR_A" \
+      && equal_or_greater "$PATCH_B" "$PATCH_A"
     then return 1
     fi
     return 0
@@ -349,7 +354,7 @@ function install_app {
     unset install
     # shellcheck disable=SC1090
     source "$SCRIPT"; log -1 "Installing: $NCP_APP"
-    ( install ); log 0 "Installed: $NCP_APP"
+    ( install );      log  0 "Installed: $NCP_APP"
 }
 
 # Return codes
@@ -371,9 +376,7 @@ function configure_app {
     # Checks
     if ! has_pkg 'dialog'
     then log 1 "Missing package: dialog"; log -1 "Attempting to install: dialog"
-         if ! install_package 'dialog'
-         then log 2 "Failed! Please install dialog manually"; return 3
-         fi
+         install_package 'dialog' || { log 2 "Failed! Please install dialog manually"; return 3; }
     fi
 
     ! is_file "$CFG_FILE" && { log 1 "No configuration file for: $NCP_APP"; return 0; }
@@ -391,7 +394,7 @@ function configure_app {
        PARAMETERS+=("$VAR" "$IDX" 1 "$VAL" "$IDX" 15 60 120)
     done
     
-    while [[ "$RES" != 1 ]] && [[ "$RES" != 250 ]]
+    while [[ "$RES" != 1 && "$RES" != 250 ]]
     do VALUE="$( dialog --ok-label "Start" \
                             --no-lines --backtitle "$BACKTITLE" \
                             --form "Enter configuration for $NCP_APP" \
@@ -418,7 +421,7 @@ function configure_app {
         esac
     done
     
-    print_line "$CFG" > "$CFG_FILE"
+    println "$CFG" > "$CFG_FILE"
     printf '\033[2J' && tput cup 0 0             # clear screen, don't clear scroll, cursor on top
     log 0 "Configured app: $NCP_APP"; return "$RET"
 }
@@ -475,7 +478,7 @@ function clear_password_fields {
        fi
        CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
     done
-    print_line "$CFG" > "$CFG_FILE"
+    println "$CFG" > "$CFG_FILE"
 }
 
 # Return codes
@@ -519,7 +522,7 @@ function is_active_app {
     ID="$(jq -r ".params[0].id" "$CFG_FILE")"
     VALUE="$(jq -r ".params[0].value" "$CFG_FILE")"
     
-    if is_match "$ID" "ACTIVE" && is_match "$VALUE" "yes"
+    if is_match "$ID" 'ACTIVE' && is_match "$VALUE" 'yes'
     then return 0
     fi
 }
@@ -618,7 +621,7 @@ function set_nc_domain {
               # We get `http2 error: protocol error` after ncp-upgrade-nc
               for ATTEMPT in {1..5}
               do log -1 "Setup notify_push (attempt ${ATTEMPT}/5)"
-                 ncc notify_push:setup "${URL}/push" && break
+                 ncc notify_push:setup "${URL}/push" && { break; }
                  sleep 10
               done
          fi
@@ -626,7 +629,7 @@ function set_nc_domain {
 }
 
 function start_notify_push {
-    pgrep notify_push &>/dev/null && return
+    pgrep notify_push &>/dev/null && { return; }
     if is_file '/.docker-image'
     then NEXTCLOUD_URL='https://localhost' sudo -E -u www-data "/var/www/nextcloud/apps/notify_push/bin/${ARCH}/notify_push" --allow-self-signed '/var/www/nextcloud/config/config.php' &>/dev/null &
     else systemctl enable --now notify_push
@@ -692,7 +695,7 @@ function run_app_unsafe {
     log -1 "Executing configure: $NCP_APP"
     ( configure ) 2>&1 | tee -a "$LOG"; RET="${PIPESTATUS[0]}"
     
-    print_line "" >> "$LOG"
+    println "" >> "$LOG"
     
     if is_file "$CFG_FILE"
     then log -1 "Clearing password fields: $NCP_APP"
@@ -754,7 +757,7 @@ function set_app_param {
     if not_match "$PARAM_FOUND" "true"
     then log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"; return 1
     fi
-    print_line "$CFG" > "$CFG_FILE"
+    println "$CFG" > "$CFG_FILE"
 }
 
 # Return codes
@@ -820,7 +823,7 @@ function needs_decrypt {
 function set_ncpcfg {
     local NAME="${1}" VALUE="${2}" CFG
     CFG="$(jq ".$NAME = \"$VALUE\"" "$NCPCFG")"
-    print_line "$CFG" > "$NCPCFG"
+    println "$CFG" > "$NCPCFG"
 }
 
 function get_ncpcfg {
@@ -907,7 +910,7 @@ fi
 
 unset DETECT_DOCKER
 
-! has_cmd 'jq' && { install_package 'jq' || return 1; }
+! has_cmd 'jq' && { install_package 'jq' || return 1 }
 
 NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
 PHPVER="$(     jq -r '.php_version'       "$NCPCFG")"

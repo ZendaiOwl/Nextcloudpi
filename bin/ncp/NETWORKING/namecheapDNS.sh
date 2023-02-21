@@ -14,9 +14,9 @@
 # - https://www.namecheap.com/support/knowledgebase/article.aspx/595/11/how-do-i-enable-dynamic-dns-for-a-domain/
 # - https://www.namecheap.com/support/knowledgebase/article.aspx/43/11/how-do-i-set-up-a-host-for-dynamic-dns
 
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 
@@ -33,25 +33,25 @@ function configure {
     [[ "$ACTIVE" != "yes" ]] && { 
         rm --force '/etc/cron.d/namecheapDNS'
         service cron restart
-        print_line "Disabled: Namecheap DNS client"
+        println "Disabled: Namecheap DNS client"
         return 0
     }
     
     cat > '/usr/local/bin/namecheapdns.sh' <<EOF
 #!/usr/bin/env bash
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
-print_line "Start: Namecheap DNS client"
+println "Start: Namecheap DNS client"
 REGISTERED_IP=\$(dig +short "$FULLDOMAIN"|tail -n1)
 CURRENT_IP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
-print_line "${URL}&ip=${CURRENT_IP}"
+println "${URL}&ip=${CURRENT_IP}"
 [[ "\$CURRENT_IP" != "\$REGISTERED_IP" ]] && {
     wget -q -O /dev/null "${URL}&ip=$CURRENT_IP"
 }
-print_line "Registered IP: \$REGISTERED_IP | Current IP: \$CURRENT_IP"
+println "Registered IP: \$REGISTERED_IP | Current IP: \$CURRENT_IP"
 EOF
     chmod +744 '/usr/local/bin/namecheapdns.sh'
     
@@ -61,7 +61,7 @@ EOF
     
     set_nc_domain "$FULLDOMAIN"
     
-    print_line "Enabled: Namecheap DNS client"
+    println "Enabled: Namecheap DNS client"
 }
 
 # License

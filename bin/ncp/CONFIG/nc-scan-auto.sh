@@ -8,8 +8,8 @@
 # More at: https://ownyourbits.com
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -17,7 +17,7 @@ function configure {
     [[ "$ACTIVE" != "yes" ]] && {
         rm --force '/etc/cron.d/ncp-scan-auto'
         service cron restart
-        print_line "Automatic scans disabled"
+        println "Automatic scans disabled"
         return 0
     }
 
@@ -60,7 +60,7 @@ chmod +x '/usr/local/bin/ncp-scan-auto'
     chmod 644 '/etc/cron.d/ncp-scan-auto'
     service cron restart
     
-    print_line "Automatic scans enabled"
+    println "Automatic scans enabled"
 fi
 }
 

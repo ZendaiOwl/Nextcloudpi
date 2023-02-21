@@ -7,20 +7,20 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
 function configure {
-  [[ -d "$DIR" ]] || { print_line "Directory not found: $DIR"; return 1; }
+  [[ -d "$DIR" ]] || { println "Directory not found: $DIR"; return 1; }
   local DESTFILE
   DESTFILE="$DIR"/ncp-config_"$(date +"%Y%m%d")".tar
 
   tar -cf "$DESTFILE" -C /usr/local/etc/ncp-config.d .
   chmod 600 "$DESTFILE"
 
-  print_line "Configuration exported to: $DESTFILE"
+  println "Configuration exported to: $DESTFILE"
 }
 
 function install { :; }

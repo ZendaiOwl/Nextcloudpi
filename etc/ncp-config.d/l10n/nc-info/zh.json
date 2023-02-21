@@ -1,6 +1,6 @@
 {
     "translations": {
-        "print_line NextcloudPi system info": "顯示NextcloudPi系統信息",
+        "println NextcloudPi system info": "顯示NextcloudPi系統信息",
         "nc-info": "NCP系統訊息"
     }
 }

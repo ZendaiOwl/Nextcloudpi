@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -48,12 +48,12 @@ function configure () {
     [[ "$ACTIVE" != "yes" ]] && {
         rm --force '/etc/cron.d/ncp-snapsync-auto'
         service cron restart
-        print_line "Snapshot sync disabled"
+        println "Snapshot sync disabled"
         return 0
     }
     local NET DST SSH
     # checks
-    [[ -d "$SNAPDIR" ]] || { print_line "Directory not found: $SNAPDIR"; return 1; }
+    [[ -d "$SNAPDIR" ]] || { println "Directory not found: $SNAPDIR"; return 1; }
     if ! [[ -f '/root/.ssh/id_rsa' ]]
     then ssh-keygen -N "" -f '/root/.ssh/id_rsa'
     fi
@@ -64,11 +64,11 @@ function configure () {
         #NET="$( sed 's|:.*||' <<<"$DESTINATION" )"
         #DST="$( sed 's|.*:||' <<<"$DESTINATION" )"
         SSH=(ssh -o "BatchMode=yes" "$NET")
-        "${SSH[@]}" : || { print_line "SSH non-interactive not properly configured"; return 1; }
+        "${SSH[@]}" : || { println "SSH non-interactive not properly configured"; return 1; }
     } || DST="$DESTINATION"
 
     [[ "$( "${SSH[@]}" stat -fc%T "$DST" )" != "btrfs" ]] && {
-        print_line "Not a BTRFS filesystem: $DESTINATION"
+        println "Not a BTRFS filesystem: $DESTINATION"
         return 1
     }
     
@@ -82,7 +82,7 @@ function configure () {
         . "${BINDIR}/SYSTEM/metrics.sh"
         reload_metrics_config
     )
-    print_line "Snapshot sync enabled"
+    println "Snapshot sync enabled"
 }
 
 # License

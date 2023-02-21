@@ -19,8 +19,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -119,7 +119,7 @@ function install {
     
     # Setup apt repository for php 8
     wget -O '/etc/apt/trusted.gpg.d/php.gpg' "$PHPREPO_GPGKEY"
-    print_line "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
+    println "deb ${PHPREPO}/ ${RELEASE%-security} main" > "$PHPAPTLIST"
     update_apt
     install_package apt-utils cron curl apache2
 
@@ -142,8 +142,8 @@ function install {
 
     mkdir --parents "$PHPDAEMON"
 
-    print_line "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
-    #print_line "[client]" "password=$DBPASSWD" > /root/.my.cnf
+    println "[mysqld]" "[client]" "password=$DBPASSWD" > "$MYCNF_FILE"
+    #println "[client]" "password=$DBPASSWD" > /root/.my.cnf
     chmod 600 "$MYCNF_FILE"
 
     debconf-set-selections <<< "mariadb-server-10.5 mysql-server/root_password password $DBPASSWD"
@@ -176,7 +176,7 @@ function install {
     a2enmod mime
     a2enmod ssl
 
-    print_line "ServerName localhost" >> '/etc/apache2/apache2.conf'
+    println "ServerName localhost" >> '/etc/apache2/apache2.conf'
 
 
     ################################

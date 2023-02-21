@@ -7,9 +7,9 @@
 # GPL licensed (see end of file) * Use at your own risk!
 #
 
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 
@@ -26,17 +26,17 @@ function configure {
     
          # Creates duck.sh script that checks for updates to DNS records
          if ! touch "$INSTALLPATH"/duck.sh
-         then print_line "Failed to create file: $INSTALLPATH/duck.sh"; return 1
+         then println "Failed to create file: $INSTALLPATH/duck.sh"; return 1
          fi
          if ! touch "$INSTALLPATH"/duck.log
-         then print_line "Failed to create file: $INSTALLPATH/duck.log"; return 1
+         then println "Failed to create file: $INSTALLPATH/duck.log"; return 1
          fi
          
          echo -e "echo url=\"https://www.duckdns.org/update?domains=${DOMAIN}&token=${TOKEN}&ip=\" | curl -k -o ${INSTALLPATH}/duck.log -K -" > "$INSTALLPATH"/duck.sh
          
          # Adds file to cron to run script for DNS record updates and change permissions
          if ! touch "$CRONFILE"
-         then print_line "Failed to create file: $CRONFILE"; return 1
+         then println "Failed to create file: $CRONFILE"; return 1
          fi
          
          echo "*/5 * * * * root $INSTALLPATH/duck.sh >/dev/null 2>&1" > "$CRONFILE"
@@ -49,9 +49,9 @@ function configure {
          
          # Checks for successful run of duck.sh
          if [[ "$SUCCESS" == "OK" ]]
-         then print_line "DuckDNS is enabled"
+         then println "DuckDNS is enabled"
          elif [[ "$SUCCESS" == "KO" ]]
-         then print_line "Failed to install DuckDNS, is your information correct?"
+         then println "Failed to install DuckDNS, is your information correct?"
          fi
          
     elif [[ "$ACTIVE" == "no" ]]
@@ -59,7 +59,7 @@ function configure {
          rm --force "$INSTALLPATH"/duck.sh
          rm --force "$INSTALLPATH"/duck.log
          rmdir "$INSTALLPATH"
-         print_line "Disabled: DuckDNS"
+         println "Disabled: DuckDNS"
     fi
 }
 

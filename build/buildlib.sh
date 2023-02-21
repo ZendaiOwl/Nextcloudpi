@@ -14,13 +14,16 @@ VERSION="$(git describe --tags --always)"
 VERSION="${VERSION%-*-*}"
 export VERSION
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
 # A log that uses log levels for logging different outputs
-# Log levels  | Colour
+# Return codes
+# 1: Invalid log level
+# 2: Invalid number of arguments
+# Log level   | colour
 # -2: Debug   | CYAN='\e[1;36m'
 # -1: Info    | BLUE='\e[1;34m'
 #  0: Success | GREEN='\e[1;32m'
@@ -36,9 +39,10 @@ function log {
                    1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
                    2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; return 1
          fi
-  fi
+    else log 2 "Invalid number of arguments"; return 2 
+    fi
 }
 
 #########################
@@ -546,8 +550,8 @@ function prepare_chroot_raspbian {
     
     if is_file 'qemu-aarch64-static'
     then if is_root
-         then cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
-         else sudo cp qemu-aarch64-static "$ROOTDIR"/usr/bin/qemu-aarch64-static
+         then cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+         else sudo cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
          fi
     else
          if is_file '/usr/bin/qemu-aarch64-static'
@@ -593,17 +597,17 @@ function resize_image {
     ! has_cmd 'resize2fs' && { install_package 'e2fsprogs'; }
     
     if is_root
-    then log -1 "fallocate"; fallocate -l"$SIZE" "$IMG"
-         log -1 "parted";    parted "$IMG" -- resizepart 2 -1s
-         log -1 "losetup";   DEV="$( losetup -f )"
-    else log -1 "fallocate"; sudo fallocate -l"$SIZE" "$IMG"
-         log -1 "parted";    sudo parted "$IMG" -- resizepart 2 -1s
-         log -1 "losetup";   DEV="$( sudo losetup -f )"
+    then log -1 "fallocate";  fallocate -l"$SIZE" "$IMG"
+         log -1 "parted";     parted "$IMG" -- resizepart 2 -1s
+         log -1 "losetup";    DEV="$( losetup -f )"
+    else log -1 "fallocate";  sudo fallocate -l"$SIZE" "$IMG"
+         log -1 "parted";     sudo parted "$IMG" -- resizepart 2 -1s
+         log -1 "losetup";    DEV="$( sudo losetup -f )"
     fi; log -1 "Mount: $IMG"; mount_raspbian "$IMG"
     
     if is_root
-    then log -1 "resize2fs"; resize2fs -f "$DEV"
-    else log -1 "resize2fs"; sudo resize2fs -f "$DEV"
+    then log -1 "resize2fs";   resize2fs -f "$DEV"
+    else log -1 "resize2fs";   sudo resize2fs -f "$DEV"
     fi; log 0 "Resized: $IMG"; umount_raspbian
 }
 

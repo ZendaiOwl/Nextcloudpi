@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -148,8 +148,8 @@ function install {
     sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'    "$REDIS_CONF"
     sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'   "$REDIS_CONF"
     sed -i "s|^port.*|port $PORT_NR|"                                 "$REDIS_CONF"
-    print_line "maxmemory $REDIS_MEM"     >> "$REDIS_CONF"
-    print_line 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
+    println "maxmemory $REDIS_MEM"     >> "$REDIS_CONF"
+    println 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
 
     if is_lxc
     then mkdir --parents '/etc/systemd/system/redis-server.service.d'

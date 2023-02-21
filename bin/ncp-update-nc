@@ -17,8 +17,8 @@
 # - failure at each test point
 # -> must pass basic NC in tests.py ( meaning it's not in a broken state )
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -114,11 +114,11 @@ then log 2 "NCP doesn't support Nextcloud versions greater than 23 with Debian 1
 fi
 
 if ! grep -qP "\d+\.\d+\.\d+" <<<"$CURRENT"
-then print_line "Invalid version: $CURRENT"; exit 1
+then println "Invalid version: $CURRENT"; exit 1
 fi
 
 if ! grep -qP "\d+\.\d+\.\d+" <<<"$VER"
-then print_line "Invalid version: $VER"; exit 1
+then println "Invalid version: $VER"; exit 1
 fi
 
 log -1 "Current Nextcloud version: $CURRENT"
@@ -138,7 +138,7 @@ fi
 # make sure that cron.php is not running and there are no pending jobs
 # https://github.com/nextcloud/server/issues/10949
 pgrep -cf cron.php &>/dev/null && { pkill -f cron.php; sleep 3; }
-pgrep -cf cron.php &>/dev/null && { print_line "cron.php running. Abort"; exit 1; }
+pgrep -cf cron.php &>/dev/null && { println "cron.php running. Abort"; exit 1; }
 mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 
 # cleanup
@@ -146,7 +146,7 @@ mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 function cleanup {
     local RET="$?"
     set +eE
-    print_line "Cleanup"
+    println "Cleanup"
     if ! rm --recursive --force "$BASEDIR"/nextcloud.tar.bz2 "$BASEDIR"/nextcloud-old
     then log 2 "Failed to remove: $BASEDIR/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
     fi
@@ -172,7 +172,7 @@ WITH_DATA='no'
 COMPRESSED='yes'
 LIMIT=0
 
-print_line "Creating backup"
+println "Creating backup"
 set +eE
 ncp-backup "$BKPDIR" "$WITH_DATA" "$COMPRESSED" "$LIMIT" # && false # test point
 RET="$?"
@@ -197,7 +197,7 @@ then rm --force "$BKP_"
 fi
 
 BKP="$(dirname "$BKP_" )/$( basename "$BKP_" .tar.gz )-${CURRENT}.tar.gz"
-print_line "Storing backup at: $BKP"
+println "Storing backup at: $BKP"
 mv "$BKP_" "$BKP"
 
 # simple restore if anything fails from here
@@ -205,7 +205,7 @@ mv "$BKP_" "$BKP"
 function rollback_simple () {
     set +eE
     trap "" INT TERM HUP ERR
-    print_line "Abort" "Simple rollback"
+    println "Abort" "Simple rollback"
     if ! rm --recursive --force "$BASEDIR"/nextcloud
     then log 2 "Failed to remove: $BASEDIR/nextcloud"
     fi
@@ -219,7 +219,7 @@ trap 'rollback_simple' INT TERM HUP ERR
 
 # replace code
 ####################
-print_line "Installing Nextcloud: $VER"
+println "Installing Nextcloud: $VER"
 mv -T                  'nextcloud nextcloud-old'
 tar -xf                'nextcloud.tar.bz2'     # && false # test point
 rm --recursive --force '/var/www/nextcloud.tar.bz2'
@@ -245,7 +245,7 @@ done
 # copy data if it was at the default location
 ####################
 if [[ "$DATADIR" == "/var/www/nextcloud/data" ]] || [[ "$DATADIR" == "/data/nextcloud/data" ]]
-then print_line "Restoring data"
+then println "Restoring data"
      if ! mv -T 'nextcloud-old/data' 'nextcloud/data'
      then log 2 "Failed to move nextcloud-old/data to nextcloud/data"
           exit 1
@@ -257,7 +257,7 @@ fi
 function rollback () {
     set +eE
     trap "" INT TERM HUP ERR EXIT
-    print_line "Abort" "Doing cleanup"
+    println "Abort" "Doing cleanup"
     
     if ! rm --recursive --force '/var/www/nextcloud.tar.bz2' "$BASEDIR"/nextcloud-old
     then log 2 "Failed to remove: /var/www/nextcloud.tar.bz2 & $BASEDIR/nextcloud-old"
@@ -391,7 +391,7 @@ then (
 
         # Setup apt repository for php 8
         wget -O '/etc/apt/trusted.gpg.d/php.gpg' 'https://packages.sury.org/php/apt.gpg'
-        print_line "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > '/etc/apt/sources.list.d/php.list'
+        println "deb https://packages.sury.org/php/ ${RELEASE%-security} main" > '/etc/apt/sources.list.d/php.list'
         apt-get update --assume-yes
         clear_opcache
 
@@ -419,7 +419,7 @@ then (
 
         a2enconf php"$PHPVER_NEW"-fpm
         
-        print_line "Starting apache and php-fpm"
+        println "Starting apache and php-fpm"
         service php"$PHPVER_NEW"-fpm start
         service apache2 start
         "${ncc[@]}" status

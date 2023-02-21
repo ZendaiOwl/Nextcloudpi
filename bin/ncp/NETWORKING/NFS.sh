@@ -8,9 +8,9 @@
 # More at: https://ownyourbits.com
 #
 
-# print_lines a line using printf instead of using echo
+# printlns a line using printf instead of using echo
 # For compatibility and reducing unwanted behaviour
-function print_line {
+function println {
     printf '%s\n' "$@"
 }
 
@@ -26,17 +26,17 @@ function configure {
     if [[ "$ACTIVE" != "yes" ]]
     then service nfs-kernel-server stop
          systemctl disable nfs-kernel-server
-         print_line "NFS disabled"
+         println "NFS disabled"
          return
     fi
     
     # CHECKS
     ################################
-    id --user  "$USER"  &>/dev/null || { print_line "No such user: $USER"  ; return 1; }
-    id --group "$GROUP" &>/dev/null || { print_line "No such group: $GROUP"; return 1; }
-    [[ -d "$DIR" ]] || { print_line "Directory not found: $DIR. Creating"; mkdir --parents "$DIR"; }
+    id --user  "$USER"  &>/dev/null || { println "No such user: $USER"  ; return 1; }
+    id --group "$GROUP" &>/dev/null || { println "No such group: $GROUP"; return 1; }
+    [[ -d "$DIR" ]] || { println "Directory not found: $DIR. Creating"; mkdir --parents "$DIR"; }
     if [[ "$( stat -fc%d / )" == "$( stat -fc%d "$DIR" )" ]]
-    then print_line "INFO: mounting a in the SD card" "If you want to use an external mount, make sure it is properly set up"
+    then println "INFO: mounting a in the SD card" "If you want to use an external mount, make sure it is properly set up"
     fi
     # CONFIG
     ################################
@@ -47,7 +47,7 @@ EOF
     systemctl enable rpcbind
     systemctl enable nfs-kernel-server
     service nfs-kernel-server restart
-    print_line "Enabled: NFS"
+    println "Enabled: NFS"
 }
 
 # License

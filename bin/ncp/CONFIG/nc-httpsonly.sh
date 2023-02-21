@@ -8,8 +8,8 @@
 # More at https://ownyourbits.com/2017/03/13/nextcloudpi-gets-nextcloudpi-config/
 #
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -22,7 +22,7 @@ function configure {
   fi
   sed -i "s|RewriteEngine .*|RewriteEngine $OPT|" '/etc/apache2/sites-available/000-default.conf'
   apachectl -k graceful
-  print_line "Forcing HTTPS: $OPT"
+  println "Forcing HTTPS: $OPT"
 }
 
 function install { :; }

@@ -11,8 +11,8 @@
 # This is placed here so the script doesn't fail should someone update from
 # an old NextcloudPi version and source a library.sh without the log function
 
-# print_lines a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
-function print_line {
+# printlns a line using printf instead of using echo, for compatibility and reducing unwanted behaviour
+function println {
     printf '%s\n' "$@"
 }
 
@@ -144,7 +144,7 @@ do [[ -d "$FILE" ]]   && { continue; }
                    break
               fi
            done
-         print_line "$CFG" > "$FILE"
+         println "$CFG" > "$FILE"
          done
    fi
 
@@ -164,12 +164,12 @@ LOCAL_NCP_CONFIG='/usr/local/etc/ncp.cfg'
 NCP_CONFIG='etc/ncp.cfg'
 NC_VERSION="$(jq -r '.nextcloud_version' "$NCP_CONFIG")"
 CFG="$(jq ".nextcloud_version = \"$NC_VERSION\"" "$LOCAL_NCP_CONFIG")"
-print_line "$CFG" > "$LOCAL_NCP_CONFIG"
+println "$CFG" > "$LOCAL_NCP_CONFIG"
 
 NEXTCLOUD_CONFIG='etc/ncp-config.d/nc-nextcloud.cfg'
 LOCAL_NEXTCLOUD_CONFIG='/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
 CFG="$(jq ".params[0].value = \"$NC_VERSION\"" "$NEXTCLOUD_CONFIG")"
-print_line "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
+println "$CFG" > "$LOCAL_NEXTCLOUD_CONFIG"
 
 # install localization files
 cp -rT 'etc/ncp-config.d/l10n'      "$CONFDIR"/l10n
@@ -234,13 +234,13 @@ then NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
 
      CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
      CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
-     print_line "$CFG" > '/usr/local/etc/ncp-recommended.cfg'
+     println "$CFG" > '/usr/local/etc/ncp-recommended.cfg'
 
      [[ -f '/.dockerenv' ]] && \
         MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
         MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
         
-        print_line "$MSG"
+        println "$MSG"
         notify_admin "New distribution available" "$MSG"
         wall "$MSG"
         
