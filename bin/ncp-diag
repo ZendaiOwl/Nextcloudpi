@@ -58,16 +58,12 @@ fi
 println "OS|$(sed 's| \\n \\l||' /etc/issue). $(uname -r) ($(uname -m))"
 
 # Data
-DATADIR="$( grep datadirectory /var/www/nextcloud/config/config.php |
+DATADIR="$( grep 'datadirectory' '/var/www/nextcloud/config/config.php' |
               awk '{ print $3 }' | grep -oP "[^']*[^']" | head -1 )"
-if ! is_directory "$DATADIR"
-then DIRINFO=" (doesn't exist)"
-fi
+! is_directory "$DATADIR" && { DIRINFO=" (doesn't exist)"; }
 
 USBDEVS="$( lsblk -S -o  NAME,TRAN | awk '{ if ( $2 == "usb" ) print $1; }' | tr '\n' ' ' )"
-if is_zero "$USBDEVS"
-then USBDEVS='none'
-fi
+is_zero "$USBDEVS" && { USBDEVS='none'; }
 
 am_cfg='/usr/local/etc/ncp-config.d/nc-automount.cfg'
 if is_file "$am_cfg" \
@@ -80,27 +76,24 @@ println "USB devices|$USBDEVS"
 println "datadir|$DATADIR$DIRINFO"
 
 [[ "$DIRINFO" == "" ]] && {
-  println "data in SD|$( [[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo yes || echo no )"
-  println "data filesystem|$( stat -fc%T "$DATADIR" )"
-  println "data disk usage|$( df -h "$DATADIR" | tail -1 | awk '{ print $3"/"$2 }')"
+    println "data in SD|$( [[ $( stat -fc%d / ) == $( stat -fc%d "$DATADIR" ) ]] && echo 'yes' || echo 'no' )"
+    println "data filesystem|$( stat -fc%T "$DATADIR" )"
+    println "data disk usage|$( df -h "$DATADIR" | tail -1 | awk '{ print $3"/"$2 }')"
 }
 println "rootfs usage|$( df -h / | tail -1 | awk '{ print $3"/"$2 }')"
+
 SWP="$( swapon | tail -1 | awk '{ print $1 }' )"
-if is_zero "$SWP"
-then SWP="none"
-fi
+is_zero "$SWP" && { SWP="none"; }
 println "swapfile|$SWP"
 
 # Database
-DBDIR="$( grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }' )"
-if ! is_directory "$DBDIR"
-then DBDIRINFO=" (doesn't exist)"
-fi
+DBDIR="$( grep 'datadir' '/etc/mysql/mariadb.conf.d/90-ncp.cnf' | awk -F "= " '{ print $2 }' )"
+! is_directory "$DBDIR" && { DBDIRINFO=" (doesn't exist)"; }
 
 println "dbdir|$DBDIR$DBDIRINFO"
 
 # Nextcloud
-VERSION="$( ncc status | grep "version:" | awk '{ print $3 }' )"
+VERSION="$( ncc status | grep 'version:' | awk '{ print $3 }' )"
 if [[ "$VERSION" != "" ]]
 then println "Nextcloud check|ok"
      println "Nextcloud version|$VERSION"
@@ -165,16 +158,16 @@ else mapfile -t IPv6PORTS < <(is_port_open 0)
 fi
 
 # Checks if Port 80 is open on IPv4 or IPv6
-if [[ "${IPv4PORTS[0]}" == "open" ]] || [[ "${IPv6PORTS[0]}" == "open" ]]
+if [[ "${IPv4PORTS[0]}" == "open" || "${IPv6PORTS[0]}" == "open" ]]
 then PORT80="open"
-elif [[ "${IPv4PORTS[0]}" == "[N/A]" ]] && [[ "${IPv6PORTS[0]}" == "[N/A]" ]]
+elif [[ "${IPv4PORTS[0]}" == "[N/A]" && "${IPv6PORTS[0]}" == "[N/A]" ]]
 then PORT80="[N/A]"
 else PORT80="closed"
 fi
 # Checks if Port 443 is open on IPv4 or IPv6
-if [[ "${IPv4PORTS[1]}" == "open" ]] || [[ "${IPv6PORTS[1]}" == "open" ]]
+if [[ "${IPv4PORTS[1]}" == "open" || "${IPv6PORTS[1]}" == "open" ]]
 then PORT443="open"
-elif [[ "${IPv4PORTS[1]}" == "[N/A]" ]] && [[ "${IPv6PORTS[1]}" == "[N/A]" ]]
+elif [[ "${IPv4PORTS[1]}" == "[N/A]" && "${IPv6PORTS[1]}" == "[N/A]" ]]
 then PORT443="[N/A]"
 else PORT443="closed"
 fi
@@ -194,7 +187,7 @@ println "Interface|$IFACE"
 # Certificates
 CERTS="$( grep "SSLCertificateFile */etc/letsencrypt/live/" /etc/apache2/sites-available/nextcloud.conf \
         | sed 's|.*SSLCertificateFile */etc/letsencrypt/live/||;s|/fullchain.pem||' )"
-[[ "$CERTS" == "" ]] && CERTS='none'
+[[ -z "$CERTS" ]] && { CERTS='none'; }
 println "Certificates|$CERTS"
 
 RESOLV="$( ping -c1 -w1 "$CERTS" 2>/dev/null | head -1 | grep -oP '\d{1,3}(.\d{1,3}){3}' )"
