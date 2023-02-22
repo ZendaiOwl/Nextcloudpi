@@ -219,7 +219,7 @@ function has_cmd {
 
 # Update apt list and packages
 # Return codes
-# 0: install_pkg completed
+# 0: Install completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
@@ -243,7 +243,7 @@ function update_apt {
 
 # Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: install_pkg completed
+# 0: Install completed
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {

@@ -52,7 +52,7 @@ function log {
 
 # Update apt list and packages
 # Return codes
-# 0: install_pkg completed
+# 0: Update completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
@@ -78,7 +78,7 @@ function update_apt {
 
 # Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: install_pkg completed
+# 0: Install completed
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
@@ -88,12 +88,12 @@ function install_package {
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
          if is_root
-         then log -1 "install_pkging $*"
+         then log -1 "Installing $*"
               if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
               then log 0 "Installation complete"; return 0
               else log 2 "Something went wrong during installation"; return 1
               fi
-         else log -1 "install_pkging $*"
+         else log -1 "Installing $*"
               if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
               then log 0 "Installation complete"; return 0
               else log 2 "Something went wrong during installation"; return 1
