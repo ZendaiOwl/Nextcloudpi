@@ -118,9 +118,7 @@ apt-get update --allow-releaseinfo-change --assume-yes
 echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-if ! cd /tmp/ncp-build
-then printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1
-fi
+cd /tmp/ncp-build || { printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1; }
 
 systemctl daemon-reload
 CODE_DIR="$PWD" bash install.sh
@@ -169,9 +167,7 @@ apt-get update --allow-releaseinfo-change --assume-yes
 printf '%s\n' 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-if ! cd /tmp/ncp-build
-then printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1
-fi
+cd /tmp/ncp-build || { printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1; }
 
 systemctl daemon-reload
 CODE_DIR="$PWD" bash install.sh
