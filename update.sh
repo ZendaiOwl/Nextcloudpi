@@ -33,7 +33,7 @@ function log {
                    1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
                    2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
          fi
   fi
 }
@@ -46,17 +46,20 @@ LOCAL_LIBRARY='/usr/local/etc/library.sh'
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
 
-if [[ -v DBG && -n "$DBG" ]]
-then set -e"$DBG"
-else set -e
+if [[ -v DBG && -n "$DBG" ]]; then
+    set -e"$DBG"
+else
+    set -e
 fi
 
-if is_docker
-then log 1 "Docker images should be updated by replacing the container with the latest docker image.
+if is_docker; then
+    log 1 "Docker images should be updated by replacing the container with the latest docker image.
 Refer to the documentation for instructions at: https://docs.nextcloudpi.com or on the forum: https://help.nextcloud.com
 If you are sure that you know what you are doing, you can still execute the update script by running it like the example below.
 Ex: ALLOW_UPDATE_SCRIPT=1 ncp-update"
-[[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || exit 1
+    [[ "$ALLOW_UPDATE_SCRIPT" == "1" ]] || {
+        exit 1
+    }
 fi
 
 
@@ -87,24 +90,27 @@ NFS
 "
 
 # in docker, just remove the volume for this
-if is_docker
-then EXCL_DOCKER+="
+if is_docker; then
+    EXCL_DOCKER+="
 nc-nextcloud
 nc-init
 "
-
-# better use a designated container
-EXCL_DOCKER+="
+    # better use a designated container
+    EXCL_DOCKER+="
 samba
 "
 fi
 
 # Check if apt or apt-get is running
-if pgrep -x "apt|apt-get" &>/dev/null
-then log 2 "Apt is currently running. Try again later"; exit 1
+if pgrep -x "apt|apt-get" &>/dev/null; then
+    log 2 "Apt is currently running. Try again later"
+    exit 1
 fi
 
-cp "$ETC_LIBRARY" "$LOCAL_LIBRARY" || { log 2 "Failed to copy file: $ETC_LIBRARY"; exit 1; }
+cp "$ETC_LIBRARY" "$LOCAL_LIBRARY" || {
+    log 2 "Failed to copy file: $ETC_LIBRARY"
+    exit 1
+}
 
 # shellcheck disable=SC1090
 source "$LOCAL_LIBRARY"
@@ -112,10 +118,10 @@ source "$LOCAL_LIBRARY"
 mkdir --parents "$CONFDIR"
 
 # prevent installing some ncp-apps in the containerized versions
-if is_docker || is_lxc
-then for OPT in $EXCL_DOCKER
-     do touch "$CONFDIR"/"$OPT".cfg
-     done
+if is_docker || is_lxc; then
+    for OPT in $EXCL_DOCKER; do
+        touch "$CONFDIR"/"$OPT".cfg
+    done
 fi
 
 # copy all files in bin and etc
@@ -125,38 +131,46 @@ cp --no-clobber 'etc/ncp.cfg' '/usr/local/etc/ncp.cfg'
 cp --recursive  'etc/ncp-templates' '/usr/local/etc/'
 
 # install new entries of ncp-config and update others
-for FILE in etc/ncp-config.d/* # Skip directories
-do [[ -d "$FILE" ]]   && { continue; }
-   [[ ! -f "$FILE" ]] && { continue; }
-   # Install new NextcloudPi apps
-   [[ ! -f /usr/local/"$FILE" ]] && { install_app "$(basename "$FILE" .cfg)"; }
+for FILE in etc/ncp-config.d/*; do # Skip directories
+    [[ -d "$FILE" ]] && { continue; }
+    [[ ! -f "$FILE" ]] && { continue; }
+    # Install new NextcloudPi apps
+    [[ ! -f /usr/local/"$FILE" ]] && {
+        install_app "$(basename "$FILE" .cfg)"
+    }
 
-   # keep saved cfg values
-   if [[ -f /usr/local/"$FILE" ]]
-   then LENGTH="$(jq '.params | length' /usr/local/"$FILE")"
-        for (( i = 0; i < "$LENGTH"; i++ ))
-        do ID="$(jq -r ".params[$i].id" /usr/local/"$FILE")"
-           VAL="$(jq -r ".params[$i].value" /usr/local/"$FILE")"
-           for (( j = 0; j < "$LENGTH"; j++ ))
-           do NEW_ID="$(jq -r ".params[$j].id" "$FILE")"
-              if [[ "$NEW_ID" == "$ID" ]]
-              then CFG="$(jq ".params[$j].value = \"$VAL\"" "$FILE")"
-                   break
-              fi
-           done
-         println "$CFG" > "$FILE"
-         done
-   fi
+    # keep saved cfg values
+    if [[ -f /usr/local/"$FILE" ]]; then
+        LENGTH="$(jq '.params | length' /usr/local/"$FILE")"
+        for (( i = 0; i < "$LENGTH"; i++ )); do
+            ID="$(jq -r ".params[$i].id" /usr/local/"$FILE")"
+            VAL="$(jq -r ".params[$i].value" /usr/local/"$FILE")"
+            for (( j = 0; j < "$LENGTH"; j++ )); do
+                NEW_ID="$(jq -r ".params[$j].id" "$FILE")"
+                if [[ "$NEW_ID" == "$ID" ]]; then
+                    CFG="$(jq ".params[$j].value = \"$VAL\"" "$FILE")"
+                    break
+                fi
+            done
+            println "$CFG" > "$FILE"
+        done
+    fi
 
-   # Configure if active by default
-   if [[ ! -f /usr/local/"$FILE" ]]
-   then if [[ "$(jq -r ".params[0].id" "$FILE")" == "ACTIVE" && \
-           [[ "$(jq -r ".params[0].value" "$FILE")" == "yes" ]]
-        then cp "$FILE" /usr/local/"$FILE" || { log 2 "Failed to copy file: $FILE"; exit 1; }
-             run_app "$(basename "$FILE" .cfg)"
+    # Configure if active by default
+    if [[ ! -f /usr/local/"$FILE" ]]; then
+        if [[ "$(jq ".params[0].id" "$FILE")" == "ACTIVE" ]] \
+        && [[ "$(jq ".params[0].value" "$FILE")" == "yes" ]]; then
+            cp "$FILE" /usr/local/"$FILE" || {
+                log 2 "Failed to copy file: $FILE"
+                exit 1
+            }
+            run_app "$(basename "$FILE" .cfg)"
         fi
-   fi
-   cp "$FILE" /usr/local/"$FILE" || { log 2 "Failed to copy file: $FILE"; exit 1; }
+    fi
+    cp "$FILE" /usr/local/"$FILE" || {
+        log 2 "Failed to copy file: $FILE"
+        exit 1
+    }
 done
 
 # update NCVER in ncp.cfg and nc-nextcloud.cfg (for nc-autoupdate-nc and nc-update-nextcloud)

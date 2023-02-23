@@ -202,7 +202,10 @@ function install {
        sleep 1
     done
 
-    cd '/tmp' || { log 2 "Failed to change directory to: /tmp"; exit 1; }
+    cd '/tmp' || {
+        log 2 "Failed to change directory to: /tmp"
+        exit 1
+    }
   
     mysql_secure_installation <<EOF
 $DBPASSWD
@@ -216,7 +219,7 @@ y
 EOF
 }
 
-function configure { :; }
+function configure () { :; }
 
 
 # License

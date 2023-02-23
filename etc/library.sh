@@ -787,7 +787,7 @@ function run_app_unsafe {
         log -1 "Clearing password fields: $NCP_APP"
         clear_password_fields "$CFG_FILE"
     }
-    log 0 "Completed: $NCP_APP [ $RET ]"
+    log 0 "Completed: $NCP_APP"
     return "$RET"
 }
 
@@ -799,7 +799,7 @@ function find_app_param_num {
                          LENGTH VAL VAR P_ID
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-    ! is_file "$CFG_FILE" && {
+    [[ ! -f "$CFG_FILE" ]] && {
         log 2 "File not found: $SCRIPT"
         return 1
     }

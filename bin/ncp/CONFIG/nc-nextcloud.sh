@@ -230,10 +230,10 @@ function configure () {
 
     log -1 "Checking for existing nextcloud directory"
     if [[ -d 'nextcloud' ]]; then
-        rm --recursive --force 'nextcloud'
+        rm --recursive --force nextcloud
         log -1 "Removed directory: nextcloud"
     else
-        log -1 "Directory not found: nextcloud"
+        log -1 "Existing directory not found: nextcloud"
     fi
     
     log -1 "Installing Nextcloud: $NCLATESTVER"
