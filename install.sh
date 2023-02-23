@@ -240,11 +240,12 @@ else log 2 "File not found: $LIBRARY"; exit 1
 fi
 
 if [[ -f "$NCPCFG" ]] # Check so NextcloudPi configuration file exists
-then if ! check_distro "$NCPCFG" # Check so the distribution is supported by the script
-     then log 2 "Distro not supported"
-          cat '/etc/issue' || { log 2 "Failed to read file: /etc/issue"; }
-          exit 1
-     fi
+then # Check so the distribution is supported by the script
+    check_distro "$NCPCFG" || {
+        log 2 "Distro not supported"
+        cat '/etc/issue' || { log 2 "Failed to read file: /etc/issue"; }
+        exit 1
+    }
 else log 2 "File not found: $NCPCFG"; exit 1
 fi
 
@@ -252,9 +253,7 @@ fi
 touch '/.ncp-image' || { log 2 "Failed to create file: /.ncp-image"; exit 1; }
 
 # Create the local NextcloudPi configuration directory
-if ! mkdir --parents '/usr/local/etc/ncp-config.d'
-then log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"; exit 1
-fi
+mkdir --parents '/usr/local/etc/ncp-config.d' || { log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"; exit 1; }
 
 # Check so the local & build configuration directories exists and
 # the nextcloud configuration file as well then copy it.
