@@ -382,7 +382,10 @@ if [[ "$REMOVE_DATADIR_CFG" == 'true' ]]; then
 fi
 
 if [[ -f '/.ncp-image' ]]; then
-    rm '/.ncp-image' || log 2 "Failed to remove file: /.ncp-image"; exit 1
+    rm '/.ncp-image' || {
+        log 2 "Failed to remove file: /.ncp-image"
+        exit 1
+    }
 fi
 
 # Skip on Armbian / Vagrant / LXD
