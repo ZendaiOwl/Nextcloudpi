@@ -43,62 +43,73 @@ function log {
 
 # Update apt list and packages
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
-    if [[ "$#" -ne 0 ]]
-    then log 2 "Invalid number of arguments, requires none"; return 2
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-                    ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-         if [[ "$EUID" -eq 0 ]]
-         then log -1 "Updating apt lists"
-              if "${ROOTUPDATE[@]}" &>/dev/null
-              then log 0 "Apt list updated"
-              else log 2 "Couldn't update apt lists"; return 1
-              fi
-         else log -1 "Updating apt lists"
-              if "${SUDOUPDATE[@]}" &>/dev/null
-              then log 0 "Apt list updated"
-              else log 2 "Couldn't update apt lists"; return 1
-              fi
-         fi
+    [[ "$#" -ne 0 ]] && {
+        log 2 "Invalid number of arguments: $#/0"
+        return 2
+    }
+    declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+               ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Updating apt lists"
+        if "${ROOTUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
+        fi
+    else
+        log -1 "Updating apt lists"
+        if "${SUDOUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
+        fi
     fi
 }
 
 # Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
-    if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [PKG(s)]"; return 2
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-                    ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         if [[ "$EUID" -eq 0 ]]
-         then log -1 "Installing $*"
-              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
-              then log 0 "Installation complete"; return 0
-              else log 2 "Something went wrong during installation"; return 1
-              fi
-         else log -1 "Installing $*"
-              if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
-              then log 0 "Installation complete"; return 0
-              else log 2 "Something went wrong during installation"; return 1
-              fi
-         fi
+    [[ "$#" -eq 0 ]] && { log 2 "Requires: [ PKG(s) ]"; return 2; }
+    declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+               ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
+    else
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
     fi
 }
 
 function add_install_variable
 {
   declare -x -a INSTALL_VARIABLES; INSTALL_VARIABLES+=("$@")
-  if [[ "${INSTALL_VARIABLES[*]}" != *'INSTALL_VARIABLES'* ]]
-  then add_install_variable INSTALL_VARIABLES
-  fi
+  [[ "${INSTALL_VARIABLES[*]}" != *'INSTALL_VARIABLES'* ]] && {
+      add_install_variable 'INSTALL_VARIABLES'
+  }
 }
 
 function clean_install_variables
@@ -224,7 +235,7 @@ install_package git \
                 apt-transport-https
 
 # Get installation/build code from repository
-if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]; then
+[[ -z "$CODE_DIR" || ! -v CODE_DIR ]] && {
     CODE_DIR="$TMPDIR"/"$REPO"
     log -1 "Fetching build code to: $CODE_DIR"
     git clone -b "$BRANCH" "$URL" "$CODE_DIR" || {
@@ -232,15 +243,15 @@ if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]; then
         exit 1
     }
     add_install_variable CODE_DIR
-fi
+}
 
 # Change directory to the code directory in the temporary directory
-if [[ -v CODE_DIR && -d "$CODE_DIR" ]]; then
+[[ -v CODE_DIR && -d "$CODE_DIR" ]] && {
     cd "$CODE_DIR" || {
         log 2 "Failed changing directory to: $CODE_DIR"
         exit 1
     }
-fi
+}
 
 # Install NextcloudPi
 log -1 "Installing NextcloudPi"
@@ -288,23 +299,23 @@ if [[ -d 'etc/ncp-config.d' ]]; then
 else log 2 "Directory not found: etc/ncp-config.d"; exit 1
 fi
 
-if [[ -f "$LIBRARY" ]]; then
+[[ -f "$LIBRARY" ]] && {
     cp "$LIBRARY" '/usr/local/etc/library.sh' || {
         log 2 "Failed to copy file: $LIBRARY"
         exit 1
     }
     LIBRARY='/usr/local/etc/library.sh'
     declare -x -g LIBRARY
-fi
+}
 
-if [[ -f "$NCPCFG" ]]; then
+[[ -f "$NCPCFG" ]] && {
     cp "$NCPCFG" '/usr/local/etc/ncp.cfg' || {
         log 2 "Failed to copy file: ncp.cfg $NCPCFG"
         exit 1
     }
     NCPCFG='/usr/local/etc/ncp.cfg'
     declare -x -g NCPCFG
-fi
+}
 
 if [[ -d "$NCP_TEMPLATES_DIR" ]]; then
     cp --recursive "$NCP_TEMPLATES_DIR" '/usr/local/etc/' || {
@@ -354,7 +365,7 @@ log -1 "Moving data directory to: /opt/ncdata"
 df -h
 mkdir --parents '/opt/ncdata'
 
-if [[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]; then
+[[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]] && {
     REMOVE_DATADIR_CFG='true'
     if [[ -f 'etc/ncp-config.d/nc-datadir.cfg' ]]; then
         cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
@@ -363,7 +374,7 @@ if [[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]; then
         }
      else log 2 "File not found: etc/ncp-config.d/nc-datadir.cfg"; exit 1
      fi
-fi
+}
 
 if [[ -f 'bin/ncp/CONFIG/nc-datadir.sh' ]]; then
     DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/CONFIG/nc-datadir.sh'
@@ -371,7 +382,7 @@ else
     log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
 fi
 
-if [[ "$REMOVE_DATADIR_CFG" == 'true' ]]; then
+[[ "$REMOVE_DATADIR_CFG" == 'true' ]] && {
     if [[ -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]; then
         rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
             log 2 "Failed to remove file: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
@@ -379,14 +390,14 @@ if [[ "$REMOVE_DATADIR_CFG" == 'true' ]]; then
         }
     else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
     fi
-fi
+}
 
-if [[ -f '/.ncp-image' ]]; then
+[[ -f '/.ncp-image' ]] && {
     rm '/.ncp-image' || {
         log 2 "Failed to remove file: /.ncp-image"
         exit 1
     }
-fi
+}
 
 # Skip on Armbian / Vagrant / LXD
 if [[ -n "$CODE_DIR" ]]; then

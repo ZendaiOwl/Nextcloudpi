@@ -23,21 +23,21 @@ function configure {
     
     # checks
     REDISPASS="$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )"
-    if [[ -z "$REDISPASS" ]]; then
+    [[ -z "$REDISPASS" ]] && {
         println "Redis server is without a password"
         return 1
-    fi
+    }
     
     ## RE-CREATE DATABASE TABLE
     
     println "Setting up: Database"
     
     # launch mariadb if not already running
-    if [[ ! -f '/run/mysqld/mysqld.pid' ]]; then
+    [[ ! -f '/run/mysqld/mysqld.pid' ]] && {
         println "Starting MariaDB"
         mysqld &
         local db_pid="$!"
-    fi
+    }
     
     # wait for mariadb
     while :; do
@@ -81,18 +81,18 @@ EOF
     
     println "Setting up: Nextcloud"
 
-    if [[ -d '/var/www/nextcloud' ]]; then
-        cd /var/www/nextcloud || {
-            println "Failed to change directory to: /var/www/nextcloud/"
+    [[ -d '/var/www/nextcloud' ]] && {
+        cd '/var/www/nextcloud' || {
+            println "Failed to change directory to: /var/www/nextcloud"
         }
-    fi
+    }
     
-    if [[ -f 'config/config.php' ]]; then
+    [[ -f 'config/config.php' ]] && {
         rm --force config/config.php || {
             println "Failed to remove file: config/config.php"
             exit 1
         }
-    fi
+    }
     ncc maintenance:install --database 'mysql' \
                             --database-name 'nextcloud'  \
                             --database-user "$DBADMIN" \
@@ -178,10 +178,10 @@ EOF
     ncc app:disable updatenotification
     
     # News dropped support for 32-bit -> https://github.com/nextcloud/news/issues/1423
-    if ! [[ "$ARCH" =~ armv7 ]]; then
+    [[ ! "$ARCH" =~ armv7 ]] && {
         ncc app:install news
         # ncc app:enable  news
-    fi
+    }
     
     # ncp-previewgenerator
     NCVER="$(ncc status 2>/dev/null | grep 'version:' | awk '{ print $3 }')"
@@ -223,18 +223,18 @@ EOF
     ncc db:add-missing-indices
     
     # Default trusted domain (only from ncp-config)
-    if [[ -f '/usr/local/bin/nextcloud-domain.sh' ]]; then
+    [[ -f '/usr/local/bin/nextcloud-domain.sh' ]] && {
         [[ -f '/.ncp-image' ]] || {
             bash '/usr/local/bin/nextcloud-domain.sh'
         }
-    fi
+    }
     
     # dettach mysql during the build
-    if [[ "$db_pid" != "" ]]; then
+    [[ -n "$db_pid" ]] && {
         println "Shutting down MariaDB [$db_pid]"
         mysqladmin -u root shutdown
         wait "$db_pid"
-    fi
+    }
     println "NC init done"
 }
 
