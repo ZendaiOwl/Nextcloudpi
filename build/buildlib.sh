@@ -639,7 +639,7 @@ function prepare_sshd_raspbian {
     mount_raspbian_boot "$IMG"     || { log 2 "Failed to mount IMG boot"; return 2; }
     # Enable SSH
     if is_root; then
-        touch "$BOOTDIR"/ssh      || { log 2 "Failed to create SSH file in IMG boot"; return 3; ]
+        touch "$BOOTDIR"/ssh      || { log 2 "Failed to create SSH file in IMG boot"; return 3; }
     else
         sudo touch "$BOOTDIR"/ssh || { log 2 "Failed to create SSH file in IMG boot"; return 3; }
     fi; umount_raspbian
