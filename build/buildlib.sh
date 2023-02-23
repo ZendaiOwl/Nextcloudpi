@@ -205,54 +205,64 @@ function has_cmd {
 
 # Update apt list and packages
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
-    if [[ "$#" -ne 0 ]]
-    then log 2 "Invalid number of arguments: $#/0"; return 2
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-                    ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-        if is_root
-        then log -1 "Updating apt lists"
-             if "${ROOTUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
-        else log -1 "Updating apt lists"
-             if "${SUDOUPDATE[@]}" &>/dev/null
-             then log 0 "Apt list updated"
-             else log 2 "Couldn't update apt lists"; return 1
-             fi
+    [[ "$#" -ne 0 ]] && {
+        log 2 "Invalid number of arguments: $#/0"
+        return 2
+    }
+    declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+               ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Updating apt lists"
+        if "${ROOTUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
+        fi
+    else
+        log -1 "Updating apt lists"
+        if "${SUDOUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
         fi
     fi
 }
 
-# Installs package(s) using the package manager and pre-configured options
+# Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
-    if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [ PKG(s) ]"; return 2
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-                    ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         declare -a PKG=(); IFS=' ' read -ra PKG <<<"$@"
-         if is_root
-         then log -1 "Installing ${PKG[*]}"
-              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "${PKG[@]}"
-              then log 0 "Installation complete"; return 0
-              else log 2 "Something went wrong during installation"; return 1
-              fi
-         else log -1 "Installing ${PKG[*]}"
-              if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "${PKG[@]}"
-              then log 0 "Installation complete"; return 0
-              else log 2 "Something went wrong during installation"; return 1
-              fi
-         fi
+    [[ "$#" -eq 0 ]] && { log 2 "Requires: [ PKG(s) ]"; return 2; }
+    declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+               ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
+    else
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
     fi
 }
 

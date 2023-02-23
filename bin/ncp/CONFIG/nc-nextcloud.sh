@@ -37,53 +37,64 @@ function log {
 
 # Update apt list and packages
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
-    if [[ "$#" -ne 0 ]]
-    then log 2 "Invalid number of arguments, requires none"; return 2
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
-                    ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-         if [[ "$EUID" -eq 0 ]]
-         then log -1 "Updating apt lists"
-              if "${ROOTUPDATE[@]}" &>/dev/null
-              then log 0 "Apt list updated"
-              else log 2 "Couldn't update apt lists"; return 1
-              fi
-         else log -1 "Updating apt lists"
-              if "${SUDOUPDATE[@]}" &>/dev/null
-              then log 0 "Apt list updated"
-              else log 2 "Couldn't update apt lists"; return 1
-              fi
-         fi
+    [[ "$#" -ne 0 ]] && {
+        log 2 "Invalid number of arguments: $#/0"
+        return 2
+    }
+    declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
+               ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Updating apt lists"
+        if "${ROOTUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
+        fi
+    else
+        log -1 "Updating apt lists"
+        if "${SUDOUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
+        fi
     fi
 }
 
 # Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
-    if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [PKG(s)]"; return 2
-    else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
-         declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
-                    ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         if [[ "$EUID" -eq 0 ]]
-         then log -1 "Installing $*"
-              if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
-              then log 0 "Installation complete"; return 0
-              else log 2 "Something went wrong during installation"; return 1
-              fi
-         else log -1 "Installing $*"
-              if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
-              then log 0 "Installation complete"; return 0
-              else log 2 "Something went wrong during installation"; return 1
-              fi
-         fi
+    [[ "$#" -eq 0 ]] && { log 2 "Requires: [ PKG(s) ]"; return 2; }
+    declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
+    declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
+               ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
+    else
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
     fi
 }
 
@@ -94,7 +105,7 @@ function tmpl_max_transfer_time {
     find_app_param 'nc-nextcloud' 'MAXTRANSFERTIME'
 }
 
-function install {
+function install () {
     local -r REDIS_CONF='/etc/redis/redis.conf' \
              REDIS_USER='redis' \
              REDISPASS='default' \
@@ -104,7 +115,9 @@ function install {
              HTTP_USER='www-data' \
              PROVISIONING_SERVICE='/usr/lib/systemd/system/nc-provisioning.service'
     # During build, this step is run before ncp.sh. Avoid executing twice
-    [[ -f "$PROVISIONING_SERVICE" ]] && return 0
+    [[ -f "$PROVISIONING_SERVICE" ]] && {
+        return 0
+    }
 
     # Update
     update_apt
@@ -132,15 +145,15 @@ function install {
     #install_package imagemagick php"$PHPVER"-imagick ghostscript
 
     # POSTFIX
-    if ! install_package postfix
-    then # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
-         log -1 "[ NCP ]: Please ignore the previous postfix installation error"
-         mv '/usr/bin/newaliases' '/'
-         ln -s '/bin/true' '/usr/bin/newaliases'
-         install_package postfix
-         rm '/usr/bin/newaliases'
-         mv '/newaliases' '/usr/bin/newaliases'
-    fi
+    install_package postfix || {
+        # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
+        log -1 "[ NCP ]: Please ignore the previous postfix installation error"
+        mv '/usr/bin/newaliases' '/'
+        ln -s '/bin/true' '/usr/bin/newaliases'
+        install_package postfix
+        rm '/usr/bin/newaliases'
+        mv '/newaliases' '/usr/bin/newaliases'
+    }
   
     sed -i "s|# unixsocket .*|unixsocket $REDIS_SOCKET|"              "$REDIS_CONF"
     sed -i "s|# unixsocketperm .*|unixsocketperm $SOCKET_PERMISSION|" "$REDIS_CONF"
@@ -151,9 +164,9 @@ function install {
     println "maxmemory $REDIS_MEM"     >> "$REDIS_CONF"
     println 'vm.overcommit_memory = 1' >> '/etc/sysctl.conf'
 
-    if is_lxc
-    then mkdir --parents '/etc/systemd/system/redis-server.service.d'
-         cat > '/etc/systemd/system/redis-server.service.d/lxc_fix.conf' <<'EOF'
+    if is_lxc; then
+        mkdir --parents '/etc/systemd/system/redis-server.service.d'
+        cat > '/etc/systemd/system/redis-server.service.d/lxc_fix.conf' <<'EOF'
 [Service]
 ReadOnlyDirectories=
 EOF
@@ -181,13 +194,13 @@ ExecStart=/bin/bash /usr/local/bin/ncp-provisioning.sh
 [Install]
 WantedBy=multi-user.target
 EOF
-    if [[ "$DOCKERBUILD" != 1 ]]
-    then systemctl enable nc-provisioning
-    fi; return 0
+    if [[ "$DOCKERBUILD" != 1 ]]; then
+        systemctl enable nc-provisioning
+    fi
+    return 0
 }
 
-function configure
-{
+function configure () {
     local -r OCPATH='/var/www/nextcloud' \
              HTPATH='/var/www' \
              HTUSER='www-data' \
@@ -204,18 +217,23 @@ function configure
     local OPCACHEDIR DBPASSWD DB_PID
 
     ## DOWNLOAD AND (OVER)WRITE NEXTCLOUD
-    cd "$HTPATH" || log 2 "Unable to change directory to: $HTPATH"; exit 1
+    cd "$HTPATH" || {
+        log 2 "Unable to change directory to: $HTPATH"
+        exit 1
+    }
 
     log -1 "Downloading Nextcloud: $NCLATESTVER"
-    if ! wget -q "$URL" -O 'nextcloud.tar.bz2'
-    then log 2 "Download failed: $URL"; return 1
-    fi
+    wget -q "$URL" -O 'nextcloud.tar.bz2' || {
+        log 2 "Download failed: $URL"
+        return 1
+    }
 
     log -1 "Checking for existing nextcloud directory"
-    if [[ -d 'nextcloud' ]]
-    then rm --recursive --force 'nextcloud'
-         log -1 "Removed directory: nextcloud"
-    else log -1 "Directory not found: nextcloud"
+    if [[ -d 'nextcloud' ]]; then
+        rm --recursive --force 'nextcloud'
+        log -1 "Removed directory: nextcloud"
+    else
+        log -1 "Directory not found: nextcloud"
     fi
     
     log -1 "Installing Nextcloud: $NCLATESTVER"
@@ -244,13 +262,13 @@ function configure
     chmod +x "$OCPATH"/occ
     
     log -1 "chmod ($HTUSER) & chown (0644): .htaccess"
-    if [[ -f "$OCPATH"/.htaccess ]]
-    then chmod 0644 "$OCPATH"/.htaccess
-         chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
+    if [[ -f "$OCPATH"/.htaccess ]]; then
+        chmod 0644 "$OCPATH"/.htaccess
+        chown "$HTUSER":"$HTGROUP" "$OCPATH"/.htaccess
     fi
-    if [[ -f "$OCPATH"/data/.htaccess ]]
-    then chmod 0644 "$OCPATH"/data/.htaccess
-         chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
+    if [[ -f "$OCPATH"/data/.htaccess ]]; then
+        chmod 0644 "$OCPATH"/data/.htaccess
+        chown "$HTUSER":"$HTGROUP" "$OCPATH"/data/.htaccess
     fi
 
     # create and configure opcache dir
@@ -263,24 +281,27 @@ function configure
     else true
     fi
     )"
-    if [[ -z "$OPCACHEDIR" ]]
-    then install_template  "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
-    else mkdir --parents   "$OPCACHEDIR"
-         chown --recursive "$HTUSER":"$HTUSER" "$OPCACHEDIR"
-         install_template  "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
+    if [[ -z "$OPCACHEDIR" ]]; then
+        install_template  "php/opcache.ini.sh" "/etc/php/${PHPVER}/mods-available/opcache.ini" '--defaults'
+    else
+        mkdir --parents   "$OPCACHEDIR"
+        chown --recursive "$HTUSER":"$HTUSER" "$OPCACHEDIR"
+        install_template  "$OPCACHE_TEMPLATE" "$OPCACHE_CONF"
     fi
     
     ## RE-CREATE DATABASE TABLE
     # Launch MariaDB if not already running (for docker build)
-    if [[ ! -f "$MYSQL_PID" ]]
-    then log -1 "Starting: MariaDB"
-         mysqld &
-         DB_PID="$!"
+    if [[ ! -f "$MYSQL_PID" ]]; then
+        log -1 "Starting: MariaDB"
+        mysqld &
+        DB_PID="$!"
     fi
     
-    while :
-    do [[ -S "$MYSQL_SOCKET" ]] && break
-       sleep 1
+    while :; do
+        [[ -S "$MYSQL_SOCKET" ]] && {
+            break
+        }
+        sleep 1
     done
     
     log -1 "Setting up: Database"
@@ -302,7 +323,10 @@ EOF
     ## SET APACHE VHOST
     log -1 "Setting up: Apache2 VirtualHost"
   
-    install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" '--allow-fallback' || { log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"; exit 1; }
+    install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" '--allow-fallback' || {
+        log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"
+        exit 1
+    }
     
     a2ensite nextcloud
     
@@ -332,11 +356,13 @@ EOF
             proxy_wstunnel
     
     arch="$(uname -m)"
-    [[ "$arch" =~ "armv7" ]] && arch='armv7'
+    [[ "$arch" =~ "armv7" ]] && {
+        arch='armv7'
+    }
     install_template "$NOTIFYPUSH_TEMPLATE" "$NOTIFYPUSH_SERVICE"
 
-    if [[ ! -f '/.docker-image' ]]
-    then systemctl enable notify_push
+    if [[ ! -f '/.docker-image' ]]; then
+        systemctl enable notify_push
     fi
     
     # some added security
@@ -367,15 +393,19 @@ EOF
     ## SET CRON
     echo "*/5  *  *  *  * php -f /var/www/nextcloud/cron.php" > '/tmp/crontab_http'
     crontab -u "$HTUSER" '/tmp/crontab_http'
-    rm '/tmp/crontab_http' || { log 2 "Failed to remove: /tmp/crontab_http"; exit 1; }
+    rm '/tmp/crontab_http' || {
+        log 2 "Failed to remove: /tmp/crontab_http"
+        exit 1
+    }
     
     # dettach mysql during the build
-    if [[ "$DB_PID" != "" ]]
-    then log -1 "Shutting down MariaDB [$DB_PID]"
-         mysqladmin -u root shutdown
-         wait "$DB_PID"
+    if [[ "$DB_PID" != "" ]]; then
+        log -1 "Shutting down MariaDB [$DB_PID]"
+        mysqladmin -u root shutdown
+        wait "$DB_PID"
     fi
-    log 0 "Completed: ${BASH_SOURCE[0]##*/}"; log -1 "Don't forget to run nc-init"
+    log 0 "Completed: ${BASH_SOURCE[0]##*/}"
+    log -1 "Don't forget to run nc-init"
 }
 
 # License

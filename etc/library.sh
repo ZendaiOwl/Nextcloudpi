@@ -220,7 +220,7 @@ function has_cmd {
 
 # Update apt list and packages
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
@@ -252,14 +252,11 @@ function update_apt {
 
 # Install package(s) using the package manager and pre-configured options
 # Return codes
-# 0: Install completed
+# 0: install_pkg completed
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
-    [[ "$#" -eq 0 ]] && {
-        log 2 "Requires: [ PKG(s) ]"
-        return 2
-    }
+    [[ "$#" -eq 0 ]] && { log 2 "Requires: [ PKG(s) ]"; return 2; }
     declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
@@ -515,7 +512,7 @@ function check_distro {
 function clear_password_fields {
     local -r CFG_FILE="$1"
     local LENGTH TYPE VAL
-    ! is_file "$CFG_FILE" && {
+    [[ ! -f "$CFG_FILE" ]] && {
         log 2 "File not found: $CFG_FILE"
         return 1
     }
@@ -526,7 +523,7 @@ function clear_password_fields {
         [[ "$TYPE" == "password" ]] && {
             VAL=""
         }
-        CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
+        CFG="$(jq -r ".params[$i].value = \"$VAL\"" "$CFG_FILE")"
     done
     println "$CFG" > "$CFG_FILE"
     return 0
@@ -549,10 +546,10 @@ function is_active_app {
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local LENGTH VAL VAR ID VALUE
     
-    ! is_file "$SCRIPT" && {
+    [[ ! -f "$SCRIPT" ]] && {
         SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
     }
-    ! is_file "$SCRIPT" && {
+    [[ ! -f "$SCRIPT" ]] && {
         log 2 "File not found: $NCP_APP"
         return 1
     }
@@ -564,7 +561,7 @@ function is_active_app {
     source "$SCRIPT"
     # Read config parameters
     if is_function 'is_active'; then
-        if is_file "$CFG_FILE"; then
+        if [[ -f "$CFG_FILE" ]]; then
             LENGTH="$(jq '.params | length' "$CFG_FILE")"
             for (( i = 0; i < "$LENGTH"; i++ )); do
                 VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
@@ -577,7 +574,7 @@ function is_active_app {
     fi
     
     # Config
-    ! is_file "$CFG_FILE" && {
+    [[ ! -f "$CFG_FILE" ]] && {
         log 2 "File not found: $CFG_FILE"
         return 1
     }
@@ -741,23 +738,23 @@ function run_app {
 
 # Return codes
 function run_app_unsafe {
-    local -r SCRIPT="$1"
-    local NCP_APP CFG_FILE LENGTH VAR VAL RET LOG='/var/log/ncp.log'
+    local -r SCRIPT="$1" LOG='/var/log/ncp.log'
+    local NCP_APP CFG_FILE LENGTH VAR VAL RET
         
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     
-    ! is_file "$SCRIPT" && {
+    [[ ! -f "$SCRIPT" ]] && {
         log 2 "File not found: $SCRIPT"
         return 1
     }
     
-    touch "$LOG"
-    chmod 640 "$LOG"
+    touch               "$LOG"
+    chmod 640           "$LOG"
     chown root:www-data "$LOG"
     
     log -1 "Running: $NCP_APP"
-    echo " [ $NCP_APP ] ($(date))" >> "$LOG"
+    println "[ $NCP_APP ] ($(date))" >> "$LOG"
     log -1 "Reading script: $NCP_APP"
     # Read script
     unset configure
@@ -766,24 +763,25 @@ function run_app_unsafe {
     source "$SCRIPT"
     
     # Read config parameters
-    if is_file "$CFG_FILE"; then
+    if [[ -f "$CFG_FILE" ]]; then
         log -1 "Reading config parameters: $NCP_APP"
         LENGTH="$(jq '.params | length' "$CFG_FILE")"
         for (( i = 0; i < "$LENGTH"; i++ )); do
-            VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
-            VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
+            VAR="$(jq ".params[$i].id" "$CFG_FILE")"
+            VAL="$(jq ".params[$i].value" "$CFG_FILE")"
             eval "$VAR=$VAL"
         done
     fi
     
     # Run
     log -1 "Executing configure: $NCP_APP"
-    ( configure ) 2>&1 | tee -a "$LOG"
+    (configure) 2>&1 | tee -a "$LOG"
+
     RET="${PIPESTATUS[0]}"
-    
+
     println "" >> "$LOG"
     
-    if is_file "$CFG_FILE"; then
+    if [[ -f "$CFG_FILE" ]]; then
         log -1 "Clearing password fields: $NCP_APP"
         clear_password_fields "$CFG_FILE"
     fi
