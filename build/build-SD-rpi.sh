@@ -129,7 +129,8 @@ echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 # install NCP
 cd /tmp/ncp-build || { printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1; }
 
-systemctl daemon-reload
+# systemctl daemon-reload # Does not work in chroot
+
 CODE_DIR="$PWD" bash install.sh
 
 # work around dhcpcd Raspbian bug
@@ -179,7 +180,8 @@ printf '%s\n' 'nameserver 1.1.1.1' >> /etc/resolv.conf
 # install NCP
 cd /tmp/ncp-build || { printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1; }
 
-systemctl daemon-reload
+# systemctl daemon-reload # Does not work in chroot
+
 CODE_DIR="$PWD" bash install.sh
 
 # work around dhcpcd Raspbian bug
