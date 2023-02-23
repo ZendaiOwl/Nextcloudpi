@@ -233,7 +233,7 @@ fi
 # Install NextcloudPi
 log -1 "Installing NextcloudPi"
 
-# shellcheck disable=SC1091
+# shellcheck disable=SC1090
 if [[ -f "$LIBRARY" ]]
 then source "$LIBRARY"
 else log 2 "File not found: $LIBRARY"; exit 1
