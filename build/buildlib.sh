@@ -452,7 +452,7 @@ function mount_raspbian {
     
     if is_root
     then mount "$IMG" -o offset="$OFFSET" "$MP"      || { log 2 "Failed to mount IMG at: $MP"; return 4; }
-    else sudo mount "$IMG" -o offset="$OFFSET" "$MP" && { log 2 "Failed to mount IMG at: $MP"; return 4; }
+    else sudo mount "$IMG" -o offset="$OFFSET" "$MP" || { log 2 "Failed to mount IMG at: $MP"; return 4; }
     fi; log 0 "IMG is mounted at: $MP"
 }
 
@@ -475,8 +475,8 @@ function mount_raspbian_boot {
     log -1 "Offset: $OFFSET"; log -1 "Mountpoint: $MP"
     mkdir --parents "$MP"
     if is_root
-    then mount "$IMG" -o offset="$OFFSET" "$MP"      && { log 2 "Failed to mount IMG at: $MP"; return 4; }
-    else sudo mount "$IMG" -o offset="$OFFSET" "$MP" && { log 2 "Failed to mount IMG at: $MP"; return 4; }
+    then mount "$IMG" -o offset="$OFFSET" "$MP"      || { log 2 "Failed to mount IMG at: $MP"; return 4; }
+    else sudo mount "$IMG" -o offset="$OFFSET" "$MP" || { log 2 "Failed to mount IMG at: $MP"; return 4; }
     fi; log 0 "IMG is mounted at: $MP"
 }
 
