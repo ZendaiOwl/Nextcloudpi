@@ -432,17 +432,24 @@ function prepare_dirs {
 function mount_raspbian {
     [[ "$#" -lt 1 ]] && { return 1; }
     local -r IMG="$1" MP='raspbian_root'
-    ! is_file "$IMG" && { log 2 "File not found: $IMG"; return 2; }
-    is_path   "$MP"  && { log 2 "Mountpoint already exists"; return 3; }
+    ! is_file "$IMG" && {
+        log 2 "File not found: $IMG"
+        return 2
+    }
+    is_path "$MP"  && {
+        log 2 "Mountpoint already exists"
+        return 3
+    }
     local SECTOR OFFSET
 
     log -1 "Mounting: $MP"
     
     ! has_cmd fdisk && { install_package fdisk; }
     
-    if is_root
-    then SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
-    else SECTOR="$( sudo fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
+    if is_root; then
+        SECTOR="$( fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
+    else
+        SECTOR="$( sudo fdisk -l "$IMG" | grep Linux | awk '{ print $2 }' )"
     fi
     log -1 "Sector: $SECTOR"
     OFFSET=$(( "$SECTOR" * 512 ))
@@ -450,9 +457,16 @@ function mount_raspbian {
     log -1 "Mountpoint: $MP"
     mkdir --parents "$MP"
     
-    if is_root
-    then mount "$IMG" -o offset="$OFFSET" "$MP"      || { log 2 "Failed to mount IMG at: $MP"; return 4; }
-    else sudo mount "$IMG" -o offset="$OFFSET" "$MP" || { log 2 "Failed to mount IMG at: $MP"; return 4; }
+    if is_root; then
+        mount "$IMG" -o offset="$OFFSET" "$MP" || {
+            log 2 "Failed to mount IMG at: $MP"
+            return 4
+        }
+    else
+        sudo mount "$IMG" -o offset="$OFFSET" "$MP" || {
+            log 2 "Failed to mount IMG at: $MP"
+            return 4
+        }
     fi; log 0 "IMG is mounted at: $MP"
 }
 
@@ -462,21 +476,35 @@ function mount_raspbian {
 # 3: Mountpoint already exists
 # 4: Failed to mount IMG at mountpoint
 function mount_raspbian_boot {
-    [[ "$#" -lt 1 ]] && return 1
+    [[ "$#" -lt 1 ]] && { return 1; }
     local IMG="$1" MP='raspbian_boot' SECTOR OFFSET
-    ! is_file "$IMG" && { log 2 "File not found: $IMG"; return 2; }
-    is_path   "$MP"  && { log 2 "Mountpoint already exists"; return 3; }
+    ! is_file "$IMG" && {
+        log 2 "File not found: $IMG"
+        return 2
+    }
+    is_path "$MP"  && {
+        log 2 "Mountpoint already exists"
+        return 3
+    }
     log -1 "Mounting: $MP"
-    if is_root
-    then SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
-    else SECTOR="$( sudo fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
+    if is_root; then
+        SECTOR="$( fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
+    else
+        SECTOR="$( sudo fdisk -l "$IMG" | grep FAT32 | awk '{ print $2 }' )"
     fi; log -1 "Sector: $SECTOR"
     OFFSET=$(( "$SECTOR" * 512 ))
     log -1 "Offset: $OFFSET"; log -1 "Mountpoint: $MP"
     mkdir --parents "$MP"
-    if is_root
-    then mount "$IMG" -o offset="$OFFSET" "$MP"      || { log 2 "Failed to mount IMG at: $MP"; return 4; }
-    else sudo mount "$IMG" -o offset="$OFFSET" "$MP" || { log 2 "Failed to mount IMG at: $MP"; return 4; }
+    if is_root; then
+        mount "$IMG" -o offset="$OFFSET" "$MP" || {
+            log 2 "Failed to mount IMG at: $MP"
+            return 4
+        }
+    else
+        sudo mount "$IMG" -o offset="$OFFSET" "$MP" || {
+            log 2 "Failed to mount IMG at: $MP"
+            return 4
+        }
     fi; log 0 "IMG is mounted at: $MP"
 }
 
@@ -490,27 +518,50 @@ function umount_raspbian {
     local -r ROOTDIR="${ROOTDIR:-raspbian_root}" \
              BOOTDIR="${BOOTDIR:-raspbian_boot}"
     log -1 "Unmounting IMG"
-    if ! is_directory "$ROOTDIR" && ! is_directory "$BOOTDIR"
-    then log -1 "Nothing to unmount"; return 0
+    if ! is_directory "$ROOTDIR" && ! is_directory "$BOOTDIR"; then
+        log -1 "Nothing to unmount"
+        return 0
     fi
     is_directory "$ROOTDIR" && {
-         if is_root
-         then
-            umount --lazy "$ROOTDIR" || { log 2 "Could not unmount: $ROOTDIR"; return 1; }
-            rmdir "$ROOTDIR"         || { log 2 "Could not remove: $ROOTDIR"; return 2; }
+         if is_root; then
+            umount --lazy "$ROOTDIR" || {
+                log 2 "Could not unmount: $ROOTDIR"
+                return 1
+            }
+            rmdir "$ROOTDIR" || {
+                log 2 "Could not remove: $ROOTDIR"
+                return 2
+            }
          else
-            sudo umount --lazy "$ROOTDIR" || { log 2 "Could not unmount: $ROOTDIR"; return 1; }
-            sudo rmdir "$ROOTDIR"         || { log 2 "Could not remove: $ROOTDIR"; return 2; }
+            sudo umount --lazy "$ROOTDIR" || {
+                log 2 "Could not unmount: $ROOTDIR"
+                return 1
+            }
+            sudo rmdir "$ROOTDIR" || {
+                log 2 "Could not remove: $ROOTDIR"
+                return 2
+            }
          fi
     }
     is_directory "$BOOTDIR" && {
-         if is_root
-         then
-            umount --lazy "$BOOTDIR" || { log 2 "Could not unmount: $BOOTDIR"; return 3; }
-            rmdir "$BOOTDIR"         || { log 2 "Could not remove: $BOOTDIR"; return 4; }
+         if is_root; then
+            umount --lazy "$BOOTDIR" || {
+                log 2 "Could not unmount: $BOOTDIR"
+                return 3
+            }
+            rmdir "$BOOTDIR" || {
+                log 2 "Could not remove: $BOOTDIR"
+                return 4
+            }
          else
-            sudo umount --lazy "$BOOTDIR" || { log 2 "Could not unmount: $BOOTDIR"; return 3; }
-            sudo rmdir "$BOOTDIR"         || { log 2 "Could not remove: $BOOTDIR"; return 4; }
+            sudo umount --lazy "$BOOTDIR" || {
+                log 2 "Could not unmount: $BOOTDIR"
+                return 3
+            }
+            sudo rmdir "$BOOTDIR" || {
+                log 2 "Could not remove: $BOOTDIR"
+                return 4
+            }
          fi
     }; log 0 "Unmounted IMG"; return 0
 }
@@ -523,26 +574,29 @@ function prepare_chroot_raspbian {
     local -r IMG="$1" \
             ROOTDIR="${ROOTDIR:-raspbian_root}"
     mount_raspbian "$IMG" || { return 2; }
-    if is_root
-    then mount -t proc proc          "$ROOTDIR"/proc/
-         mount -t sysfs sys          "$ROOTDIR"/sys/
-         mount -o bind /dev          "$ROOTDIR"/dev/
-         mount -o bind /dev/pts      "$ROOTDIR"/dev/pts
-    else sudo mount -t proc proc     "$ROOTDIR"/proc/
-         sudo mount -t sysfs sys     "$ROOTDIR"/sys/
-         sudo mount -o bind /dev     "$ROOTDIR"/dev/
-         sudo mount -o bind /dev/pts "$ROOTDIR"/dev/pts
+    if is_root; then
+        mount -t proc proc          "$ROOTDIR"/proc/
+        mount -t sysfs sys          "$ROOTDIR"/sys/
+        mount -o bind /dev          "$ROOTDIR"/dev/
+        mount -o bind /dev/pts      "$ROOTDIR"/dev/pts
+    else
+        sudo mount -t proc proc     "$ROOTDIR"/proc/
+        sudo mount -t sysfs sys     "$ROOTDIR"/sys/
+        sudo mount -o bind /dev     "$ROOTDIR"/dev/
+        sudo mount -o bind /dev/pts "$ROOTDIR"/dev/pts
     fi
     
     if is_file 'qemu-aarch64-static'; then
-        if is_root
-        then cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
-        else sudo cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        if is_root; then
+            cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        else
+            sudo cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
         fi
     elif is_file '/usr/bin/qemu-aarch64-static'; then
-        if is_root
-        then cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
-        else sudo cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        if is_root; then
+            cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        else
+            sudo cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
         fi
     else log 2 "File not found: /usr/bin/qemu-aarch64-static"; return 3
     fi
@@ -583,18 +637,19 @@ function resize_image {
     ! has_cmd 'resize2fs' && { install_package 'e2fsprogs'; }
     
     if is_root; then
-        log -1 "fallocate";  fallocate -l"$SIZE" "$IMG"
-        log -1 "parted";     parted "$IMG" -- resizepart 2 -1s
-        log -1 "losetup";    DEV="$( losetup -f )"
+        log -1 "fallocate"; fallocate -l"$SIZE" "$IMG"
+        log -1 "parted"; parted "$IMG" -- resizepart 2 -1s
+        log -1 "losetup"; DEV="$( losetup -f )"
     else
-        log -1 "fallocate";  sudo fallocate -l"$SIZE" "$IMG"
-        log -1 "parted";     sudo parted "$IMG" -- resizepart 2 -1s
-        log -1 "losetup";    DEV="$( sudo losetup -f )"
+        log -1 "fallocate"; sudo fallocate -l"$SIZE" "$IMG"
+        log -1 "parted"; sudo parted "$IMG" -- resizepart 2 -1s
+        log -1 "losetup"; DEV="$( sudo losetup -f )"
     fi; log -1 "Mount: $IMG"; mount_raspbian "$IMG"
     
-    if is_root
-    then log -1 "resize2fs";   resize2fs -f "$DEV"
-    else log -1 "resize2fs";   sudo resize2fs -f "$DEV"
+    if is_root; then
+        log -1 "resize2fs"; resize2fs -f "$DEV"
+    else
+        log -1 "resize2fs"; sudo resize2fs -f "$DEV"
     fi; log 0 "Resized: $IMG"; umount_raspbian
 }
 
@@ -608,29 +663,38 @@ function update_boot_uuid {
              ROOTDIR="${ROOTDIR:-raspbian_root}" \
              BOOTDIR="${BOOTDIR:-raspbian_boot}"
     local PTUUID
-    if is_root
-    then PTUUID="$(blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
-    else PTUUID="$(sudo blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
+    if is_root; then
+        PTUUID="$(blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
+    else
+        PTUUID="$(sudo blkid -o export "$IMG" | grep PTUUID | sed 's|.*=||')"
     fi; log -1 "Updating IMG Boot UUID's"
     
-    mount_raspbian "$IMG" || { log 2 "Failed to mount IMG root"; return 2; }
+    mount_raspbian "$IMG" || {
+        log 2 "Failed to mount IMG root"
+        return 2
+    }
     
-    if is_root
-    then bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
+    if is_root; then
+        bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
 PARTUUID=${PTUUID}-01  /boot           vfat    defaults          0       2
 PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
 EOF
-    else sudo bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
+    else
+        sudo bash -c "cat > ${ROOTDIR}/etc/fstab" <<EOF
 PARTUUID=${PTUUID}-01  /boot           vfat    defaults          0       2
 PARTUUID=${PTUUID}-02  /               ext4    defaults,noatime  0       1
 EOF
     fi
     umount_raspbian
-    mount_raspbian_boot "$IMG" || { log 2 "Failed to mount IMG boot"; return 3; }
+    mount_raspbian_boot "$IMG" || {
+        log 2 "Failed to mount IMG boot"
+        return 3
+    }
     
-    if is_root
-    then bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
-    else sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
+    if is_root; then
+        bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
+    else
+        sudo bash -c "sed -i 's|root=[^[:space:]]*|root=PARTUUID=${PTUUID}-02 |' ${BOOTDIR}/cmdline.txt"
     fi; umount_raspbian
 }
 
@@ -641,7 +705,10 @@ EOF
 function prepare_sshd_raspbian {
     [[ "$#" -lt 1 ]] && { return 1; }
     local -r IMG="$1" BOOTDIR="${BOOTDIR:-raspbian_boot}"
-    mount_raspbian_boot "$IMG"     || { log 2 "Failed to mount IMG boot"; return 2; }
+    mount_raspbian_boot "$IMG"    || {
+        log 2 "Failed to mount IMG boot"
+        return 2
+    }
     # Enable SSH
     if is_root; then
         touch "$BOOTDIR"/ssh      || { log 2 "Failed to create SSH file in IMG boot"; return 3; }
@@ -656,10 +723,13 @@ function prepare_sshd_raspbian {
 function set_static_IP {
     [[ "$#" -lt 2 ]] && { return 1; }
     local -r IMG="$1" IP="$2" ROOTDIR="${ROOTDIR:-raspbian_root}"
-    mount_raspbian "$IMG" || { log 2 "Failed to mount IMG root"; return 2; }
+    mount_raspbian "$IMG" || {
+        log 2 "Failed to mount IMG root"
+        return 2
+    }
     
-    if is_root
-    then bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
+    if is_root; then
+        bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
 interface eth0
 static ip_address=$IP/24
 static routers=192.168.0.1
@@ -669,7 +739,8 @@ static domain_name_servers=8.8.8.8
 auto lo
 iface lo inet loopback
 EOF
-    else sudo bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
+    else
+        sudo bash -c "cat > ${ROOTDIR}/etc/dhcpcd.conf" <<EOF
 interface eth0
 static ip_address=$IP/24
 static routers=192.168.0.1
@@ -688,10 +759,14 @@ EOF
 function copy_to_image {
     [[ "$#" -lt 2 ]] && { return 1; }
     local IMG="$1" DST="$2" SRC=("${@:3}") ROOTDIR="${ROOTDIR:-raspbian_root}"
-    mount_raspbian "$IMG" || { log 2 "Failed to mount IMG root"; return 1; }
-    if is_root
-    then cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"      || { log 2 "Copy to image failed"; return 2; }
-    else sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST" || { log 2 "Copy to image failed"; return 2; }
+    mount_raspbian "$IMG" || {
+        log 2 "Failed to mount IMG root"
+        return 1
+    }
+    if is_root; then
+        cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST"      || { log 2 "Copy to image failed"; return 2; }
+    else
+        sudo cp --reflink=auto -v "${SRC[@]}" "$ROOTDIR"/"$DST" || { log 2 "Copy to image failed"; return 2; }
     fi; sync; umount_raspbian
 }
 
@@ -699,16 +774,20 @@ function copy_to_image {
 # 1: Invalid number of arguments
 # 2: Failed to mount IMG root
 function deactivate_unattended_upgrades {
-    [[ "$#" -lt 1 ]] && return 1
+    [[ "$#" -lt 1 ]] && { return 1; }
     local -r IMG="$1" ROOTDIR="${ROOTDIR:-raspbian_root}"
-    mount_raspbian "$IMG" || { log 2 "Failed to mount IMG root"; return 2; }
-    if ! is_file "${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
-    then log 1 "Directory not found: ${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
+    mount_raspbian "$IMG" || {
+        log 2 "Failed to mount IMG root"
+        return 2
+    }
+    if ! is_file "${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"; then
+        log 1 "Directory not found: ${ROOTDIR}/etc/apt/apt.conf.d/20ncp-upgrades"
     else
-         if is_root
-         then rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
-         else sudo rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
-         fi
+        if is_root; then
+            rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
+        else
+            sudo rm --force "$ROOTDIR"/etc/apt/apt.conf.d/20ncp-upgrades
+        fi
     fi; umount_raspbian
 }
 
@@ -725,16 +804,26 @@ function download_raspbian {
              ZIP_CACHE='cache/raspios_lite.xz'
     log -1 "Downloading Raspberry Pi OS"
     mkdir --parents cache
-    if is_file "$IMG_CACHE"
-    then log -1 "File exists: $IMG_CACHE"; log -1 "Skipping download"
-         cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE" || { log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"; return 2; }
-         return 0
-    elif is_file "$ZIP_CACHE"
-    then log -1 "File exists: $ZIP_CACHE"; log -1 "Skipping download"
-    else wget "$URL" -nv -O "$ZIP_CACHE" || { log 2 "Download failed from: $URL"; return 3; }
+    if is_file "$IMG_CACHE"; then
+        log -1 "File exists: $IMG_CACHE"; log -1 "Skipping download"
+        cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE" || {
+            log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"
+            return 2
+        }
+        return 0
+    elif is_file "$ZIP_CACHE"; then
+        log -1 "File exists: $ZIP_CACHE"; log -1 "Skipping download"
+    else
+        wget "$URL" -nv -O "$ZIP_CACHE" || {
+            log 2 "Download failed from: $URL"
+            return 3
+        }
     fi
     
-    ! has_cmd 'unxz' && { log 2 "Missing command: unxz"; return 4; }
+    ! has_cmd 'unxz' && {
+        log 2 "Missing command: unxz"
+        return 4
+    }
     unxz -k -c "$ZIP_CACHE" > "$IMG_CACHE"
     cp -v --reflink=auto "$IMG_CACHE" "$IMGFILE" || { log 2 "Copy failed, from $IMG_CACHE to $IMGFILE"; return 2; }
 }
@@ -750,16 +839,22 @@ function pack_image {
     DIR="$( dirname  "$IMG" )"
     IMGNAME="$( basename "$IMG" )"
     log -1 "Packing image: $IMG → $TAR"
-    if is_root
-    then if tar -C "$DIR" -cavf "$TAR" "$IMGNAME"
-         then log 0 "$TAR packed successfully"; return 0
-         else log 2 "Failed packing IMG: $TAR"; return 2
-         fi
+    if is_root; then
+        if tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then
+            log 0 "$TAR packed successfully"
+            return 0
+        else
+            log 2 "Failed packing IMG: $TAR"
+            return 2
+        fi
     else
-         if sudo tar -C "$DIR" -cavf "$TAR" "$IMGNAME"
-         then log 0 "$TAR packed successfully"; return 0
-         else log 2 "Failed packing IMG: $TAR"; return 2
-         fi
+        if sudo tar -C "$DIR" -cavf "$TAR" "$IMGNAME"; then
+            log 0 "$TAR packed successfully"
+            return 0
+        else
+            log 2 "Failed packing IMG: $TAR"
+            return 2
+        fi
     fi
 }
 
@@ -771,7 +866,10 @@ function create_torrent {
     local -r TAR="$1"
     local IMGNAME DIR
     log -1 "Creating torrent"
-    ! is_file "$TAR" && { log 2 "File not found: $TAR"; return 1; }
+    ! is_file "$TAR" && {
+        log 2 "File not found: $TAR"
+        return 1
+    }
     IMGNAME="$( basename "$TAR" .tar.bz2 )"
     DIR="torrent/$IMGNAME"
     is_directory "$DIR" && { log 2 "Directory already exists: $DIR"; return 1; }

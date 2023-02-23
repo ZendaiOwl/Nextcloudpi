@@ -690,7 +690,8 @@ function run_app_unsafe {
     
     # Run
     log -1 "Executing configure: $NCP_APP"
-    ( configure ) 2>&1 | tee -a "$LOG"; RET="${PIPESTATUS[0]}"
+    ( configure ) 2>&1 | tee -a "$LOG"
+    RET="${PIPESTATUS[0]}"
     
     println "" >> "$LOG"
     
@@ -699,7 +700,7 @@ function run_app_unsafe {
          clear_password_fields "$CFG_FILE"
          log 0 "Password fields cleared"
     fi
-    log 0 "Completed: $NCP_APP"
+    log 0 "Completed: $NCP_APP $RET"
     return "$RET"
 }
 

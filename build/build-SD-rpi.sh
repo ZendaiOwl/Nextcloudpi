@@ -20,9 +20,13 @@ then set -e"$DBG"
 else set -e
 fi
 
-BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"; add_build_variables 'BUILDLIBRARY'
+BUILDLIBRARY="${BUILDLIBRARY:-build/buildlib.sh}"
+add_build_variables 'BUILDLIBRARY'
 
-[[ ! -f "$BUILDLIBRARY" ]] && { printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"; exit 1; }
+[[ ! -f "$BUILDLIBRARY" ]] && {
+    printf '\e[1;31mERROR\e[0m %s\n' "File not found: $BUILDLIBRARY"
+    exit 1
+}
 
 # shellcheck disable=SC1090
 source "$BUILDLIBRARY"
@@ -45,10 +49,10 @@ add_build_variables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
 ##############################################################################
 
 function clean_build_sd_rpi {
-  log -1 "Cleaning build sd script"
-  clean_chroot_raspbian
-  unset "${BUILDVARIABLES[@]}"
-  log 0 "Done"
+    log -1 "Cleaning build-sd script"
+    clean_chroot_raspbian
+    unset "${BUILDVARIABLES[@]}"
+    log 0 "Done"
 }
 
 ##############################################################################
@@ -78,30 +82,33 @@ resize_image      "$IMG" "$SIZE"
 update_boot_uuid  "$IMG"
 
 # Make sure we don't accidentally disable first run wizard
-if is_root
-then rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
-else sudo rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
+if is_root; then
+    rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
+else
+    sudo rm --force ncp-web/{wizard.cfg,ncp-web.cfg}
 fi
 
 ## BUILD NCP
 
 prepare_chroot_raspbian "$IMG"
 
-if is_root
-then mkdir "$ROOTDIR"/"$BUILD_DIR"
-else sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
+if is_root; then
+    mkdir "$ROOTDIR"/"$BUILD_DIR"
+else
+    sudo mkdir "$ROOTDIR"/"$BUILD_DIR"
 fi
 
-if is_root
-then # shellcheck disable=SC2035
-     rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
-else # shellcheck disable=SC2035
-     sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+if is_root; then
+    # shellcheck disable=SC2035
+    rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
+else
+    # shellcheck disable=SC2035
+    sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 fi
 
-if is_root
-then PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
-     chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
+if is_root; then
+    PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+    chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
 set -ex
 
 # allow oldstable
@@ -149,8 +156,9 @@ then rm --recursive --force '/tmp/ncp-build'
 fi
 
 EOFCHROOT
-else PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
-     sudo chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
+else
+    PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+    sudo chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
 set -ex
 
 # allow oldstable
@@ -200,11 +208,12 @@ fi
 EOFCHROOT
 fi
 
-if is_root
-then log -1 "Image created: $(basename "$IMG")"
-     basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
-else log -1 "Image created: $(sudo basename "$IMG")"
-     sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+if is_root; then
+    log -1 "Image created: $(basename "$IMG")"
+    basename "$IMG" | tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
+else
+    log -1 "Image created: $(sudo basename "$IMG")"
+    sudo basename "$IMG" | sudo tee "$ROOTDIR"/usr/local/etc/ncp-baseimage
 fi
 
 clean_build_sd_rpi
@@ -214,7 +223,10 @@ trap - EXIT SIGHUP SIGABRT SIGINT
 # pack_image "$IMG" "$TAR"
 
 ## Pack IMG
-[[ "$*" =~ .*"--pack".* ]] && { log -1 "Packing image"; pack_image "$IMG" "$TAR"; }
+[[ "$*" =~ .*"--pack".* ]] && {
+    log -1 "Packing image"
+    pack_image "$IMG" "$TAR"
+}
 
 log 0 "Build is complete"; exit 0
 
