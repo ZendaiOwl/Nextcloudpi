@@ -283,7 +283,7 @@ function find_full_process {
 function launch_install_qemu {
     [[ "$#" -lt 2 ]] && { return 1; }
     local IMG="$1" IP="$2" IMGOUT
-    if is_zero "$IP" && { log 2 "Invalid argument #2: [IP]"; return 2; }
+    is_zero "$IP"    && { log 2 "Invalid argument #2: [IP]"; return 2; }
     ! is_file "$IMG" && { log 2 "File not found: $IMG"; return 3; }
     IMGOUT="${IMG}-$( date +%s )"
     cp --reflink=auto -v "$IMG" "$IMGOUT" && { log 2 "Copying IMG failed"; return 1; }
