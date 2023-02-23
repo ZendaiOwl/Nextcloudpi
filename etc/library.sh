@@ -467,7 +467,7 @@ function check_distro {
 function clear_password_fields {
     local -r CFG_FILE="$1"
     local LENGTH TYPE VAL
-    is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 1; }
+    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 1; }
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0 ; i < "$LENGTH" ; i++ ))
     do TYPE="$(jq -r ".params[$i].type" "$CFG_FILE")"

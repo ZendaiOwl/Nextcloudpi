@@ -219,15 +219,20 @@ install_package git \
 if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]; then
     CODE_DIR="$TMPDIR"/"$REPO"
     log -1 "Fetching build code to: $CODE_DIR"
-    if ! git clone -b "$BRANCH" "$URL" "$CODE_DIR"; then
-        log 2 "Failed to clone repository: $URL"; exit 1
-    fi
+    git clone -b "$BRANCH" "$URL" "$CODE_DIR" || {
+        log 2 "Failed to clone repository: $URL"
+        exit 1
+    }
     add_install_variable CODE_DIR
 fi
 
 # Change directory to the code directory in the temporary directory
 if [[ -v CODE_DIR && -d "$CODE_DIR" ]]
-then cd "$CODE_DIR" || { log 2 "Failed changing directory to: $CODE_DIR"; exit 1; }
+then
+    cd "$CODE_DIR" || {
+        log 2 "Failed changing directory to: $CODE_DIR"
+        exit 1
+    }
 fi
 
 # Install NextcloudPi
@@ -327,9 +332,11 @@ mkdir --parents '/opt/ncdata'
 if [[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]
 then REMOVE_DATADIR_CFG='true'
      if [[ -f 'etc/ncp-config.d/nc-datadir.cfg' ]]
-     then if ! cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
-          then log 2 "Failed to copy file: nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
-          fi
+     then
+        cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
+            log 2 "Failed to copy file: nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
+            exit 1
+        }
      else log 2 "File not found: etc/ncp-config.d/nc-datadir.cfg"; exit 1
      fi
 fi
@@ -341,9 +348,11 @@ fi
 
 if [[ "$REMOVE_DATADIR_CFG" == 'true' ]]
 then if [[ -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]
-     then if ! rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg'
-          then log 2 "Failed to remove file: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
-          fi
+     then
+        rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
+            log 2 "Failed to remove file: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
+            exit 1
+        }
      else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
      fi
 fi
