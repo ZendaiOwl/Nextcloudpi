@@ -104,16 +104,15 @@ function install_package {
     fi
 }
 
-function add_install_variable
-{
-  declare -x -a INSTALL_VARIABLES; INSTALL_VARIABLES+=("$@")
-  [[ "${INSTALL_VARIABLES[*]}" != *'INSTALL_VARIABLES'* ]] && {
+function add_install_variable () {
+  declare -x -a INSTALL_VARIABLES
+  INSTALL_VARIABLES+=("$@")
+  if [[ "${INSTALL_VARIABLES[*]}" != *'INSTALL_VARIABLES'* ]]; then
       add_install_variable 'INSTALL_VARIABLES'
-  }
+  fi
 }
 
-function clean_install_variables
-{
+function clean_install_variables {
   unset "${INSTALL_VARIABLES[@]}"
 }
 
@@ -144,8 +143,7 @@ function clean_install_script {
 ###### Variables #######
 ########################
 
-
-[[ ! "$EUID" -eq 0 ]] && {
+[[ "$EUID" -ne 0 ]] && {
     log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"
     exit 1
 }
@@ -188,8 +186,8 @@ TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "Failed to create temp direc
 
 # Add variables to be unset during cleanup to free up memory
 # allocation and not leave dangling variables in the system environment
-add_install_variable OWNER REPO BRANCH URL LIBRARY \
-                     NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
+add_install_variable 'OWNER' 'REPO' 'BRANCH URL' 'LIBRARY' \
+                     'NCPCFG' 'DBNAME' 'NCP_TEMPLATES_DIR' 'TMPDIR'
 
 # Trap cleanup function() for install.sh
 trap 'clean_install_script' EXIT SIGHUP SIGABRT SIGILL
@@ -199,7 +197,6 @@ trap 'clean_install_script' EXIT SIGHUP SIGABRT SIGILL
 ##### Installation #####
 ########################
 
-
 # Add to PATH if needed
 if [[ "$PATH" != *'/usr/local/sbin:/usr/sbin:/sbin:'* ]]
 then PATH="/usr/local/sbin:/usr/sbin:/sbin:$PATH"
@@ -207,7 +204,7 @@ else PATH="$PATH"
 fi; export PATH
 
 # Check for existing MariaDB/MySQL install
-[[ "$(command -v mysqld &>/dev/null; printf '%i\n' "$?")" -eq 0 ]] && {
+if [[ "$(command -v mysqld &>/dev/null; printf '%i\n' "$?")" -eq 0 ]]; then
     log 1 "Existing MySQL configuration will be changed"
     if [[ -v DBNAME ]]; then
         if mysql -e 'use '"$DBNAME"'' &>/dev/null; then
@@ -220,9 +217,9 @@ fi; export PATH
             exit 1
         fi
     fi
-}
+fi
 
-if [[ -v APT_IS_UPDATED ]] && [[ "$APT_IS_UPDATED" -eq 1 ]]; then
+if [[ -v APT_IS_UPDATED && "$APT_IS_UPDATED" -eq 1 ]]; then
     log -2 "Skipping apt update"
 else update_apt # Update apt list
 fi
@@ -239,18 +236,18 @@ install_package git \
                 apt-transport-https
 
 # Get installation/build code from repository
-if [[ -z "$CODE_DIR" ]] || [[ ! -v CODE_DIR ]]; then
+if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]; then
     CODE_DIR="$TMPDIR"/"$REPO"
     log -1 "Fetching build code to: $CODE_DIR"
     git clone -b "$BRANCH" "$URL" "$CODE_DIR" || {
         log 2 "Failed to clone repository: $URL"
         exit 1
     }
-    add_install_variable CODE_DIR
+    add_install_variable 'CODE_DIR'
 fi
 
 # Change directory to the code directory in the temporary directory
-if [[ -v CODE_DIR ]] && [[ -d "$CODE_DIR" ]]; then
+if [[ -v CODE_DIR && -d "$CODE_DIR" ]]; then
     cd "$CODE_DIR" || {
         log 2 "Failed changing directory to: $CODE_DIR"
         exit 1
@@ -303,23 +300,23 @@ if [[ -d 'etc/ncp-config.d' ]]; then
 else log 2 "Directory not found: etc/ncp-config.d"; exit 1
 fi
 
-[[ -f "$LIBRARY" ]] && {
+if [[ -f "$LIBRARY" ]]; then
     cp "$LIBRARY" '/usr/local/etc/library.sh' || {
         log 2 "Failed to copy file: $LIBRARY"
         exit 1
     }
     LIBRARY='/usr/local/etc/library.sh'
     declare -x -g LIBRARY
-}
+fi
 
-[[ -f "$NCPCFG" ]] && {
+if [[ -f "$NCPCFG" ]]; then
     cp "$NCPCFG" '/usr/local/etc/ncp.cfg' || {
         log 2 "Failed to copy file: ncp.cfg $NCPCFG"
         exit 1
     }
     NCPCFG='/usr/local/etc/ncp.cfg'
     declare -x -g NCPCFG
-}
+fi
 
 if [[ -d "$NCP_TEMPLATES_DIR" ]]; then
     cp --recursive "$NCP_TEMPLATES_DIR" '/usr/local/etc/' || {
@@ -369,7 +366,7 @@ log -1 "Moving data directory to: /opt/ncdata"
 df -h
 mkdir --parents '/opt/ncdata'
 
-[[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]] && {
+if [[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]; then
     REMOVE_DATADIR_CFG='true'
     if [[ -f 'etc/ncp-config.d/nc-datadir.cfg' ]]; then
         cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
@@ -378,14 +375,14 @@ mkdir --parents '/opt/ncdata'
         }
      else log 2 "File not found: etc/ncp-config.d/nc-datadir.cfg"; exit 1
      fi
-}
+fi
 
 if [[ -f 'bin/ncp/CONFIG/nc-datadir.sh' ]]; then
     DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/CONFIG/nc-datadir.sh'
 else log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
 fi
 
-[[ "$REMOVE_DATADIR_CFG" == 'true' ]] && {
+if [[ "$REMOVE_DATADIR_CFG" == 'true' ]]; then
     if [[ -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]; then
         rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
             log 2 "Failed to remove file: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
@@ -393,14 +390,14 @@ fi
         }
     else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
     fi
-}
+fi
 
-[[ -f '/.ncp-image' ]] && {
+if [[ -f '/.ncp-image' ]]; then
     rm '/.ncp-image' || {
         log 2 "Failed to remove file: /.ncp-image"
         exit 1
     }
-}
+fi
 
 # Skip on Armbian / Vagrant / LXD
 if [[ -n "$CODE_DIR" ]]; then

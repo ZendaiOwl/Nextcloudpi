@@ -127,8 +127,8 @@ apt-get update --allow-releaseinfo-change --assume-yes
 echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-cd 'tmp/ncp-build' || {
-    printf '%s\n' "Failed to change directory to: tmp/ncp-build"
+cd /tmp/ncp-build || {
+    printf '%s\n' "Failed to change directory to: /tmp/ncp-build"
     exit 1
 }
 
@@ -155,8 +155,8 @@ if [[ -f '/etc/resolv.conf' ]]
 then rm /etc/resolv.conf
 fi
 
-if [[ -d 'tmp/ncp-build' ]]
-then rm --recursive --force 'tmp/ncp-build'
+if [[ -d '/tmp/ncp-build' ]]
+then rm --recursive --force '/tmp/ncp-build'
 fi
 
 EOFCHROOT
@@ -181,8 +181,8 @@ apt-get update --allow-releaseinfo-change --assume-yes
 printf '%s\n' 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-cd 'tmp/ncp-build' || {
-    printf '%s\n' "Failed to change directory to: tmp/ncp-build"
+cd /tmp/ncp-build || {
+    printf '%s\n' "Failed to change directory to: /tmp/ncp-build"
     exit 1
 }
 
@@ -209,8 +209,8 @@ if [[ -f '/etc/resolv.conf' ]]; then
     rm /etc/resolv.conf
 fi
 
-if [[ -d 'tmp/ncp-build' ]]; then
-    rm --recursive --force 'tmp/ncp-build'
+if [[ -d '/tmp/ncp-build' ]]; then
+    rm --recursive --force '/tmp/ncp-build'
 fi
 
 EOFCHROOT
