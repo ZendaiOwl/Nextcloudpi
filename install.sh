@@ -10,25 +10,31 @@
 # more details at https://ownyourbits.com
 
 # A log that uses log levels for logging different outputs
-# Log levels  | Colour
+# Return codes
+# 1: Invalid log level
+# 2: Invalid number of arguments
+# Log level   | colour
 # -2: Debug   | CYAN='\e[1;36m'
 # -1: Info    | BLUE='\e[1;34m'
 #  0: Success | GREEN='\e[1;32m'
 #  1: Warning | YELLOW='\e[1;33m'
 #  2: Error   | RED='\e[1;31m'
 function log {
-    if [[ "$#" -gt 0 ]]
-    then if [[ "$1" =~ [(-2)-2] ]]
-         then case "$1" in
-                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
-                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
-                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
-                   1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
-                   2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
-              esac
-         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
-         fi
-  fi
+    if [[ "$#" -gt 0 ]]; then
+        if [[ "$1" =~ [(-2)-2] ]]; then
+            case "$1" in
+                -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
+                -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
+                 0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
+                 1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
+                 2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
+            esac
+        else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
+             return 1
+        fi
+    else log 2 "Invalid number of arguments: [ $#/1+ ]"
+         return 2 
+    fi
 }
 
 ############################
@@ -283,19 +289,28 @@ else log 2 "Directory not found: etc/ncp-config.d"; exit 1
 fi
 
 if [[ -f "$LIBRARY" ]]; then
-    cp "$LIBRARY" '/usr/local/etc/library.sh' || { log 2 "Failed to copy file: $LIBRARY"; exit 1; }
+    cp "$LIBRARY" '/usr/local/etc/library.sh' || {
+        log 2 "Failed to copy file: $LIBRARY"
+        exit 1
+    }
     LIBRARY='/usr/local/etc/library.sh'
     declare -x -g LIBRARY
 fi
 
 if [[ -f "$NCPCFG" ]]; then
-    cp "$NCPCFG" '/usr/local/etc/ncp.cfg' || { log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1; }
+    cp "$NCPCFG" '/usr/local/etc/ncp.cfg' || {
+        log 2 "Failed to copy file: ncp.cfg $NCPCFG"
+        exit 1
+    }
     NCPCFG='/usr/local/etc/ncp.cfg'
     declare -x -g NCPCFG
 fi
 
 if [[ -d "$NCP_TEMPLATES_DIR" ]]; then
-    cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/' || { log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1; }
+    cp --recursive "$NCP_TEMPLATES_DIR" '/usr/local/etc/' || {
+        log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"
+        exit 1
+    }
     NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
     declare -x -g NCP_TEMPLATES_DIR
 else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1
@@ -378,7 +393,10 @@ if [[ -n "$CODE_DIR" ]]; then
     fi
 fi
 
-cd - || { log 2 "Failed to change directory to: -"; exit 1; }
+cd - || {
+    log 2 "Failed to change directory to: -"
+    exit 1
+}
 
 if [[ -d "$TMPDIR" ]]; then
     rm --recursive --force "$TMPDIR"

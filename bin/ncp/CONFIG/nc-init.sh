@@ -23,8 +23,9 @@ function configure {
     
     # checks
     REDISPASS="$( grep "^requirepass" /etc/redis/redis.conf  | cut -d' ' -f2 )"
-    if [[ -z "$REDISPASS" ]]
-    then println "Redis server is without a password"; return 1
+    if [[ -z "$REDISPASS" ]]; then
+        println "Redis server is without a password"
+        return 1
     fi
     
     ## RE-CREATE DATABASE TABLE
@@ -32,16 +33,18 @@ function configure {
     println "Setting up: Database"
     
     # launch mariadb if not already running
-    if [[ ! -f '/run/mysqld/mysqld.pid' ]]
-    then println "Starting MariaDB"
-         mysqld &
-         local db_pid="$!"
+    if [[ ! -f '/run/mysqld/mysqld.pid' ]]; then
+        println "Starting MariaDB"
+        mysqld &
+        local db_pid="$!"
     fi
     
     # wait for mariadb
-    while :
-    do [[ -S '/run/mysqld/mysqld.sock' ]] && { break; }
-       sleep 1
+    while :; do
+        [[ -S '/run/mysqld/mysqld.sock' ]] && {
+            break
+        }
+        sleep 1
     done
     sleep 1
     
@@ -62,26 +65,33 @@ EOF
     ## INITIALIZE NEXTCLOUD
     
     # make sure redis is running first
-    if ! pgrep -c redis-server &>/dev/null
-    then mkdir --parents '/var/run/redis'
-         chown 'redis'   '/var/run/redis'
-         # TODO: Add hostname to stop sudo error: unable to resolve host
-         sudo -u redis redis-server '/etc/redis/redis.conf' &
+    if ! pgrep -c redis-server &>/dev/null; then
+        mkdir --parents '/var/run/redis'
+        chown 'redis'   '/var/run/redis'
+        # TODO: Add hostname to stop sudo error: unable to resolve host
+        sudo -u redis redis-server '/etc/redis/redis.conf' &
     fi
     
-    while :
-    do [[ -S '/run/redis/redis.sock' ]] && { break; }
-       sleep 1
+    while :; do
+        [[ -S '/run/redis/redis.sock' ]] && {
+            break
+        }
+        sleep 1
     done
     
     
     println "Setting up: Nextcloud"
-    if [[ -d '/var/www/nextcloud/' ]]
-    then cd '/var/www/nextcloud/' || { println "Failed to change directory to: /var/www/nextcloud/"; }
+    if [[ -d '/var/www/nextcloud/' ]]; then
+        cd '/var/www/nextcloud/' || {
+            println "Failed to change directory to: /var/www/nextcloud/"
+        }
     fi
-
-    if [[ -f 'config/config.php' ]]
-    then rm --force 'config/config.php' || { println "Failed to remove file: config/config.php"; exit 1; }
+    
+    if [[ -f 'config/config.php' ]]; then
+        rm --force 'config/config.php' || {
+            println "Failed to remove file: config/config.php"
+            exit 1
+        }
     fi
     ncc maintenance:install --database 'mysql' \
                             --database-name 'nextcloud'  \
@@ -109,7 +119,7 @@ EOF
 EOF
 
     mkdir --parents "$UPLOADTMPDIR"
-    chown 'www-data':'www-data' "$UPLOADTMPDIR"
+    chown www-data:www-data "$UPLOADTMPDIR"
     ncc config:system:set tempdirectory --value "$UPLOADTMPDIR"
     sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/"$PHPVER"/cli/php.ini
     sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/"$PHPVER"/fpm/php.ini
@@ -133,13 +143,16 @@ EOF
     [[ -e '/usr/local/etc/logo' ]] && {
         ID="$( grep 'instanceid' 'config/config.php' | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
 
-        [[ -z "$ID" ]] || { println "Failed to get ID"; return 1; }
+        [[ -z "$ID" ]] || {
+            println "Failed to get Instance ID"
+            return 1
+        }
         
         mkdir --parents                data/appdata_"$ID"/theming/images
         cp '/usr/local/etc/background' data/appdata_"$ID"/theming/images
         cp '/usr/local/etc/logo'       data/appdata_"$ID"/theming/images/logo
         cp '/usr/local/etc/logo'       data/appdata_"$ID"/theming/images/logoheader
-        chown -R 'www-data':'www-data' data/appdata_"$ID"
+        chown -R www-data:www-data     data/appdata_"$ID"
     }
     
     mysql nextcloud <<EOF
@@ -165,22 +178,26 @@ EOF
     ncc app:disable updatenotification
     
     # News dropped support for 32-bit -> https://github.com/nextcloud/news/issues/1423
-    if ! [[ "$ARCH" =~ armv7 ]]
-    then ncc app:install news
-         # ncc app:enable  news
+    if ! [[ "$ARCH" =~ armv7 ]]; then
+        ncc app:install news
+        # ncc app:enable  news
     fi
     
     # ncp-previewgenerator
     NCVER="$(ncc status 2>/dev/null | grep 'version:' | awk '{ print $3 }')"
-    if is_more_recent_than '21.0.0' "$NCVER"
-    then NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
-    else ncc app:install notify_push
-         ncc app:enable  notify_push
-         [[ -f '/.ncp-image' ]] || { start_notify_push; } # don't start during build
-         NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
+    if is_more_recent_than '21.0.0' "$NCVER"; then
+        NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc20'
+    else
+        ncc app:install notify_push
+        ncc app:enable  notify_push
+        [[ -f '/.ncp-image' ]] || {
+            # don't start during build
+            start_notify_push
+        } 
+        NCPREV='/var/www/ncp-previewgenerator/ncp-previewgenerator-nc21'
     fi
-    ln -snf "$NCPREV"    '/var/www/nextcloud/apps/previewgenerator'
-    chown -R 'www-data': '/var/www/nextcloud/apps/previewgenerator'
+    ln -snf "$NCPREV"  '/var/www/nextcloud/apps/previewgenerator'
+    chown -R www-data: '/var/www/nextcloud/apps/previewgenerator'
     ncc app:enable previewgenerator
     
     # Preview generator
@@ -206,20 +223,22 @@ EOF
     ncc db:add-missing-indices
     
     # Default trusted domain (only from ncp-config)
-    if [[ -f '/usr/local/bin/nextcloud-domain.sh' ]]
-    then [[ -f '/.ncp-image' ]] || { bash '/usr/local/bin/nextcloud-domain.sh'; }
+    if [[ -f '/usr/local/bin/nextcloud-domain.sh' ]]; then
+        [[ -f '/.ncp-image' ]] || {
+            bash '/usr/local/bin/nextcloud-domain.sh'
+        }
     fi
     
     # dettach mysql during the build
-    if [[ "$db_pid" != "" ]]
-    then println "Shutting down MariaDB ($db_pid)"
-         mysqladmin -u root shutdown
-         wait "$db_pid"
+    if [[ "$db_pid" != "" ]]; then
+        println "Shutting down MariaDB [$db_pid]"
+        mysqladmin -u root shutdown
+        wait "$db_pid"
     fi
     println "NC init done"
 }
 
-function install { :; }
+function install () { :; }
 
 # License
 #

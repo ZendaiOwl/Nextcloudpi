@@ -17,25 +17,31 @@ function println {
 }
 
 # A log that uses log levels for logging different outputs
-# Log levels  | Colour
+# Return codes
+# 1: Invalid log level
+# 2: Invalid number of arguments
+# Log level   | colour
 # -2: Debug   | CYAN='\e[1;36m'
 # -1: Info    | BLUE='\e[1;34m'
 #  0: Success | GREEN='\e[1;32m'
 #  1: Warning | YELLOW='\e[1;33m'
 #  2: Error   | RED='\e[1;31m'
 function log {
-    if [[ "$#" -gt 0 ]]
-    then if [[ "$1" =~ [(-2)-2] ]]
-         then case "$1" in
-                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
-                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
-                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
-                   1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
-                   2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
-              esac
-         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
-         fi
-  fi
+    if [[ "$#" -gt 0 ]]; then
+        if [[ "$1" =~ [(-2)-2] ]]; then
+            case "$1" in
+                -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
+                -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
+                 0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
+                 1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
+                 2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
+            esac
+        else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
+             return 1
+        fi
+    else log 2 "Invalid number of arguments: [ $#/1+ ]"
+         return 2 
+    fi
 }
 
 CONFDIR='/usr/local/etc/ncp-config.d'
@@ -213,26 +219,30 @@ cp --recursive '/var/www/ncp-app'   '/var/www/nextcloud/apps/nextcloudpi'
 chown --recursive 'www-data':       '/var/www/nextcloud/apps/nextcloudpi'
 
 # remove unwanted ncp-apps for containerized versions
-if is_docker || is_lxc
-then for OPT in $EXCL_DOCKER
-     do rm "$CONFDIR"/"$OPT".cfg
+if is_docker || is_lxc; then
+    for OPT in $EXCL_DOCKER; do
+        rm "$CONFDIR"/"$OPT".cfg
         find '/usr/local/bin/ncp' -name "${OPT}.sh" -exec rm '{}' \;
      done
 fi
 
 # update services for docker
-if is_docker
-then cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} '/etc/services-enabled.d'
+if is_docker; then
+    cp build/docker/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} '/etc/services-enabled.d'
 fi
 
 # only live updates from here
-[[ -f '/.ncp-image' ]] && { exit 0; }
+[[ -f '/.ncp-image' ]] && {
+    exit 0
+}
 
 # update old images
 ./run_update_history.sh "$UPDATESDIR"
 
 # update to the latest NC version
-is_active_app 'nc-autoupdate-nc' && { run_app 'nc-autoupdate-nc'; }
+is_active_app 'nc-autoupdate-nc' && {
+    run_app 'nc-autoupdate-nc'
+}
 
 start_notify_push
 
@@ -242,17 +252,19 @@ source "$LIBRARY"
 
 # check dist-upgrade
 if ! check_distro "$NCPCFG" \
-&& ! check_distro "$NCP_CONFIG"
-then NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
-     NEW_RELEASE="$(jq -r '.release'         "$NCP_CONFIG")"
+&& ! check_distro "$NCP_CONFIG"; then
+    NEW_PHP_VERSION="$(jq -r '.php_version' "$NCP_CONFIG")"
+    NEW_RELEASE="$(jq -r '.release'         "$NCP_CONFIG")"
 
-     CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
-     CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
-     println "$CFG" > '/usr/local/etc/ncp-recommended.cfg'
+    CFG="$(jq ".php_version   = \"$NEW_PHP_VERSION\"" "$NCPCFG")"
+    CFG="$(jq ".release       = \"$NEW_RELEASE\""     "$NCPCFG")"
+    println "$CFG" > '/usr/local/etc/ncp-recommended.cfg'
 
-     [[ -f '/.dockerenv' ]] && \
-        MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade" || \
+    if [[ -f '/.dockerenv' ]]; then
+        MSG="Update to $NEW_RELEASE available. Get the latest container to upgrade"
+    else
         MSG="Update to $NEW_RELEASE available. Type 'sudo ncp-dist-upgrade' to upgrade"
+    fi
         
         println "$MSG"
         notify_admin "New distribution available" "$MSG"
@@ -271,11 +283,13 @@ fi
 # Remove redundant opcache configuration.
 # Related to https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=815968
 # Bug #416 reappeared after we moved to php7.3 and debian buster packages.
-[[ "$( ls -l /etc/php/"$PHPVER"/fpm/conf.d/*-opcache.ini 2>/dev/null |  wc -l )" -gt 1 ]] \
-&& rm "$( ls /etc/php/"$PHPVER"/fpm/conf.d/*-opcache.ini | tail -1 )"
+[[ "$( ls -l /etc/php/"$PHPVER"/fpm/conf.d/*-opcache.ini 2>/dev/null |  wc -l )" -gt 1 ]] && {
+    rm "$( ls /etc/php/"$PHPVER"/fpm/conf.d/*-opcache.ini | tail -1 )"
+}
 
-[[ "$( ls -l /etc/php/"$PHPVER"/cli/conf.d/*-opcache.ini 2>/dev/null |  wc -l )" -gt 1 ]] \
-&& rm "$( ls /etc/php/"$PHPVER"/cli/conf.d/*-opcache.ini | tail -1 )"
+[[ "$( ls -l /etc/php/"$PHPVER"/cli/conf.d/*-opcache.ini 2>/dev/null |  wc -l )" -gt 1 ]] && {
+    rm "$( ls /etc/php/"$PHPVER"/cli/conf.d/*-opcache.ini | tail -1 )"
+}
 
 exit 0
 

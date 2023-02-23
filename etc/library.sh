@@ -44,7 +44,7 @@ function log {
         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
              return 1
         fi
-    else log 2 "Invalid number of arguments: $#/1+"
+    else log 2 "Invalid number of arguments: [ $#/1+ ]"
          return 2 
     fi
 }

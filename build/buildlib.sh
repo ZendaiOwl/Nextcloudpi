@@ -35,19 +35,19 @@ function print_int {
 #  1: Warning | YELLOW='\e[1;33m'
 #  2: Error   | RED='\e[1;31m'
 function log {
-    if [[ "$#" -gt 0 ]]
-    then if [[ "$1" =~ [(-2)-2] ]]
-         then case "$1" in
-                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
-                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
-                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
-                   1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
-                   2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
-              esac
-         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
-              return 1
-         fi
-    else log 2 "Invalid number of arguments: $#/1+"
+    if [[ "$#" -gt 0 ]]; then
+        if [[ "$1" =~ [(-2)-2] ]]; then
+            case "$1" in
+                -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
+                -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
+                 0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
+                 1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
+                 2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
+            esac
+        else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
+             return 1
+        fi
+    else log 2 "Invalid number of arguments: [ $#/1+ ]"
          return 2 
     fi
 }
