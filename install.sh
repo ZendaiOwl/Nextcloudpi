@@ -114,9 +114,9 @@ function clean_install_script {
   log -1 "Cleaning up from install script"
   [[ -v TMPDIR && -d "$TMP" ]]    && { clean_install_tmp; }
   [[ -f '/.ncp-image' ]]          && { rm '/.ncp-image'; }
-  #[[ -v DBPID && -n "$DBPID" ]]   && { log -1 "Shutting down MariaDB [$DBPID]";  mysqladmin -u root shutdown; wait "$DBPID"; }
-  #[[ -v DB_PID && -n "$DB_PID" ]] && { log -1 "Shutting down MariaDB [$DB_PID]"; mysqladmin -u root shutdown; wait "$DB_PID"; }
-  #[[ -v db_pid && -n "$db_pid" ]] && { log -1 "Shutting down MariaDB [$db_pid]"; mysqladmin -u root shutdown; wait "$db_pid"; }
+  #[[ -v DBPID && -n "$DBPID" ]]   && { log -1 "Shutting down MariaDB [$DBPID]";  sudo kill "$DBPID";  }
+  #[[ -v DB_PID && -n "$DB_PID" ]] && { log -1 "Shutting down MariaDB [$DB_PID]"; sudo kill "$DB_PID"; }
+  #[[ -v db_pid && -n "$db_pid" ]] && { log -1 "Shutting down MariaDB [$db_pid]"; sudo kill "$db_pid"; }
   [[ -v INSTALL_VARIABLES ]]      && { clean_install_variables; }
   
   log 0 "Cleaned up from install script"

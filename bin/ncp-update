@@ -24,7 +24,7 @@ function log {
                    1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
                    2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
          fi
   fi
 }
@@ -37,12 +37,12 @@ function remove_tmp_directory {
 }
 
 function clean_ncp_update {
-    if ! cd /
-    then log 2 "Failed to change directory to: /"
-         log -1 "Attempting to remove tmp directory nonetheless"
-         remove_tmp_directory || { exit 1; }
-    else remove_tmp_directory || { exit 1; }
-    fi
+    cd / || {
+      log 2 "Failed to change directory to: /"
+      log -1 "Attempting to remove tmp directory nonetheless"
+    }
+    remove_tmp_directory || { exit 1; }
+    
 }
 
 [[ -n "$DBG" ]] && { set -"$DBG"; }
