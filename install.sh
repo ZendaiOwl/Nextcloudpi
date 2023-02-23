@@ -145,7 +145,7 @@ function clean_install_script {
 ########################
 
 
-[[ "$EUID" -ne 0 ]] && {
+[[ ! "$EUID" -eq 0 ]] && {
     log 2 "Must be run as root or with sudo, try: 'sudo ./${BASH_SOURCE[0]##*/}'"
     exit 1
 }
