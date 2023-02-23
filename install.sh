@@ -26,7 +26,7 @@ function log {
                    1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
                    2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"
+         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
          fi
   fi
 }
@@ -167,15 +167,8 @@ TMPDIR="$(mktemp -d /tmp/"$REPO".XXXXXX || ({ log 2 "Failed to create temp direc
 
 # Add variables to be unset during cleanup to free up memory
 # allocation and not leave dangling variables in the system environment
-add_install_variable 'OWNER' \
-                     'REPO' \
-                     'BRANCH' \
-                     'URL' \
-                     'LIBRARY' \
-                     'NCPCFG' \
-                     'DBNAME' \
-                     'NCP_TEMPLATES_DIR' \
-                     'TMPDIR'
+add_install_variable OWNER REPO BRANCH URL LIBRARY \
+                     NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
 
 # Trap cleanup function() for install.sh
 trap 'clean_install_script' EXIT SIGHUP SIGILL SIGABRT SIGINT
@@ -193,20 +186,21 @@ else PATH="$PATH"
 fi; export PATH
 
 # Check for existing MariaDB/MySQL install
-if command -v mysqld &>/dev/null
-then log 1 "Existing MySQL configuration will be changed"
-     if [[ -v DBNAME ]]
-     then if mysql -e 'use '"$DBNAME"'' &>/dev/null
-          then log 2 "Database exists: $DBNAME"; exit 1
-          fi
-     else if mysql -e 'use nextcloud' &>/dev/null
-          then log 2 "Database exists: nextcloud"; exit 1
-          fi
-     fi
-fi
+[[ "$(command -v mysqld &>/dev/null; printf '%i\n' "$?")" -eq 0 ]] && {
+    log 1 "Existing MySQL configuration will be changed"
+    if [[ -v DBNAME ]]; then
+        if mysql -e 'use '"$DBNAME"'' &>/dev/null
+        then log 2 "Database exists: $DBNAME"; exit 1
+        fi
+    else
+        if mysql -e 'use nextcloud' &>/dev/null
+        then log 2 "Database exists: nextcloud"; exit 1
+        fi
+    fi
+}
 
-if [[ -v APT_IS_UPDATED && "$APT_IS_UPDATED" -eq 1 ]]
-then log -2 "Skipping apt update"
+if [[ -v APT_IS_UPDATED && "$APT_IS_UPDATED" -eq 1 ]]; then
+    log -2 "Skipping apt update"
 else update_apt # Update apt list
 fi
 
@@ -222,13 +216,13 @@ install_package git \
                 apt-transport-https
 
 # Get installation/build code from repository
-if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]
-then CODE_DIR="$TMPDIR"/"$REPO"
-     log -1 "Fetching build code to: $CODE_DIR"
-     if ! git clone -b "$BRANCH" "$URL" "$CODE_DIR"
-     then log 2 "Failed to clone repository: $URL"; exit 1
-     fi
-     add_install_variable 'CODE_DIR'
+if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]; then
+    CODE_DIR="$TMPDIR"/"$REPO"
+    log -1 "Fetching build code to: $CODE_DIR"
+    if ! git clone -b "$BRANCH" "$URL" "$CODE_DIR"; then
+        log 2 "Failed to clone repository: $URL"; exit 1
+    fi
+    add_install_variable CODE_DIR
 fi
 
 # Change directory to the code directory in the temporary directory

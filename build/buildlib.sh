@@ -39,9 +39,11 @@ function log {
                    1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
                    2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; return 1
+         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
+              return 1
          fi
-    else log 2 "Invalid number of arguments"; return 2 
+    else log 2 "Invalid number of arguments: $#/1+"
+         return 2 
     fi
 }
 
@@ -189,10 +191,7 @@ function has_text {
 # $1: Command
 function has_cmd {
     [[ "$#" -ne 1 ]] && { return 2; }
-    if command -v "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
+    [[ "$(command -v "$1" &>/dev/null; print_int "$?")" -eq 0 ]]
 }
 
 ############################
@@ -206,7 +205,7 @@ function has_cmd {
 # 2: Invalid number of arguments
 function update_apt {
     if [[ "$#" -ne 0 ]]
-    then log 2 "Invalid number of arguments, requires none"; return 2
+    then log 2 "Invalid number of arguments: $#/0"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
@@ -232,7 +231,7 @@ function update_apt {
 # 2: Missing package argument
 function install_package {
     if [[ "$#" -eq 0 ]]
-    then log 2 "Requires: [PKG(s) to install]"; return 2
+    then log 2 "Requires: [ PKG(s) ]"; return 2
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
@@ -261,10 +260,7 @@ function install_package {
 function find_process {
     [[ "$#" -ne 1 ]]  && { log 2 "Requires argument: process"; return 2; }
     ! has_cmd 'pgrep' && { log 2 "Command not found: pgrep"; return 3; }
-    if pgrep "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
+    [[ "$(pgrep "$1" &>/dev/null; print_int "$?")" -eq 0 ]]
 }
 
 # Checks for a running process
@@ -276,10 +272,7 @@ function find_process {
 function find_full_process {
     [[ "$#" -ne 1 ]]  && { log 2 "Requires argument: process"; return 2; }
     ! has_cmd 'pgrep' && { log 2 "Command not found: pgrep"; return 3; }
-    if pgrep --full "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
+    [[ "$(pgrep --full "$1" &>/dev/null; print_int "$?")" -eq 0 ]]
 }
 
 #
@@ -497,34 +490,22 @@ function umount_raspbian {
     fi
     is_directory "$ROOTDIR" && {
          if is_root
-         then if ! umount --lazy "$ROOTDIR"
-              then log 2 "Could not unmount: $ROOTDIR"; return 1
-              fi
-              if ! rmdir "$ROOTDIR"
-              then log 2 "Could not remove: $ROOTDIR"; return 2
-              fi
+         then
+            umount --lazy "$ROOTDIR" || { log 2 "Could not unmount: $ROOTDIR"; return 1; }
+            rmdir "$ROOTDIR"         || { log 2 "Could not remove: $ROOTDIR"; return 2; }
          else
-              if ! sudo umount --lazy "$ROOTDIR"
-              then log 2 "Could not unmount: $ROOTDIR"; return 1
-              fi
-              if ! sudo rmdir "$ROOTDIR"
-              then log 2 "Could not remove: $ROOTDIR"; return 2
-              fi
+            sudo umount --lazy "$ROOTDIR" || { log 2 "Could not unmount: $ROOTDIR"; return 1; }
+            sudo rmdir "$ROOTDIR"         || { log 2 "Could not remove: $ROOTDIR"; return 2; }
          fi
     }
     is_directory "$BOOTDIR" && {
          if is_root
-         then if ! umount --lazy "$BOOTDIR"
-              then log 2 "Could not unmount: $BOOTDIR"; return 3
-              fi
-              if ! rmdir "$BOOTDIR"; then log 2 "Could not remove: $BOOTDIR"; return 4; fi
+         then
+            umount --lazy "$BOOTDIR" || { log 2 "Could not unmount: $BOOTDIR"; return 3; }
+            rmdir "$BOOTDIR"         || { log 2 "Could not remove: $BOOTDIR"; return 4; }
          else
-              if ! sudo umount --lazy "$BOOTDIR"
-              then log 2 "Could not unmount: $BOOTDIR"; return 3
-              fi
-              if ! sudo rmdir "$BOOTDIR"
-              then log 2 "Could not remove: $BOOTDIR"; return 4
-              fi
+            sudo umount --lazy "$BOOTDIR" || { log 2 "Could not unmount: $BOOTDIR"; return 3; }
+            sudo rmdir "$BOOTDIR"         || { log 2 "Could not remove: $BOOTDIR"; return 4; }
          fi
     }; log 0 "Unmounted IMG"; return 0
 }
@@ -548,39 +529,39 @@ function prepare_chroot_raspbian {
          sudo mount -o bind /dev/pts "$ROOTDIR"/dev/pts
     fi
     
-    if is_file 'qemu-aarch64-static'
-    then if is_root
-         then cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
-         else sudo cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
-         fi
-    else
-         if is_file '/usr/bin/qemu-aarch64-static'
-         then if is_root
-              then cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
-              else sudo cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
-              fi
-         else log 2 "File not found: /usr/bin/qemu-aarch64-static"; return 3
-         fi
+    if is_file 'qemu-aarch64-static'; then
+        if is_root
+        then cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        else sudo cp 'qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        fi
+    elif is_file '/usr/bin/qemu-aarch64-static'; then
+        if is_root
+        then cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        else sudo cp '/usr/bin/qemu-aarch64-static' "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        fi
+    else log 2 "File not found: /usr/bin/qemu-aarch64-static"; return 3
     fi
     
     # Prevent services from auto-starting
-    if is_root
-    then bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
-         chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
-    else sudo bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
-         sudo chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
+    if is_root; then
+        bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
+        chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
+    else
+        sudo bash -c "echo -e '#!/bin/sh\nexit 101' > ${ROOTDIR}/usr/sbin/policy-rc.d"
+        sudo chmod +x "$ROOTDIR"/usr/sbin/policy-rc.d
     fi
 }
 
 function clean_chroot_raspbian {
     local -r ROOTDIR="${ROOTDIR:-raspbian_root}"; log -1 "Cleaning chroot"
-    if is_root
-    then rm --force         "$ROOTDIR"/usr/bin/qemu-aarch64-static
-         rm --force         "$ROOTDIR"/usr/sbin/policy-rc.d
-         #umount --lazy     "$ROOTDIR"/{proc,sys,dev/pts,dev}
-    else sudo rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
-         sudo rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
-         #sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
+    if is_root; then
+        rm --force         "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        rm --force         "$ROOTDIR"/usr/sbin/policy-rc.d
+        #umount --lazy     "$ROOTDIR"/{proc,sys,dev/pts,dev}
+    else
+        sudo rm --force    "$ROOTDIR"/usr/bin/qemu-aarch64-static
+        sudo rm --force    "$ROOTDIR"/usr/sbin/policy-rc.d
+        #sudo umount --lazy "$ROOTDIR"/{proc,sys,dev/pts,dev}
     fi
     umount_raspbian
 }
@@ -596,13 +577,14 @@ function resize_image {
     ! has_cmd 'parted'    && { install_package 'parted'; }
     ! has_cmd 'resize2fs' && { install_package 'e2fsprogs'; }
     
-    if is_root
-    then log -1 "fallocate";  fallocate -l"$SIZE" "$IMG"
-         log -1 "parted";     parted "$IMG" -- resizepart 2 -1s
-         log -1 "losetup";    DEV="$( losetup -f )"
-    else log -1 "fallocate";  sudo fallocate -l"$SIZE" "$IMG"
-         log -1 "parted";     sudo parted "$IMG" -- resizepart 2 -1s
-         log -1 "losetup";    DEV="$( sudo losetup -f )"
+    if is_root; then
+        log -1 "fallocate";  fallocate -l"$SIZE" "$IMG"
+        log -1 "parted";     parted "$IMG" -- resizepart 2 -1s
+        log -1 "losetup";    DEV="$( losetup -f )"
+    else
+        log -1 "fallocate";  sudo fallocate -l"$SIZE" "$IMG"
+        log -1 "parted";     sudo parted "$IMG" -- resizepart 2 -1s
+        log -1 "losetup";    DEV="$( sudo losetup -f )"
     fi; log -1 "Mount: $IMG"; mount_raspbian "$IMG"
     
     if is_root

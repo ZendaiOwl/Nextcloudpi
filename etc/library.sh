@@ -16,6 +16,11 @@ function println {
     printf '%s\n' "$@"
 }
 
+# Integer: Arguments appended to one String
+function print_int {
+    printf '%i\n' "$*"
+}
+
 # A log that uses log levels for logging different outputs
 # Return codes
 # 1: Invalid log level
@@ -36,9 +41,11 @@ function log {
                    1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
                    2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
               esac
-         else log 2 "Invalid log level: [Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2]"; return 1
+         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
+              return 1
          fi
-    else log 2 "Invalid number of arguments"; return 2 
+    else log 2 "Invalid number of arguments: $#/1+"
+         return 2 
     fi
 }
 
@@ -61,10 +68,7 @@ function is_root {
 # 2: Invalid number of arguments
 function is_user {
     [[ "$#" -ne 1 ]] && { return 2; }
-    if id --user "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
+    [[ "$(id --user "$1" &>/dev/null; print_int "$?")" -eq 0 ]]
 }
 
 # Checks if a given path to a file exists
@@ -207,10 +211,7 @@ function has_text {
 # $1: Command
 function has_cmd {
     [[ "$#" -ne 1 ]] && { return 2; }
-    if command -v "$1" &>/dev/null
-    then return 0
-    else return 1
-    fi
+    [[ "$(command -v "$1" &>/dev/null; print_int "$?")" -eq 0 ]]
 }
 
 ############################
@@ -223,7 +224,7 @@ function has_cmd {
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
-    [[ "$#" -ne 0 ]] && log 2 "Invalid number of arguments, requires none"; return 2
+    [[ "$#" -ne 0 ]] && log 2 "Invalid number of arguments: $#/0"; return 2
     declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
@@ -247,7 +248,7 @@ function update_apt {
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
-    [[ "$#" -eq 0 ]] && { log 2 "Requires: [PKG(s)]"; return 2; }
+    [[ "$#" -eq 0 ]] && { log 2 "Requires: [ PKG(s) ]"; return 2; }
     declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
@@ -898,14 +899,14 @@ fi
 
 DETECT_DOCKER="$(ps -p 1 --no-headers -o "%c")"
 
-if is_match "$(ps -p 1 --no-headers -o "%c")" "systemd" \
-&& ! is_directory "/run/systemd/system"
-then INIT_SYSTEM="chroot"
-elif is_directory "/run/systemd/system"
-then INIT_SYSTEM="systemd"
-elif is_match "$DETECT_DOCKER" "run-parts.sh"
-then INIT_SYSTEM="docker"
-else INIT_SYSTEM="unknown"
+if is_match "$(ps -p 1 --no-headers -o "%c")" 'systemd' \
+&& ! is_directory '/run/systemd/system'
+then INIT_SYSTEM='chroot'
+elif is_directory '/run/systemd/system'
+then INIT_SYSTEM='systemd'
+elif is_match "$DETECT_DOCKER" 'run-parts.sh'
+then INIT_SYSTEM='docker'
+else INIT_SYSTEM='unknown'
 fi
 
 unset DETECT_DOCKER
@@ -918,13 +919,13 @@ RELEASE="$(    jq -r '.release'           "$NCPCFG")"
 CFG_RELEASE="$RELEASE"
 
 # The default security repository in bullseye is bullseye-security
-if grep -Eh '^deb ' '/etc/apt/sources.list' | grep "${RELEASE}-security" > /dev/null
-then RELEASE="${RELEASE}-security"
+if grep -Eh '^deb ' '/etc/apt/sources.list' | grep "${RELEASE}-security" > /dev/null; then
+    RELEASE="${RELEASE}-security"
 fi
 
-if has_cmd 'ncc'
-then NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
-     export NCVER
+if has_cmd 'ncc'; then
+    NCVER="$(ncc status 2>/dev/null | grep "version:" | awk '{ print $3 }')"
+    export NCVER
 fi
 
 # Prevent systemd pager from blocking script execution
