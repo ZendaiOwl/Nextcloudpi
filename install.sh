@@ -171,7 +171,7 @@ add_install_variable OWNER REPO BRANCH URL LIBRARY \
                      NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
 
 # Trap cleanup function() for install.sh
-trap 'clean_install_script' EXIT SIGHUP SIGABRT SIGINT
+trap 'clean_install_script' EXIT SIGHUP SIGABRT SIGILL
 
 
 ########################
@@ -189,12 +189,14 @@ fi; export PATH
 [[ "$(command -v mysqld &>/dev/null; printf '%i\n' "$?")" -eq 0 ]] && {
     log 1 "Existing MySQL configuration will be changed"
     if [[ -v DBNAME ]]; then
-        if mysql -e 'use '"$DBNAME"'' &>/dev/null
-        then log 2 "Database exists: $DBNAME"; exit 1
+        if mysql -e 'use '"$DBNAME"'' &>/dev/null; then
+            log 2 "Database exists: $DBNAME"
+            exit 1
         fi
     else
-        if mysql -e 'use nextcloud' &>/dev/null
-        then log 2 "Database exists: nextcloud"; exit 1
+        if mysql -e 'use nextcloud' &>/dev/null; then
+            log 2 "Database exists: nextcloud"
+            exit 1
         fi
     fi
 }
@@ -227,24 +229,24 @@ if [[ -z "$CODE_DIR" || ! -v CODE_DIR ]]; then
 fi
 
 # Change directory to the code directory in the temporary directory
-if [[ -v CODE_DIR && -d "$CODE_DIR" ]]
-then cd "$CODE_DIR" || {
-         log 2 "Failed changing directory to: $CODE_DIR"
-         exit 1
-     }
+if [[ -v CODE_DIR && -d "$CODE_DIR" ]]; then
+    cd "$CODE_DIR" || {
+        log 2 "Failed changing directory to: $CODE_DIR"
+        exit 1
+    }
 fi
 
 # Install NextcloudPi
 log -1 "Installing NextcloudPi"
 
 # shellcheck disable=SC1090
-if [[ -f "$LIBRARY" ]]
-then source "$LIBRARY"
+if [[ -f "$LIBRARY" ]]; then
+    source "$LIBRARY"
 else log 2 "File not found: $LIBRARY"; exit 1
 fi
 
-if [[ -f "$NCPCFG" ]] # Check so NextcloudPi configuration file exists
-then # Check so the distribution is supported by the script
+# Check so NextcloudPi configuration file exists
+if [[ -f "$NCPCFG" ]]; then # Check so the distribution is supported by the script
     check_distro "$NCPCFG" || {
         log 2 "Distro not supported"
         cat '/etc/issue' || { log 2 "Failed to read file: /etc/issue"; }
@@ -254,73 +256,82 @@ else log 2 "File not found: $NCPCFG"; exit 1
 fi
 
 # Mark the build as an image build for other scripts in the installation/build flow
-touch '/.ncp-image' || { log 2 "Failed to create file: /.ncp-image"; exit 1; }
+touch '/.ncp-image' || {
+    log 2 "Failed to create file: /.ncp-image"
+    exit 1
+}
 
 # Create the local NextcloudPi configuration directory
-mkdir --parents '/usr/local/etc/ncp-config.d' || { log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"; exit 1; }
+mkdir --parents '/usr/local/etc/ncp-config.d' || {
+    log 2 "Failed creating directory: /usr/local/etc/ncp-config.d"
+    exit 1
+}
 
 # Check so the local & build configuration directories exists and
 # the nextcloud configuration file as well then copy it.
-if [[ -d 'etc/ncp-config.d' ]]
-then if [[ -d '/usr/local/etc/ncp-config.d' ]]
-     then if [[ -f 'etc/ncp-config.d/nc-nextcloud.cfg' ]]
-          then cp 'etc/ncp-config.d/nc-nextcloud.cfg' '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg' || { log 2 "Failed to copy file: nc-nextcloud.cfg"; exit 1; }
-          fi
-     else log 2 "Directory not found: /usr/local/etc/ncp-config.d"; exit 1
-     fi
+if [[ -d 'etc/ncp-config.d' ]]; then
+    if [[ -d '/usr/local/etc/ncp-config.d' ]]; then
+        if [[ -f 'etc/ncp-config.d/nc-nextcloud.cfg' ]]; then
+            cp 'etc/ncp-config.d/nc-nextcloud.cfg' '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg' || {
+                log 2 "Failed to copy file: nc-nextcloud.cfg"
+                exit 1
+            }
+        fi
+    else log 2 "Directory not found: /usr/local/etc/ncp-config.d"; exit 1
+    fi
 else log 2 "Directory not found: etc/ncp-config.d"; exit 1
 fi
 
-if [[ -f "$LIBRARY" ]]
-then cp "$LIBRARY" '/usr/local/etc/library.sh' || { log 2 "Failed to copy file: $LIBRARY"; exit 1; }
-     LIBRARY='/usr/local/etc/library.sh'
-     declare -x -g LIBRARY
+if [[ -f "$LIBRARY" ]]; then
+    cp "$LIBRARY" '/usr/local/etc/library.sh' || { log 2 "Failed to copy file: $LIBRARY"; exit 1; }
+    LIBRARY='/usr/local/etc/library.sh'
+    declare -x -g LIBRARY
 fi
 
-if [[ -f "$NCPCFG" ]]
-then cp "$NCPCFG" '/usr/local/etc/ncp.cfg' || { log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1; }
-     NCPCFG='/usr/local/etc/ncp.cfg'
-     declare -x -g NCPCFG
+if [[ -f "$NCPCFG" ]]; then
+    cp "$NCPCFG" '/usr/local/etc/ncp.cfg' || { log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1; }
+    NCPCFG='/usr/local/etc/ncp.cfg'
+    declare -x -g NCPCFG
 fi
 
-if [[ -d "$NCP_TEMPLATES_DIR" ]]
-then cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/' || { log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1; }
-     NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
-     declare -x -g NCP_TEMPLATES_DIR
+if [[ -d "$NCP_TEMPLATES_DIR" ]]; then
+    cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/' || { log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1; }
+    NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
+    declare -x -g NCP_TEMPLATES_DIR
 else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1
 fi
 
-if [[ -f 'lamp.sh' ]]
-then install_app 'lamp.sh'
+if [[ -f 'lamp.sh' ]]; then
+    install_app 'lamp.sh'
 else log 2 "File not found: lamp.sh"; exit 1
 fi
 
-if [[ -f 'bin/ncp/CONFIG/nc-nextcloud.sh' ]]
-then install_app 'bin/ncp/CONFIG/nc-nextcloud.sh'
+if [[ -f 'bin/ncp/CONFIG/nc-nextcloud.sh' ]]; then
+    install_app 'bin/ncp/CONFIG/nc-nextcloud.sh'
 else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1
 fi
 
-if [[ -f 'bin/ncp/CONFIG/nc-nextcloud.sh' ]]
-then run_app_unsafe 'bin/ncp/CONFIG/nc-nextcloud.sh'
+if [[ -f 'bin/ncp/CONFIG/nc-nextcloud.sh' ]]; then
+    run_app_unsafe 'bin/ncp/CONFIG/nc-nextcloud.sh'
 else log 2 "File not found: bin/ncp/CONFIG/nc-nextcloud.sh"; exit 1
 fi
 
 # armbian overlay is ro
-if [[ -f '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg' ]]
-then rm '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
+if [[ -f '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg' ]]; then
+    rm '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
 else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-nextcloud.cfg"; exit 1
 fi
 
 # TODO this shouldn't be necessary, but somehow it's needed. FIXME
-systemctl restart mysqld
+#systemctl restart mysqld
 
-if [[ -f 'ncp.sh' ]]
-then install_app 'ncp.sh'
+if [[ -f 'ncp.sh' ]]; then
+    install_app 'ncp.sh'
 else log 2 "File not found: ncp.sh"; exit 1
 fi
 
-if [[ -f 'bin/ncp/CONFIG/nc-init.sh' ]]
-then run_app_unsafe 'bin/ncp/CONFIG/nc-init.sh'
+if [[ -f 'bin/ncp/CONFIG/nc-init.sh' ]]; then
+    run_app_unsafe 'bin/ncp/CONFIG/nc-init.sh'
 else log 2 "File not found: bin/ncp/CONFIG/nc-init.sh"; exit 1
 fi
 
@@ -328,10 +339,9 @@ log -1 "Moving data directory to: /opt/ncdata"
 df -h
 mkdir --parents '/opt/ncdata'
 
-if [[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]
-then REMOVE_DATADIR_CFG='true'
-     if [[ -f 'etc/ncp-config.d/nc-datadir.cfg' ]]
-     then
+if [[ ! -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]; then
+    REMOVE_DATADIR_CFG='true'
+    if [[ -f 'etc/ncp-config.d/nc-datadir.cfg' ]]; then
         cp 'etc/ncp-config.d/nc-datadir.cfg' '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
             log 2 "Failed to copy file: nc-datadir.cfg | To: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
             exit 1
@@ -340,42 +350,42 @@ then REMOVE_DATADIR_CFG='true'
      fi
 fi
 
-if [[ -f 'bin/ncp/CONFIG/nc-datadir.sh' ]]
-then DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/CONFIG/nc-datadir.sh'
-else log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
+if [[ -f 'bin/ncp/CONFIG/nc-datadir.sh' ]]; then
+    DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/CONFIG/nc-datadir.sh'
+else
+    log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
 fi
 
-if [[ "$REMOVE_DATADIR_CFG" == 'true' ]]
-then if [[ -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]
-     then
+if [[ "$REMOVE_DATADIR_CFG" == 'true' ]]; then
+    if [[ -f '/usr/local/etc/ncp-config.d/nc-datadir.cfg' ]]; then
         rm '/usr/local/etc/ncp-config.d/nc-datadir.cfg' || {
             log 2 "Failed to remove file: /usr/local/etc/ncp-config.d/nc-datadir.cfg"
             exit 1
         }
-     else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
-     fi
+    else log 2 "File not found: /usr/local/etc/ncp-config.d/nc-datadir.cfg"; exit 1
+    fi
 fi
 
-if [[ -f '/.ncp-image' ]]
-then rm '/.ncp-image' || log 2 "Failed to remove file: /.ncp-image"; exit 1
+if [[ -f '/.ncp-image' ]]; then
+    rm '/.ncp-image' || log 2 "Failed to remove file: /.ncp-image"; exit 1
 fi
 
 # Skip on Armbian / Vagrant / LXD
-if [[ -n "$CODE_DIR" ]]
-then if [[ -f '/usr/local/bin/ncp-provisioning.sh' ]]
-     then bash '/usr/local/bin/ncp-provisioning.sh'
-     else log 2 "File not found: /usr/local/bin/ncp-provisioning.sh"; exit 1
-     fi
+if [[ -n "$CODE_DIR" ]]; then
+    if [[ -f '/usr/local/bin/ncp-provisioning.sh' ]]; then
+        bash '/usr/local/bin/ncp-provisioning.sh'
+    else log 2 "File not found: /usr/local/bin/ncp-provisioning.sh"; exit 1
+    fi
 fi
 
 cd - || { log 2 "Failed to change directory to: -"; exit 1; }
 
-if [[ -d "$TMPDIR" ]]
-then rm --recursive --force "$TMPDIR"
+if [[ -d "$TMPDIR" ]]; then
+    rm --recursive --force "$TMPDIR"
 else log 2 "Directory not found: $TMPDIR"; exit 1
 fi
 
-trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
+trap - EXIT SIGHUP SIGABRT SIGILL
 
 IP="$(get_ip)"
 

@@ -656,8 +656,8 @@ function run_app {
 
 # Return codes
 function run_app_unsafe {
-    local -r SCRIPT="$1" LOG='/var/log/ncp.log'
-    local NCP_APP CFG_FILE LENGTH VAR VAL RET
+    local -r SCRIPT="$1"
+    local NCP_APP CFG_FILE LENGTH VAR VAL RET LOG='/var/log/ncp.log'
         
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
