@@ -90,6 +90,16 @@ function is_file {
     [[ -f "$1" ]]
 }
 
+# Test if a function() is available
+# Return codes
+# 0: Available
+# 1: Unvailable
+# 2: Too many/few arguments
+function is_function {
+    [[ "$#" -ne 1 ]] && { return 2; }
+    [[ "$(declare -F "$1" &>/dev/null; print_int "$?")" -eq 0 ]]
+}
+
 # Checks if given path is a directory 
 # Return codes
 # 0: Is a directory
