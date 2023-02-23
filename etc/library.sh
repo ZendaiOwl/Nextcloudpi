@@ -668,8 +668,8 @@ function run_app_unsafe {
     
     ! is_file "$SCRIPT" && { log 2 "File not found: $SCRIPT"; return 1; }
     
-    touch                       "$LOG"
-    change_permissions 640      "$LOG"
+    touch "$LOG"
+    chmod 640 "$LOG"
     set_owner 'root' 'www-data' "$LOG"
     
     log -1 "Running: $NCP_APP"
