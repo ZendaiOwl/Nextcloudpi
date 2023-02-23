@@ -365,7 +365,7 @@ function install_app {
     local NCP_APP="$1" SCRIPT 
     
     # $1 can be either an installed app name or an app script
-    if is_file "$NCP_APP"; then
+    if [[ -f "$NCP_APP" ]]; then
         SCRIPT="$NCP_APP"
         NCP_APP="$(basename "$SCRIPT" .sh)"
     else
@@ -769,8 +769,8 @@ function run_app_unsafe {
         log -1 "Reading config parameters: $NCP_APP"
         LENGTH="$(jq '.params | length' "$CFG_FILE")"
         for (( i = 0; i < "$LENGTH"; i++ )); do
-            VAR="$(jq ".params[$i].id" "$CFG_FILE")"
-            VAL="$(jq ".params[$i].value" "$CFG_FILE")"
+            VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
+            VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
             eval "$VAR=$VAL"
         done
     fi
