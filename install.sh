@@ -113,11 +113,11 @@ function clean_install_tmp {
 function clean_install_script {
   log -1 "Cleaning up from install script"
   [[ -v TMPDIR && -d "$TMP" ]]    && { clean_install_tmp; }
-  [[ -v INSTALL_VARIABLES ]]      && { clean_install_variables; }
   [[ -f '/.ncp-image' ]]          && { rm '/.ncp-image'; }
   [[ -v DBPID && -n "$DBPID" ]]   && { log -1 "Shutting down MariaDB [$DBPID]";  mysqladmin -u root shutdown; wait "$DBPID"; }
   [[ -v DB_PID && -n "$DB_PID" ]] && { log -1 "Shutting down MariaDB [$DB_PID]"; mysqladmin -u root shutdown; wait "$DB_PID"; }
   [[ -v db_pid && -n "$db_pid" ]] && { log -1 "Shutting down MariaDB [$db_pid]"; mysqladmin -u root shutdown; wait "$db_pid"; }
+  [[ -v INSTALL_VARIABLES ]]      && { clean_install_variables; }
   
   log 0 "Cleaned up from install script"
 }
@@ -171,7 +171,7 @@ add_install_variable OWNER REPO BRANCH URL LIBRARY \
                      NCPCFG DBNAME NCP_TEMPLATES_DIR TMPDIR
 
 # Trap cleanup function() for install.sh
-trap 'clean_install_script' EXIT SIGHUP SIGILL SIGABRT SIGINT
+trap 'clean_install_script' EXIT SIGHUP SIGABRT SIGINT
 
 
 ########################
@@ -261,9 +261,7 @@ fi
 if [[ -d 'etc/ncp-config.d' ]]
 then if [[ -d '/usr/local/etc/ncp-config.d' ]]
      then if [[ -f 'etc/ncp-config.d/nc-nextcloud.cfg' ]]
-          then if ! cp 'etc/ncp-config.d/nc-nextcloud.cfg' '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg'
-               then log 2 "Failed to copy file: nc-nextcloud.cfg"; exit 1
-               fi
+          then cp 'etc/ncp-config.d/nc-nextcloud.cfg' '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg' || { log 2 "Failed to copy file: nc-nextcloud.cfg"; exit 1; }
           else log 2 "File not found: etc/ncp-config.d/nc-nextcloud.cfg"; exit 1
           fi
      else log 2 "Directory not found: /usr/local/etc/ncp-config.d"; exit 1
@@ -272,25 +270,19 @@ else log 2 "Directory not found: etc/ncp-config.d"; exit 1
 fi
 
 if [[ -f "$LIBRARY" ]]
-then if ! cp "$LIBRARY" '/usr/local/etc/library.sh'
-     then log 2 "Failed to copy file: $LIBRARY"; exit 1
-     fi
+then cp "$LIBRARY" '/usr/local/etc/library.sh' || { log 2 "Failed to copy file: $LIBRARY"; exit 1; }
      LIBRARY='/usr/local/etc/library.sh'
      declare -x -g LIBRARY
 fi
 
 if [[ -f "$NCPCFG" ]]
-then if ! cp "$NCPCFG" '/usr/local/etc/ncp.cfg'
-     then log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1
-     fi
+then cp "$NCPCFG" '/usr/local/etc/ncp.cfg' || { log 2 "Failed to copy file: ncp.cfg $NCPCFG"; exit 1; }
      NCPCFG='/usr/local/etc/ncp.cfg'
      declare -x -g NCPCFG
 fi
 
 if [[ -d "$NCP_TEMPLATES_DIR" ]]
-then if ! cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/'
-     then log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1
-     fi
+then cp -r "$NCP_TEMPLATES_DIR" '/usr/local/etc/' || { log 2 "Failed to copy templates: $NCP_TEMPLATES_DIR"; exit 1; }
      NCP_TEMPLATES_DIR='/usr/local/etc/ncp-templates'
      declare -x -g NCP_TEMPLATES_DIR
 else log 2 "Directory not found: $NCP_TEMPLATES_DIR"; exit 1

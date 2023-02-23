@@ -45,8 +45,10 @@ add_build_variables URL SIZE IMG TAR ROOTDIR BOOTDIR BUILD_DIR DSHELL
 ##############################################################################
 
 function clean_build_sd_rpi {
+  log -1 "Cleaning build sd script"
   clean_chroot_raspbian
   unset "${BUILDVARIABLES[@]}"
+  log 0 "Done"
 }
 
 ##############################################################################
@@ -207,7 +209,7 @@ fi
 
 clean_build_sd_rpi
 
-trap - EXIT SIGHUP SIGILL SIGABRT SIGINT
+trap - EXIT SIGHUP SIGABRT SIGINT
 
 # pack_image "$IMG" "$TAR"
 

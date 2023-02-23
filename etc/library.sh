@@ -467,16 +467,12 @@ function check_distro {
 function clear_password_fields {
     local -r CFG_FILE="$1"
     local LENGTH TYPE VAL
-    if ! is_file "$CFG_FILE"
-    then log 2 "File not found: $CFG_FILE"; return 1
-    fi
+    is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 1; }
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
     for (( i = 0 ; i < "$LENGTH" ; i++ ))
     do TYPE="$(jq -r ".params[$i].type" "$CFG_FILE")"
        VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
-       if is_match "$TYPE" "password"
-       then VAL=""
-       fi
+       is_match "$TYPE" "password" && { VAL=""; }
        CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
     done
     println "$CFG" > "$CFG_FILE"
@@ -486,7 +482,7 @@ function clear_password_fields {
 # 1: Missing command: a2query
 function is_ncp_activated {
     if has_cmd 'a2query'
-    then (! a2query -s ncp-activation -q)
+    then ! a2query -s ncp-activation -q
     else log 2 "Missing command: a2query"; return 1
     fi
 }
@@ -701,8 +697,10 @@ function run_app_unsafe {
     if is_file "$CFG_FILE"
     then log -1 "Clearing password fields: $NCP_APP"
          clear_password_fields "$CFG_FILE"
+         log 0 "Password fields cleared"
     fi
-    log 0 "Completed: $NCP_APP"; return "$RET"
+    log 0 "Completed: $NCP_APP"
+    return "$RET"
 }
 
 # Return codes
