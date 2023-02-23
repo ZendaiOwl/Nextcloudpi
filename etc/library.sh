@@ -911,7 +911,7 @@ fi
 
 unset DETECT_DOCKER
 
-! has_cmd 'jq' && { install_package 'jq' || return 1 }
+! has_cmd 'jq' && { install_package 'jq' || { return 1; }; }
 
 NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
 PHPVER="$(     jq -r '.php_version'       "$NCPCFG")"
