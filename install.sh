@@ -46,7 +46,7 @@ function update_apt {
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                     ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-         if is_root
+         if [[ "$EUID" -eq 0 ]]
          then log -1 "Updating apt lists"
               if "${ROOTUPDATE[@]}" &>/dev/null
               then log 0 "Apt list updated"
@@ -72,7 +72,7 @@ function install_package {
     else declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
          declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                     ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-         if is_root
+         if [[ "$EUID" -eq 0 ]]
          then log -1 "Installing $*"
               if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
               then log 0 "Installation complete"; return 0
