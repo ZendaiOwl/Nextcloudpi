@@ -79,16 +79,16 @@ EOF
         sleep 1
     done
     
-    
     println "Setting up: Nextcloud"
-    if [[ -d '/var/www/nextcloud/' ]]; then
-        cd '/var/www/nextcloud/' || {
+
+    if [[ -d '/var/www/nextcloud' ]]; then
+        cd /var/www/nextcloud || {
             println "Failed to change directory to: /var/www/nextcloud/"
         }
     fi
     
     if [[ -f 'config/config.php' ]]; then
-        rm --force 'config/config.php' || {
+        rm --force config/config.php || {
             println "Failed to remove file: config/config.php"
             exit 1
         }
@@ -141,10 +141,10 @@ EOF
     
     # NCP theme
     [[ -e '/usr/local/etc/logo' ]] && {
-        ID="$( grep 'instanceid' 'config/config.php' | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
+        ID="$( grep 'instanceid' config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
 
         [[ -z "$ID" ]] || {
-            println "Failed to get Instance ID"
+            println "Failed to get: Instance ID"
             return 1
         }
         
