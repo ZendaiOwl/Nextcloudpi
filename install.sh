@@ -262,7 +262,6 @@ if [[ -d 'etc/ncp-config.d' ]]
 then if [[ -d '/usr/local/etc/ncp-config.d' ]]
      then if [[ -f 'etc/ncp-config.d/nc-nextcloud.cfg' ]]
           then cp 'etc/ncp-config.d/nc-nextcloud.cfg' '/usr/local/etc/ncp-config.d/nc-nextcloud.cfg' || { log 2 "Failed to copy file: nc-nextcloud.cfg"; exit 1; }
-          else log 2 "File not found: etc/ncp-config.d/nc-nextcloud.cfg"; exit 1
           fi
      else log 2 "Directory not found: /usr/local/etc/ncp-config.d"; exit 1
      fi
