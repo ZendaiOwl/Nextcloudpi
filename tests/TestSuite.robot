@@ -28,7 +28,7 @@ ${TEMPLATE_DIR_MYSQL}           ${NCP_TEMPLATES_DIR}/mysql
 ${TEMPLATE_DIR_PHP}             ${NCP_TEMPLATES_DIR}/php
 ${TEMPLATE_DIR_SYSTEMD}         ${NCP_TEMPLATES_DIR}/systemd
 
-${BIN_DIR}                      ${CURDIR}/../bin
+${BIN_DIR}                      ${ROOTDIR}/bin
         
 ${LOCAL_ETC_DIR}                /usr/local/etc
 ${LOCAL_BIN_DIR}                /usr/local/bin

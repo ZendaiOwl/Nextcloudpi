@@ -670,7 +670,7 @@ function run_app_unsafe {
     
     touch "$LOG"
     chmod 640 "$LOG"
-    set_owner 'root' 'www-data' "$LOG"
+    chown 'root' 'www-data' "$LOG"
     
     log -1 "Running: $NCP_APP"
     echo " [ $NCP_APP ] ($(date))" >> "$LOG"
