@@ -19,6 +19,11 @@ function println {
     printf '%s\n' "$@"
 }
 
+# Integer: Arguments appended to one String
+function print_int {
+    printf '%i\n' "$*"
+}
+
 # A log that uses log levels for logging different outputs
 # Return codes
 # 1: Invalid log level
