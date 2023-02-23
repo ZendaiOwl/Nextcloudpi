@@ -405,13 +405,13 @@ function configure_app {
         }
     fi
 
-    ! is_file "$CFG_FILE" && {
+    [[ ! -f "$CFG_FILE" ]] && {
         log 1 "No configuration file for: $NCP_APP"
         return 0
     }
     
     LENGTH="$(jq  '.params | length' "$CFG_FILE")"
-    is_equal "$LENGTH" 0 && {
+    [[ "$LENGTH" -eq 0 ]] && {
         return
     }
     
@@ -603,7 +603,7 @@ function info_app {
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local INFO INFOTITLE
     
-    if is_file "$CFG_FILE"; then
+    if [[ -f "$CFG_FILE" ]]; then
         INFO="$(jq -r '.info' "$CFG_FILE")"
         INFOTITLE="$(jq -r '.infotitle' "$CFG_FILE")"
     fi
@@ -729,7 +729,7 @@ function notify_admin {
 function run_app {
     local NCP_APP="$1" SCRIPT
     SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
-    ! is_file "$SCRIPT" && {
+    [[ ! -f "$SCRIPT" ]] && {
         log 2 "File not found: $SCRIPT"
         return 1
     }
@@ -739,7 +739,7 @@ function run_app {
 # Return codes
 function run_app_unsafe {
     local -r SCRIPT="$1" LOG='/var/log/ncp.log'
-    local NCP_APP CFG_FILE LENGTH VAR VAL RET
+    local NCP_APP CFG_FILE LENGTH VAR VAL
         
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
@@ -755,9 +755,11 @@ function run_app_unsafe {
     
     log -1 "Running: $NCP_APP"
     println "[ $NCP_APP ] ($(date))" >> "$LOG"
+
     log -1 "Reading script: $NCP_APP"
     # Read script
     unset configure
+
     log -1 "Sourcing script: $NCP_APP"
     # shellcheck disable=SC1090
     source "$SCRIPT"
@@ -775,16 +777,16 @@ function run_app_unsafe {
     
     # Run
     log -1 "Executing configure: $NCP_APP"
-    (configure) 2>&1 | tee -a "$LOG"
+    ( configure ) 2>&1 | tee -a "$LOG"
 
-    RET="${PIPESTATUS[0]}"
+    local RET="${PIPESTATUS[0]}"
 
     println "" >> "$LOG"
     
-    if [[ -f "$CFG_FILE" ]]; then
+    [[ -f "$CFG_FILE" ]] && {
         log -1 "Clearing password fields: $NCP_APP"
         clear_password_fields "$CFG_FILE"
-    fi
+    }
     log 0 "Completed: $NCP_APP [ $RET ]"
     return "$RET"
 }
