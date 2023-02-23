@@ -165,7 +165,7 @@ EOF
 
     # NCP app
     cp    --recursive '/var/www/ncp-app' '/var/www/nextcloud/apps/nextcloudpi'
-    chown --recursive 'www-data':        '/var/www/nextcloud/apps/nextcloudpi'
+    chown --recursive www-data:          '/var/www/nextcloud/apps/nextcloudpi'
     ncc app:enable nextcloudpi
     
     # Install some default apps, will be enabled by installation
