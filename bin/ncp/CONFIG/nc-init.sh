@@ -143,7 +143,7 @@ EOF
     [[ -e '/usr/local/etc/logo' ]] && {
         ID="$( grep 'instanceid' config/config.php | awk -F "=> " '{ print $2 }' | sed "s|[,']||g" )"
 
-        [[ -z "$ID" ]] || {
+        [[ "$ID" == "" ]] || {
             println "Failed to get: Instance ID"
             return 1
         }
