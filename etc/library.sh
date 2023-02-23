@@ -786,7 +786,6 @@ function run_app_unsafe {
     if is_file "$CFG_FILE"; then
         log -1 "Clearing password fields: $NCP_APP"
         clear_password_fields "$CFG_FILE"
-        log 0 "Password fields cleared"
     fi
     log 0 "Completed: $NCP_APP [ $RET ]"
     return "$RET"
