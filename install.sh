@@ -250,12 +250,12 @@ install_package git \
 }
 
 # Change directory to the code directory in the temporary directory
-[[ -v CODE_DIR && -d "$CODE_DIR" ]] && {
+if [[ -v CODE_DIR ]] && [[ -d "$CODE_DIR" ]]; then
     cd "$CODE_DIR" || {
         log 2 "Failed changing directory to: $CODE_DIR"
         exit 1
     }
-}
+fi
 
 # Install NextcloudPi
 log -1 "Installing NextcloudPi"
