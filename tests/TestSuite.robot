@@ -36,6 +36,7 @@ ${LOCAL_BIN_DIR}                /usr/local/bin
 ${BUILDLIB}                     ${BUILD_DIR}/buildlib.sh
 ${LIBRARY}                      ${ROOTDIR}/etc/library.sh
 
+${NCP_CONFIG}                   ${ETC_DIR}/ncp.cfg
 ${SCRIPT_NCP}                   ${ROOTDIR}/ncp.sh
 ${SCRIPT_INSTALL}               ${ROOTDIR}/install.sh
 ${SCRIPT_LAMP}                  ${ROOTDIR}/lamp.sh

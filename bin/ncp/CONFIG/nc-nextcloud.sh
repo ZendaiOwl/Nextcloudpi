@@ -132,12 +132,12 @@ function install {
     #install_package imagemagick php"$PHPVER"-imagick ghostscript
 
     # POSTFIX
-    if ! install_package 'postfix'
+    if ! install_package postfix
     then # [armbian] workaround for bug - https://bugs.launchpad.net/ubuntu/+source/postfix/+bug/1531299
-         log -1 "[NCP]: Please ignore the previous postfix installation error"
+         log -1 "[ NCP ]: Please ignore the previous postfix installation error"
          mv '/usr/bin/newaliases' '/'
          ln -s '/bin/true' '/usr/bin/newaliases'
-         install_package 'postfix'
+         install_package postfix
          rm '/usr/bin/newaliases'
          mv '/newaliases' '/usr/bin/newaliases'
     fi
@@ -302,9 +302,7 @@ EOF
     ## SET APACHE VHOST
     log -1 "Setting up: Apache2 VirtualHost"
   
-    if ! install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" '--allow-fallback'
-    then log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"; exit 1
-    fi
+    install_template "$NEXTCLOUD_TEMPLATE" "$NEXTCLOUD_CONF" '--allow-fallback' || { log 2 "Failed parsing template: $NEXTCLOUD_TEMPLATE"; exit 1; }
     
     a2ensite nextcloud
     
@@ -369,9 +367,7 @@ EOF
     ## SET CRON
     echo "*/5  *  *  *  * php -f /var/www/nextcloud/cron.php" > '/tmp/crontab_http'
     crontab -u "$HTUSER" '/tmp/crontab_http'
-    if ! rm '/tmp/crontab_http'
-    then log 2 "Failed to remove: /tmp/crontab_http"; exit 1
-    fi
+    rm '/tmp/crontab_http' || { log 2 "Failed to remove: /tmp/crontab_http"; exit 1; }
     
     # dettach mysql during the build
     if [[ "$DB_PID" != "" ]]
