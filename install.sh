@@ -378,8 +378,7 @@ mkdir --parents '/opt/ncdata'
 
 if [[ -f 'bin/ncp/CONFIG/nc-datadir.sh' ]]; then
     DISABLE_FS_CHECK=1 NCPCFG="/usr/local/etc/ncp.cfg" run_app_unsafe 'bin/ncp/CONFIG/nc-datadir.sh'
-else
-    log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
+else log 2 "File not found: bin/ncp/CONFIG/nc-datadir.sh"; exit 1
 fi
 
 [[ "$REMOVE_DATADIR_CFG" == 'true' ]] && {
