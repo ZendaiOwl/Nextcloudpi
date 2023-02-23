@@ -222,7 +222,7 @@ fi; export PATH
     fi
 }
 
-if [[ -v APT_IS_UPDATED && "$APT_IS_UPDATED" -eq 1 ]]; then
+if [[ -v APT_IS_UPDATED ]] && [[ "$APT_IS_UPDATED" -eq 1 ]]; then
     log -2 "Skipping apt update"
 else update_apt # Update apt list
 fi
@@ -239,7 +239,7 @@ install_package git \
                 apt-transport-https
 
 # Get installation/build code from repository
-[[ -z "$CODE_DIR" || ! -v CODE_DIR ]] && {
+if [[ -z "$CODE_DIR" ]] || [[ ! -v CODE_DIR ]]; then
     CODE_DIR="$TMPDIR"/"$REPO"
     log -1 "Fetching build code to: $CODE_DIR"
     git clone -b "$BRANCH" "$URL" "$CODE_DIR" || {
@@ -247,7 +247,7 @@ install_package git \
         exit 1
     }
     add_install_variable CODE_DIR
-}
+fi
 
 # Change directory to the code directory in the temporary directory
 if [[ -v CODE_DIR ]] && [[ -d "$CODE_DIR" ]]; then

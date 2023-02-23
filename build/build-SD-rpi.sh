@@ -15,7 +15,7 @@ function add_build_variables {
   fi
 }
 
-if [[ -v DBG && -n "$DBG" ]]
+if [[ -v DBG ]] && [[ -n "$DBG" ]]
 then set -e"$DBG"
 else set -e
 fi
@@ -106,7 +106,7 @@ else
     sudo rsync -Aax --exclude-from .gitignore --exclude *.img --exclude *.bz2 . "$ROOTDIR"/"$BUILD_DIR"
 fi
 
-if is_root; then
+if [[ "$EUID" -eq 0 ]]; then
     PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
     chroot "$ROOTDIR" "$DSHELL" <<'EOFCHROOT'
 set -ex
@@ -127,7 +127,10 @@ apt-get update --allow-releaseinfo-change --assume-yes
 echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-cd /tmp/ncp-build || { printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1; }
+cd '/tmp/ncp-build' || {
+    printf '%s\n' "Failed to change directory to: /tmp/ncp-build"
+    exit 1
+}
 
 # systemctl daemon-reload # Does not work in chroot
 
@@ -178,7 +181,10 @@ apt-get update --allow-releaseinfo-change --assume-yes
 printf '%s\n' 'nameserver 1.1.1.1' >> /etc/resolv.conf
 
 # install NCP
-cd /tmp/ncp-build || { printf '%s\n' "Failed to change directory to: /tmp/ncp-build"; exit 1; }
+cd '/tmp/ncp-build' || {
+    printf '%s\n' "Failed to change directory to: /tmp/ncp-build"
+    exit 1
+}
 
 # systemctl daemon-reload # Does not work in chroot
 
