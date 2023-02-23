@@ -32,18 +32,18 @@ function print_int {
 #  1: Warning | YELLOW='\e[1;33m'
 #  2: Error   | RED='\e[1;31m'
 function log {
-    if [[ "$#" -gt 0 ]]
-    then if [[ "$1" =~ [(-2)-2] ]]
-         then case "$1" in
-                  -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
-                  -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
-                   0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
-                   1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
-                   2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
-              esac
-         else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
-              return 1
-         fi
+    if [[ "$#" -gt 0 ]]; then
+        if [[ "$1" =~ [(-2)-2] ]]; then
+            case "$1" in
+                -2) printf '\e[1;36mDEBUG\e[0m %s\n'   "${*:2}" >&2 ;;
+                -1) printf '\e[1;34mINFO\e[0m %s\n'    "${*:2}"     ;;
+                 0) printf '\e[1;32mSUCCESS\e[0m %s\n' "${*:2}"     ;;
+                 1) printf '\e[1;33mWARNING\e[0m %s\n' "${*:2}"     ;;
+                 2) printf '\e[1;31mERROR\e[0m %s\n'   "${*:2}" >&2 ;;
+            esac
+        else log 2 "Invalid log level: [ Debug: -2|Info: -1|Success: 0|Warning: 1|Error: 2 ]"
+             return 1
+        fi
     else log 2 "Invalid number of arguments: $#/1+"
          return 2 
     fi
@@ -224,21 +224,29 @@ function has_cmd {
 # 1: Coudn't update apt list
 # 2: Invalid number of arguments
 function update_apt {
-    [[ "$#" -ne 0 ]] && log 2 "Invalid number of arguments: $#/0"; return 2
+    [[ "$#" -ne 0 ]] && {
+        log 2 "Invalid number of arguments: $#/0"
+        return 2
+    }
     declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     declare -r SUDOUPDATE=(sudo apt-get "${OPTIONS[@]}" update) \
                ROOTUPDATE=(apt-get "${OPTIONS[@]}" update)
-    if [[ "$EUID" -eq 0 ]]
-    then log -1 "Updating apt lists"
-         if "${ROOTUPDATE[@]}" &>/dev/null
-         then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1
-         fi
-    else log -1 "Updating apt lists"
-         if "${SUDOUPDATE[@]}" &>/dev/null
-         then log 0 "Apt list updated"
-         else log 2 "Couldn't update apt lists"; return 1
-         fi
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Updating apt lists"
+        if "${ROOTUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
+        fi
+    else
+        log -1 "Updating apt lists"
+        if "${SUDOUPDATE[@]}" &>/dev/null; then
+            log 0 "Apt list updated"
+        else
+            log 2 "Couldn't update apt lists"
+            return 1
+        fi
     fi
 }
 
@@ -248,21 +256,31 @@ function update_apt {
 # 1: Error during installation
 # 2: Missing package argument
 function install_package {
-    [[ "$#" -eq 0 ]] && { log 2 "Requires: [ PKG(s) ]"; return 2; }
+    [[ "$#" -eq 0 ]] && {
+        log 2 "Requires: [ PKG(s) ]"
+        return 2
+    }
     declare -r OPTIONS=(--quiet --assume-yes --no-show-upgraded --auto-remove=true --no-install-recommends)
     declare -r SUDOINSTALL=(sudo apt-get "${OPTIONS[@]}" install) \
                ROOTINSTALL=(apt-get "${OPTIONS[@]}" install)
-    if [[ "$EUID" -eq 0 ]]
-    then log -1 "Installing: $*"
-         if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"
-         then log 0 "Installation complete"; return 0
-         else log 2 "Something went wrong during installation"; return 1
-         fi
-    else log -1 "Installing: $*"
-         if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"
-         then log 0 "Installation complete"; return 0
-         else log 2 "Something went wrong during installation"; return 1
-         fi
+    if [[ "$EUID" -eq 0 ]]; then
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${ROOTINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
+    else
+        log -1 "Installing: $*"
+        if DEBIAN_FRONTEND=noninteractive "${SUDOINSTALL[@]}" "$@"; then
+            log 0 "Installation complete"
+            return 0
+        else
+            log 2 "Something went wrong during installation"
+            return 1
+        fi
     fi
 }
 
@@ -282,7 +300,9 @@ function install_package {
 # Return codes
 # 1: Command not found: sudo
 function ncc {
-    ! has_cmd 'sudo' && { return 1; }
+    ! has_cmd 'sudo' && {
+        return 1
+    }
     declare -r -a SUDO=(sudo -E -u www-data)
     "${SUDO[@]}" php /var/www/nextcloud/occ "$@"
 }
@@ -295,16 +315,17 @@ function apt_install {
 function install_with_shadow_workaround {
     # Subshell to trap trap :P
     (
-        RESTORE_SHADOW=true
-        [[ -L '/etc/shadow' ]] || RESTORE_SHADOW=false
-        if [[ "$RESTORE_SHADOW" != "false" ]]
-        then trap 'mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow' EXIT SIGINT SIGABRT SIGHUP
-             rm '/etc/shadow'
-             cp '/data/etc/shadow' '/etc/shadow'
+        RESTORE_SHADOW='true'
+        [[ -L '/etc/shadow' ]] || RESTORE_SHADOW='false'
+        if [[ "$RESTORE_SHADOW" != "false" ]]; then
+            trap 'mv /etc/shadow /data/etc/shadow; ln -s /data/etc/shadow /etc/shadow' EXIT SIGINT SIGABRT SIGHUP
+            rm '/etc/shadow'
+            cp '/data/etc/shadow' '/etc/shadow'
         fi
-        if is_root
-        then DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes "$@"
-        else DEBIAN_FRONTEND=noninteractive sudo apt-get install --assume-yes "$@"
+        if [[ "$EUID" -eq 0 ]]; then
+            DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes "$@"
+        else
+            DEBIAN_FRONTEND=noninteractive sudo apt-get install --assume-yes "$@"
         fi
         [[ "$RESTORE_SHADOW" == "false" ]] || {
             mv '/etc/shadow' '/data/etc/shadow'; ln -s '/data/etc/shadow' '/etc/shadow'
@@ -329,15 +350,15 @@ function is_more_recent_than {
     # Compare version A with version B
     # Versioning ex. 25.0.3 or 24.9.5 etc
     # Returns a 1 if B is greater than A
-    if is_greater "$MAJOR_B" "$MAJOR_A"
-    then return 1
+    if is_greater "$MAJOR_B" "$MAJOR_A"; then
+        return 1
     elif is_equal "$MAJOR_B" "$MAJOR_A" \
-      && is_greater "$MINOR_B" "$MINOR_A"
-    then return 1
+      && is_greater "$MINOR_B" "$MINOR_A"; then
+        return 1
     elif is_equal "$MAJOR_B" "$MAJOR_A" \
       && is_equal "$MINOR_B" "$MINOR_A" \
-      && equal_or_greater "$PATCH_B" "$PATCH_A"
-    then return 1
+      && equal_or_greater "$PATCH_B" "$PATCH_A"; then
+        return 1
     fi
     return 0
 }
@@ -347,15 +368,18 @@ function install_app {
     local NCP_APP="$1" SCRIPT 
     
     # $1 can be either an installed app name or an app script
-    if is_file "$NCP_APP"
-    then SCRIPT="$NCP_APP"; NCP_APP="$(basename "$SCRIPT" .sh)"
-    else SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
+    if is_file "$NCP_APP"; then
+        SCRIPT="$NCP_APP"
+        NCP_APP="$(basename "$SCRIPT" .sh)"
+    else
+        SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
     fi
-    
     unset install
     # shellcheck disable=SC1090
-    source "$SCRIPT"; log -1 "Installing: $NCP_APP"
-    ( install );      log  0 "Installed: $NCP_APP"
+    source "$SCRIPT"
+    log -1 "Installing: $NCP_APP"
+    ( install )
+    log  0 "Installed: $NCP_APP"
 }
 
 # Return codes
@@ -375,47 +399,59 @@ function configure_app {
           RES=0
     log -1 "Configuring app: $NCP_APP"
     # Checks
-    if ! has_pkg 'dialog'
-    then log 1 "Missing package: dialog"; log -1 "Attempting to install: dialog"
-         install_package 'dialog' || { log 2 "Failed! Please install dialog manually"; return 3; }
+    if ! has_pkg 'dialog'; then
+        log 1 "Missing package: dialog"
+        log -1 "Attempting to install: dialog"
+        install_package 'dialog' || {
+            log 2 "Failed! Please install dialog manually"
+            return 3
+        }
     fi
 
-    ! is_file "$CFG_FILE" && { log 1 "No configuration file for: $NCP_APP"; return 0; }
+    ! is_file "$CFG_FILE" && {
+        log 1 "No configuration file for: $NCP_APP"
+        return 0
+    }
     
     LENGTH="$(jq  '.params | length' "$CFG_FILE")"
-    is_equal "$LENGTH" 0 && { return; }
+    is_equal "$LENGTH" 0 && {
+        return
+    }
     
     # Read config parameters
-    for (( i = 0; i < "$LENGTH"; i++ ))
-    do VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
-       VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
-       VARIABLES+=("$VAR")
-       VALUES+=("$VAL")
-       IDX=$(("$i"+1))
-       PARAMETERS+=("$VAR" "$IDX" 1 "$VAL" "$IDX" 15 60 120)
+    for (( i = 0; i < "$LENGTH"; i++ )); do
+        VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
+        VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
+        VARIABLES+=("$VAR")
+        VALUES+=("$VAL")
+        IDX=$(("$i"+1))
+        PARAMETERS+=("$VAR" "$IDX" 1 "$VAL" "$IDX" 15 60 120)
     done
     
-    while [[ "$RES" != 1 && "$RES" != 250 ]]
-    do VALUE="$( dialog --ok-label "Start" \
-                            --no-lines --backtitle "$BACKTITLE" \
-                            --form "Enter configuration for $NCP_APP" \
-                            20 70 0 "${PARAMETERS[@]}" \
-                    3>&1 1>&2 2>&3 )"
+    while [[ "$RES" != 1 && "$RES" != 250 ]]; do
+        VALUE="$( dialog --ok-label "Start" \
+                         --no-lines --backtitle "$BACKTITLE" \
+                         --form "Enter configuration for $NCP_APP" \
+                         20 70 0 "${PARAMETERS[@]}" \
+                         3>&1 1>&2 2>&3 )"
         RES="$?"
         case "$RES" in
-            "$DIALOG_CANCEL") break ;;
+            "$DIALOG_CANCEL") { break; } ;;
                 "$DIALOG_OK")
-                while read -r VAL
-                do RETURN_VALUES+=("$VAL")
+                while read -r VAL; do
+                    RETURN_VALUES+=("$VAL")
                 done <<<"$VALUE"
-                    for (( i = 0 ; i < "$LENGTH" ; i++ )) # Check for invalid characters
-                    do if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "${RETURN_VALUES[$i]}"
-                       then log 2 "Invalid characters in field: ${VARIABLES[$i]}"; return 1
-                       fi
-                       CFG="$(jq ".params[$i].value = \"${RETURN_VALUES[$i]}\"" "$CFG_FILE")"
-                    done
-                    RET=0
-                    break ;;
+                # Check for invalid characters
+                for (( i = 0 ; i < "$LENGTH" ; i++ )); do
+                    if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "${RETURN_VALUES[$i]}"; then
+                        log 2 "Invalid characters in field: ${VARIABLES[$i]}"
+                        return 1
+                    fi
+                    CFG="$(jq ".params[$i].value = \"${RETURN_VALUES[$i]}\"" "$CFG_FILE")"
+                done
+                RET=0
+                break
+                ;;
             "$DIALOG_ERROR") { log  2 "$VALUE"; break; } ;;
               "$DIALOG_ESC") { log -1 "ESC pressed."; break; } ;;
                           *) { log -1 "Return code was: $RES"; break; } ;;
@@ -424,7 +460,8 @@ function configure_app {
     
     println "$CFG" > "$CFG_FILE"
     printf '\033[2J' && tput cup 0 0             # clear screen, don't clear scroll, cursor on top
-    log 0 "Configured app: $NCP_APP"; return "$RET"
+    log 0 "Configured app: $NCP_APP"
+    return "$RET"
 }
 
 # Return codes
@@ -432,7 +469,9 @@ function persistent_cfg {
     local SRC="$1" DST="${2:-/data/etc/$( basename "$SRC" )}"
     log -1 "Persisting configuration"
     # Trick to disable in dev docker
-    is_path '/changelog.md' && { return; }
+    is_path '/changelog.md' && {
+        return
+    }
     mkdir --parents "$(dirname "$DST")"
     ! is_path "$DST" && { log -1 "Making $SRC persistent"; mv "$SRC" "$DST"; }
     rm --recursive --force "$SRC"
@@ -442,12 +481,18 @@ function persistent_cfg {
 # Return codes
 function cleanup_script {
     local SCRIPT="$1"
-    log -1 "Cleanup script: $SCRIPT"; unset cleanup
+
+    log -1 "Cleanup script: $SCRIPT"
+    unset cleanup
+
     log -1 "Source: $SCRIPT"
     # shellcheck disable=SC1090
     source "$SCRIPT"
-    if is_match "$(type -t cleanup)" "function"
-    then log -1 "Cleanup function found: $SCRIPT"; cleanup; return "$?"
+
+    if [[ "$(type -t cleanup)" == "function" ]]; then
+        log -1 "Cleanup function found: $SCRIPT"
+        cleanup
+        return "$?"
     fi
     return 0
 }
@@ -456,9 +501,12 @@ function check_distro {
     local CFG="${1:-$NCPCFG}" SUPPORTED
     SUPPORTED="$(jq -r '.release' "$CFG")"
     log -1 "Checking support for distro"
-    if grep -q "$SUPPORTED" <(lsb_release -sc)
-    then log 0 "Supported"; return 0
-    else log 2 "Not supported"; return 1
+    if grep -q "$SUPPORTED" <(lsb_release -sc); then
+        log 0 "Supported"
+        return 0
+    else
+        log 2 "Not supported"
+        return 1
     fi
 }
 
@@ -467,23 +515,31 @@ function check_distro {
 function clear_password_fields {
     local -r CFG_FILE="$1"
     local LENGTH TYPE VAL
-    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 1; }
+    ! is_file "$CFG_FILE" && {
+        log 2 "File not found: $CFG_FILE"
+        return 1
+    }
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
-    for (( i = 0 ; i < "$LENGTH" ; i++ ))
-    do TYPE="$(jq -r ".params[$i].type" "$CFG_FILE")"
-       VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
-       is_match "$TYPE" "password" && { VAL=""; }
-       CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
+    for (( i = 0 ; i < "$LENGTH" ; i++ )); do
+        TYPE="$(jq -r ".params[$i].type" "$CFG_FILE")"
+        VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
+        [[ "$TYPE" == "password" ]] && {
+            VAL=""
+        }
+        CFG="$(jq -r ".params[$i].value=\"$VAL\"" "$CFG_FILE")"
     done
     println "$CFG" > "$CFG_FILE"
+    return 0
 }
 
 # Return codes
 # 1: Missing command: a2query
 function is_ncp_activated {
-    if has_cmd 'a2query'
-    then ! a2query -s ncp-activation -q
-    else log 2 "Missing command: a2query"; return 1
+    if has_cmd 'a2query'; then
+        ! a2query -s ncp-activation -q
+    else
+        log 2 "Missing command: a2query"
+        return 1
     fi
 }
 
@@ -493,34 +549,44 @@ function is_active_app {
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local LENGTH VAL VAR ID VALUE
     
-    ! is_file "$SCRIPT" && { SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"; }
-    ! is_file "$SCRIPT" && { log 2 "File not found: $NCP_APP"; return 1; }
+    ! is_file "$SCRIPT" && {
+        SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
+    }
+    ! is_file "$SCRIPT" && {
+        log 2 "File not found: $NCP_APP"
+        return 1
+    }
     
     # Function
     unset is_active
     
     #shellcheck disable=SC1090
     source "$SCRIPT"
-    if is_function 'is_active' # Read config parameters
-    then if is_file "$CFG_FILE"
-         then LENGTH="$(jq '.params | length' "$CFG_FILE")"
-              for (( i = 0; i < "$LENGTH"; i++ ))
-              do VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
-                 VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
-                 eval "$VAR=$VAL"
-              done
+    # Read config parameters
+    if is_function 'is_active'; then
+        if is_file "$CFG_FILE"; then
+            LENGTH="$(jq '.params | length' "$CFG_FILE")"
+            for (( i = 0; i < "$LENGTH"; i++ )); do
+                VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
+                VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
+                eval "$VAR=$VAL"
+            done
          fi
-         is_active; return "$?";
+         is_active
+         return "$?"
     fi
     
     # Config
-    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 1; }
+    ! is_file "$CFG_FILE" && {
+        log 2 "File not found: $CFG_FILE"
+        return 1
+    }
     
     ID="$(jq -r ".params[0].id" "$CFG_FILE")"
     VALUE="$(jq -r ".params[0].value" "$CFG_FILE")"
     
-    if is_match "$ID" 'ACTIVE' && is_match "$VALUE" 'yes'
-    then return 0
+    if [[ "$ID" == "ACTIVE" && "$VALUE" == "yes" ]]; then
+        return 0
     fi
 }
 
@@ -533,21 +599,23 @@ function is_app_enabled {
 # Return codes
 # 1: Invalid number of arguments
 function info_app {
-    [[ "$#" -ne 1 ]] && { return 1; }
+    [[ "$#" -ne 1 ]] && {
+        return 1
+    }
     local -r NCP_APP="$1"
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     local INFO INFOTITLE
     
-    if is_file "$CFG_FILE"
-    then INFO="$(jq -r '.info' "$CFG_FILE")"
-         INFOTITLE="$(jq -r '.infotitle' "$CFG_FILE")"
+    if is_file "$CFG_FILE"; then
+        INFO="$(jq -r '.info' "$CFG_FILE")"
+        INFOTITLE="$(jq -r '.infotitle' "$CFG_FILE")"
     fi
     
-    if is_zero "$INFO" || is_match "$INFO" "null"
-    then return 0
+    if is_zero "$INFO" || is_match "$INFO" "null"; then
+        return 0
     fi
-    if is_zero "$INFOTITLE" || is_match "$INFOTITLE" "null"
-    then INFOTITLE="Info"
+    if is_zero "$INFOTITLE" || is_match "$INFOTITLE" "null"; then
+        INFOTITLE="Info"
     fi
     
     whiptail --yesno \
@@ -581,7 +649,10 @@ function is_lxc {
 # Return codes
 # 1: Missing command: ncc
 function nc_version {
-    ! has_cmd 'ncc' && { log 2 "Missing command: ncc"; return 1; }
+    ! has_cmd 'ncc' && {
+        log 2 "Missing command: ncc"
+        return 1
+    }
     ncc status | grep "version:" | awk '{ print $3 }'
 }
 
@@ -590,46 +661,54 @@ function nc_version {
 function set_nc_domain {
     local DOMAIN="${1?}" PROTOCOL URL
     DOMAIN="$(sed 's|http.\?://||;s|\(/.*\)||' <<<"$DOMAIN")"
-    if ! ping -c1 -w1 -q "$DOMAIN" &>/dev/null
-    then unset DOMAIN
+    if ! ping -c1 -w1 -q "$DOMAIN" &>/dev/null; then
+        unset DOMAIN
     fi
-    if [[ "$DOMAIN" == "" ]] || is_an_ip "$DOMAIN"
-    then log 1 "No domain found. Defaulting to hostname: $(hostname)"
-         DOMAIN="$(hostname)"
+    if [[ "$DOMAIN" == "" ]] || is_an_ip "$DOMAIN"; then
+        log 1 "No domain found. Defaulting to hostname: $(hostname)"
+        DOMAIN="$(hostname)"
     fi
     
-    if ! PROTOCOL="$(ncc config:system:get overwriteprotocol)"
-    then true
+    if ! PROTOCOL="$(ncc config:system:get overwriteprotocol)"; then
+        true
     fi
 
     is_zero "$PROTOCOL" && PROTOCOL="https"
     URL="${PROTOCOL}://${DOMAIN%*/}"
 
-    if not_match "$2" "--no-trusted-domain"
-    then ! has_cmd 'ncc' && { log 2 "Missing command: ncc"; return 2; }
+    if not_match "$2" "--no-trusted-domain"; then
+        ! has_cmd 'ncc' && {
+        log 2 "Missing command: ncc"
+        return 2
+    }
          ncc config:system:set trusted_domains 3 --value="${DOMAIN%*/}"
          ncc config:system:set overwrite.cli.url --value="${URL}/"
-         if is_ncp_activated && is_app_enabled notify_push
-         then ncc config:system:set trusted_proxies 11 --value="127.0.0.1"
-              ncc config:system:set trusted_proxies 12 --value="::1"
-              ncc config:system:set trusted_proxies 13 --value="$DOMAIN"
-              ncc config:system:set trusted_proxies 14 --value="$(dig +short "$DOMAIN")"
-              sleep 5 # this seems to be required in the VM for some reason.
-              # We get `http2 error: protocol error` after ncp-upgrade-nc
-              for ATTEMPT in {1..5}
-              do log -1 "Setup notify_push (attempt ${ATTEMPT}/5)"
-                 ncc notify_push:setup "${URL}/push" && { break; }
-                 sleep 10
-              done
+         if is_ncp_activated && is_app_enabled notify_push; then
+            ncc config:system:set trusted_proxies 11 --value="127.0.0.1"
+            ncc config:system:set trusted_proxies 12 --value="::1"
+            ncc config:system:set trusted_proxies 13 --value="$DOMAIN"
+            ncc config:system:set trusted_proxies 14 --value="$(dig +short "$DOMAIN")"
+            sleep 5 # this seems to be required in the VM for some reason.
+            # We get `http2 error: protocol error` after ncp-upgrade-nc
+            for ATTEMPT in {1..5}; do
+                log -1 "Setup notify_push (attempt ${ATTEMPT}/5)"
+                ncc notify_push:setup "${URL}/push" && {
+                    break
+                }
+                sleep 10
+            done
          fi
     fi
 }
 
 function start_notify_push {
-    pgrep notify_push &>/dev/null && { return; }
-    if is_file '/.docker-image'
-    then NEXTCLOUD_URL='https://localhost' sudo -E -u www-data "/var/www/nextcloud/apps/notify_push/bin/${ARCH}/notify_push" --allow-self-signed '/var/www/nextcloud/config/config.php' &>/dev/null &
-    else systemctl enable --now notify_push
+    pgrep notify_push &>/dev/null && {
+        return
+    }
+    if is_file '/.docker-image'; then
+        NEXTCLOUD_URL='https://localhost' sudo -E -u www-data "/var/www/nextcloud/apps/notify_push/bin/${ARCH}/notify_push" --allow-self-signed '/var/www/nextcloud/config/config.php' &>/dev/null &
+    else
+        systemctl enable --now notify_push
     fi
     sleep 5 # apparently we need to make sure we wait until the database is written or something
 }
@@ -638,11 +717,14 @@ function start_notify_push {
 function notify_admin {
     local HEADER="$1" MSG="$2" ADMINS
     ADMINS="$(mysql -u root nextcloud -Nse "select uid from oc_group_user where gid='admin';")"
-    is_zero "$ADMINS" && { log 2 "Admin user(s) not found" >&2; return 0; }
-    while read -r ADMIN
-    do if ! ncc notification:generate "$ADMIN" "$HEADER" -l "$MSG"
-       then true
-       fi
+    is_zero "$ADMINS" && {
+        log 2 "Admin user(s) not found" >&2
+        return 0
+    }
+    while read -r ADMIN; do
+        if ! ncc notification:generate "$ADMIN" "$HEADER" -l "$MSG"; then
+            true
+        fi
     done <<<"$ADMINS"
 }
 
@@ -650,7 +732,10 @@ function notify_admin {
 function run_app {
     local NCP_APP="$1" SCRIPT
     SCRIPT="$(find "$BINDIR" -name "$NCP_APP".sh | head -1)"
-    ! is_file "$SCRIPT" && { log 2 "File not found: $SCRIPT"; return 1; }
+    ! is_file "$SCRIPT" && {
+        log 2 "File not found: $SCRIPT"
+        return 1
+    }
     run_app_unsafe "$SCRIPT"
 }
 
@@ -662,7 +747,10 @@ function run_app_unsafe {
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     
-    ! is_file "$SCRIPT" && { log 2 "File not found: $SCRIPT"; return 1; }
+    ! is_file "$SCRIPT" && {
+        log 2 "File not found: $SCRIPT"
+        return 1
+    }
     
     touch "$LOG"
     chmod 640 "$LOG"
@@ -678,14 +766,14 @@ function run_app_unsafe {
     source "$SCRIPT"
     
     # Read config parameters
-    if is_file "$CFG_FILE"
-    then log -1 "Reading config parameters: $NCP_APP"
-         LENGTH="$(jq '.params | length' "$CFG_FILE")"
-         for (( i = 0; i < "$LENGTH"; i++ ))
-         do VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
+    if is_file "$CFG_FILE"; then
+        log -1 "Reading config parameters: $NCP_APP"
+        LENGTH="$(jq '.params | length' "$CFG_FILE")"
+        for (( i = 0; i < "$LENGTH"; i++ )); do
+            VAR="$(jq -r ".params[$i].id" "$CFG_FILE")"
             VAL="$(jq -r ".params[$i].value" "$CFG_FILE")"
             eval "$VAR=$VAL"
-         done
+        done
     fi
     
     # Run
@@ -695,12 +783,12 @@ function run_app_unsafe {
     
     println "" >> "$LOG"
     
-    if is_file "$CFG_FILE"
-    then log -1 "Clearing password fields: $NCP_APP"
-         clear_password_fields "$CFG_FILE"
-         log 0 "Password fields cleared"
+    if is_file "$CFG_FILE"; then
+        log -1 "Clearing password fields: $NCP_APP"
+        clear_password_fields "$CFG_FILE"
+        log 0 "Password fields cleared"
     fi
-    log 0 "Completed: $NCP_APP $RET"
+    log 0 "Completed: $NCP_APP [ $RET ]"
     return "$RET"
 }
 
@@ -712,11 +800,17 @@ function find_app_param_num {
                          LENGTH VAL VAR P_ID
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
-    ! is_file "$CFG_FILE" && { log 2 "File not found: $SCRIPT"; return 1; }
+    ! is_file "$CFG_FILE" && {
+        log 2 "File not found: $SCRIPT"
+        return 1
+    }
     LENGTH="$(jq '.params | length' "$CFG_FILE")"
-    for (( i = 0 ; i < "$LENGTH" ; i++ ))
-    do P_ID="$(jq -r ".params[$i].id" "$CFG_FILE")"
-       is_match "$PARAM_ID" "$P_ID" && { echo "$i"; return 0; }
+    for (( i = 0 ; i < "$LENGTH" ; i++ )); do
+        P_ID="$(jq -r ".params[$i].id" "$CFG_FILE")"
+        [[ "$PARAM_ID" == "$P_ID" ]] && {
+            printf '%i\n' "$i"
+            return 0
+        }
     done
 }
 
@@ -726,10 +820,14 @@ function find_app_param {
     NCP_APP="$(basename "$SCRIPT" .sh)"
     CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     
-    if ! P_NUM="$(find_app_param_num "$SCRIPT" "$PARAM_ID")"
-    then log 2 "Parameter index not found: $SCRIPT"; return 1
+    if ! P_NUM="$(find_app_param_num "$SCRIPT" "$PARAM_ID")"; then
+        log 2 "Parameter index not found: $SCRIPT"
+        return 1
     fi
-    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 2; }
+    ! is_file "$CFG_FILE" && {
+        log 2 "File not found: $CFG_FILE"
+        return 2
+    }
     jq -r ".params[$P_NUM].value" "$CFG_FILE"
 }
 
@@ -739,23 +837,29 @@ function set_app_param {
     NCP_APP="$(basename "$SCRIPT" .sh)"
     local CFG_FILE="${CFGDIR}/${NCP_APP}.cfg"
     
-    if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "$PARAM_VALUE"
-    then log 2 "Invalid characters in field ${VARIABLES[$i]}"; return 1
+    if grep -q '[\\&#;'"'"'`|*?~<>^"()[{}$&[:space:]]' <<< "$PARAM_VALUE"; then
+        log 2 "Invalid characters in field ${VARIABLES[$i]}"
+        return 1
     fi
 
-    ! is_file "$CFG_FILE" && { log 2 "File not found: $CFG_FILE"; return 2; }
+    ! is_file "$CFG_FILE" && {
+        log 2 "File not found: $CFG_FILE"
+        return 2
+    }
     
     LENGTH="$(jq  '.params | length' "$CFG_FILE")"
     PARAM_FOUND='false'
     
-    for (( i = 0; i < "$LENGTH"; i++ )) # check for invalid characters
-    do if is_match "$(jq -r ".params[$i].id" "$CFG_FILE")" "$PARAM_ID"
-       then PARAM_FOUND='true'
+    # check for invalid characters
+    for (( i = 0; i < "$LENGTH"; i++ )); do
+        if is_match "$(jq -r ".params[$i].id" "$CFG_FILE")" "$PARAM_ID"; then
+            PARAM_FOUND='true'
             CFG="$(jq ".params[$i].value = \"$PARAM_VALUE\"" "$CFG_FILE")"
-       fi
+        fi
     done
-    if not_match "$PARAM_FOUND" "true"
-    then log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"; return 1
+    if not_match "$PARAM_FOUND" "true"; then
+        log 2 "Did not find parameter: $PARAM_ID when configuring app: $(basename "$SCRIPT" .sh)"
+        return 1
     fi
     println "$CFG" > "$CFG_FILE"
 }
@@ -771,53 +875,58 @@ function install_template {
     mkdir --parents "$(dirname "$TARGET")"
     is_file "$TARGET" && cp -a "$TARGET" "$BACKUP"
     {
-        if [[ "${3:-}" == "--defaults" ]]
-        then { bash -C /usr/local/etc/ncp-templates/"$TEMPLATE" --defaults > "$TARGET"; } 2>&1
-        else { bash -C /usr/local/etc/ncp-templates/"$TEMPLATE" > "$TARGET"; } 2>&1 || \
-               if [[ "${3:-}" == "--allow-fallback" ]]
-               then { bash -C /usr/local/etc/ncp-templates/"$TEMPLATE" --defaults > "$TARGET"; } 2>&1
-               fi
+        if [[ "${3:-}" == "--defaults" ]]; then
+            { bash -C /usr/local/etc/ncp-templates/"$TEMPLATE" --defaults > "$TARGET"; } 2>&1
+        else
+            { bash -C /usr/local/etc/ncp-templates/"$TEMPLATE" > "$TARGET"; } 2>&1 || {
+                    if [[ "${3:-}" == "--allow-fallback" ]]; then
+                        { bash -C /usr/local/etc/ncp-templates/"$TEMPLATE" --defaults > "$TARGET"; } 2>&1
+                    fi
+                }
         fi
     } || {
         log 2 "Could not generate: $TARGET From template: $TEMPLATE. Rolling back.."
-        mv "$BACKUP" "$TARGET"; return 1
+        mv "$BACKUP" "$TARGET"
+        return 1
     }
     rm "$BACKUP"
 }
 
 function save_maintenance_mode {
     unset NCP_MAINTENANCE_MODE
-    if has_cmd 'ncc'
-    then if grep -q 'enabled' <(ncc maintenance:mode)
-         then export NCP_MAINTENANCE_MODE="on" || true
-         fi
-         ncc maintenance:mode --on
+    if has_cmd 'ncc'; then
+        if grep -q 'enabled' <(ncc maintenance:mode); then
+            export NCP_MAINTENANCE_MODE="on" || true
+        fi
+        ncc maintenance:mode --on
     else
-         if grep -q enabled <("$ncc" maintenance:mode)
-         then export NCP_MAINTENANCE_MODE="on" || true
-         fi
-         "$ncc" maintenance:mode --on
+        if grep -q enabled <("$ncc" maintenance:mode); then
+            export NCP_MAINTENANCE_MODE="on" || true
+        fi
+        "$ncc" maintenance:mode --on
     fi
 }
 
 function restore_maintenance_mode {
-    if has_cmd 'ncc'
-    then if not_zero "${NCP_MAINTENANCE_MODE:-}"
-         then ncc maintenance:mode --on
-         else ncc maintenance:mode --off
-         fi
+    if has_cmd 'ncc'; then
+        if not_zero "${NCP_MAINTENANCE_MODE:-}"; then
+            ncc maintenance:mode --on
+        else
+            ncc maintenance:mode --off
+        fi
     else
-         if not_zero "${NCP_MAINTENANCE_MODE:-}"
-         then ${ncc} maintenance:mode --on
-         else ${ncc} maintenance:mode --off
-         fi
+        if not_zero "${NCP_MAINTENANCE_MODE:-}"; then
+            ${ncc} maintenance:mode --on
+        else
+            ${ncc} maintenance:mode --off
+        fi
     fi
 }
 
 function needs_decrypt {
     local ACTIVE
     ACTIVE="$(find_app_param_num nc-encrypt ACTIVE)"
-    (! is_active_app 'nc-encrypt') && is_match "$ACTIVE" "yes"
+    (! is_active_app 'nc-encrypt') && [[ "$ACTIVE" == "yes" ]]
 }
 
 function set_ncpcfg {
@@ -828,7 +937,10 @@ function set_ncpcfg {
 
 function get_ncpcfg {
     local NAME="${1}"
-    ! is_file "$NCPCFG" && { log 2 "File not found: $NCPCFG"; return 1; }
+    ! is_file "$NCPCFG" && {
+        log 2 "File not found: $NCPCFG"
+        return 1
+    }
     jq -r ".$NAME" "$NCPCFG"
 }
 
@@ -840,11 +952,11 @@ function get_nc_config_value {
 function clear_opcache {
     local DATA_DIR
     DATA_DIR="$(get_nc_config_value datadirectory)"
-    if is_directory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"
-    then log -1 "Clearing opcache"
-         log -1 "This can take some time, please don't interrupt by closing or refreshing your browser tab"
-         rm --recursive --force "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/* "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/.[!.]*
-         log 0 "Cleared opcache"
+    if is_directory "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"; then
+        log -1 "Clearing opcache"
+        log -1 "This can take some time, please don't interrupt by closing or refreshing your browser tab"
+        rm --recursive --force "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/* "${DATA_DIR:-/var/www/nextcloud/data}/.opcache"/.[!.]*
+        log 0 "Cleared opcache"
     fi
     service php"$PHPVER"-fpm reload
 }
@@ -854,11 +966,13 @@ function clear_opcache {
 ########################
 
 CFGDIR="${CFGDIR:-etc/ncp-config.d}"
-if is_directory "$CFGDIR"
-then CFGDIR="$CFGDIR"
-elif is_directory '/usr/local/etc/ncp-config.d'
-then CFGDIR='/usr/local/etc/ncp-config.d'
-else log 2 "Directory not found: ncp-config.d"; return 1
+if is_directory "$CFGDIR"; then
+    CFGDIR="$CFGDIR"
+elif is_directory '/usr/local/etc/ncp-config.d'; then
+    CFGDIR='/usr/local/etc/ncp-config.d'
+else
+    log 2 "Directory not found: ncp-config.d"
+    return 1
 fi
 
 export CFGDIR
@@ -873,44 +987,55 @@ ncc="${ncc:-/usr/local/bin/ncc}"
 export ncc
 
 NCPCFG="${NCPCFG:-etc/ncp.cfg}"
-if is_file "$NCPCFG"
-then NCPCFG="$NCPCFG"
-elif is_file '/usr/local/etc/ncp.cfg'
-then NCPCFG='/usr/local/etc/ncp.cfg'
-elif is_file 'ncp.cfg'
-then NCPCFG='ncp.cfg'
-else log 2 "File not found: ncp.cfg"; return 1
+if is_file "$NCPCFG"; then
+    NCPCFG="$NCPCFG"
+elif is_file '/usr/local/etc/ncp.cfg'; then
+    NCPCFG='/usr/local/etc/ncp.cfg'
+elif is_file 'ncp.cfg'; then
+    NCPCFG='ncp.cfg'
+else
+    log 2 "File not found: ncp.cfg"
+    return 1
 fi
 
 export NCPCFG
 
-! has_cmd 'dpkg' && { log 2 "Missing command: dpkg"; return 1; }
+! has_cmd 'dpkg' && {
+    log 2 "Missing command: dpkg"
+    return 1
+}
 ARCH="$(dpkg --print-architecture)"
 
 
-if [[ "$ARCH" =~ ^(armhf|arm)$ ]]
-then ARCH='armv7'
-elif is_match "$ARCH" "arm64"
-then ARCH='aarch64'
-elif is_match "$ARCH" "amd64"
-then ARCH='x86_64'
+if [[ "$ARCH" =~ ^(armhf|arm)$ ]]; then
+    ARCH='armv7'
+elif is_match "$ARCH" "arm64"; then
+    ARCH='aarch64'
+elif is_match "$ARCH" "amd64"; then
+    ARCH='x86_64'
 fi
 
 DETECT_DOCKER="$(ps -p 1 --no-headers -o "%c")"
 
 if is_match "$(ps -p 1 --no-headers -o "%c")" 'systemd' \
-&& ! is_directory '/run/systemd/system'
-then INIT_SYSTEM='chroot'
-elif is_directory '/run/systemd/system'
-then INIT_SYSTEM='systemd'
-elif is_match "$DETECT_DOCKER" 'run-parts.sh'
-then INIT_SYSTEM='docker'
-else INIT_SYSTEM='unknown'
+&& ! is_directory '/run/systemd/system'; then
+    INIT_SYSTEM='chroot'
+elif is_directory '/run/systemd/system'; then
+    INIT_SYSTEM='systemd'
+elif is_match "$DETECT_DOCKER" 'run-parts.sh'; then
+    INIT_SYSTEM='docker'
+else
+    INIT_SYSTEM='unknown'
 fi
 
 unset DETECT_DOCKER
 
-! has_cmd 'jq' && { install_package 'jq' || { log 2 "Missing command: jq"; return 1; }; }
+! has_cmd 'jq' && {
+    install_package 'jq' || {
+        log 2 "Missing command: jq"
+        return 1
+    }
+}
 
 NCLATESTVER="$(jq -r '.nextcloud_version' "$NCPCFG")"
 PHPVER="$(     jq -r '.php_version'       "$NCPCFG")"

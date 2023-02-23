@@ -10,11 +10,13 @@
 
 #########################
 
-if [[ -f 'etc/library.sh' ]]
-then LIBRARY='etc/library.sh'
-elif [[ -f '/usr/local/etc/library.sh' ]]
-then LIBRARY='/usr/local/etc/library.sh'
-else log 2 "File not found: library.sh"; return 1
+if [[ -f 'etc/library.sh' ]]; then
+    LIBRARY='etc/library.sh'
+elif [[ -f '/usr/local/etc/library.sh' ]]; then
+    LIBRARY='/usr/local/etc/library.sh'
+else
+    log 2 "File not found: library.sh"
+    return 1
 fi
 
 # shellcheck disable=SC1090
@@ -44,8 +46,8 @@ function install {
     # This has changed, pi user no longer exists by default, the user needs to create it with Raspberry Pi imager
     # The raspi-config layout and options have also changed
     # https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
-    if [[ -f "$RASPI_CONFIG" ]]
-    then # shellcheck disable=SC1003
+    if [[ -f "$RASPI_CONFIG" ]]; then
+        # shellcheck disable=SC1003
         sed -i '/S3 Password/i "S0 NextcloudPi Configuration" "Configuration of NextcloudPi" \\' "$RASPI_CONFIG"
         sed -i '/S3\\ \*) do_change_pass ;;/i S0\\ *) ncp-config ;;'                             "$RASPI_CONFIG"
     fi
@@ -148,8 +150,8 @@ EOF
     a2ensite ncp-activation
     
     ## NCP USER FOR AUTHENTICATION
-    if ! id --user "$WEBADMIN" &>/dev/null
-    then useradd --home-dir '/nonexistent' "$WEBADMIN"
+    if ! id --user "$WEBADMIN" &>/dev/null; then
+        useradd --home-dir '/nonexistent' "$WEBADMIN"
     fi
     println "$WEBPASSWD" "$WEBPASSWD" | passwd "$WEBADMIN"
     chsh -s "$NOLOGIN_SHELL" "$WEBADMIN"
@@ -221,7 +223,9 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
 
-    [[ "$DOCKERBUILD" != 1 ]] && { systemctl enable nextcloud-domain; }
+    [[ "$DOCKERBUILD" != 1 ]] && {
+        systemctl enable nextcloud-domain
+    }
     
     # NEXTCLOUDPI UPDATES
     cat > '/etc/cron.daily/ncp-check-version' <<EOF
@@ -234,7 +238,9 @@ EOF
     chmod g+w               '/var/run/.ncp-latest-version'
     
     # Install all ncp-apps
-    ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || { exit "$?"; }
+    ALLOW_UPDATE_SCRIPT=1 bin/ncp-update "$BRANCH" || {
+        log 2 "NCP app update/install failed. Code: $?" && exit "$?"
+    }
     
     # LIMIT LOG SIZE
     grep -q 'maxsize' '/etc/logrotate.d/apache2' || sed -i '/weekly/amaxsize2M' '/etc/logrotate.d/apache2'
@@ -252,52 +258,52 @@ EOF
     
     # ONLY FOR IMAGE BUILDS
     # If-statement closes at the end of the install function()
-    if [[ -f '/.ncp-image' ]]
-    then rm --recursive --force '/var/log/ncp.log'
-         ## NEXTCLOUDPI MOTD
-         rm --recursive --force '/etc/update-motd.d'
-         mkdir '/etc/update-motd.d'
-         rm '/etc/motd'
-         ln -s '/var/run/motd' '/etc/motd'
-         cat > '/etc/update-motd.d/10logo' <<EOF
+    if [[ -f '/.ncp-image' ]]; then
+        rm --recursive --force '/var/log/ncp.log'
+        ## NEXTCLOUDPI MOTD
+        rm --recursive --force '/etc/update-motd.d'
+        mkdir '/etc/update-motd.d'
+        rm '/etc/motd'
+        ln -s '/var/run/motd' '/etc/motd'
+        cat > '/etc/update-motd.d/10logo' <<EOF
 #!/bin/sh
 echo
 cat /usr/local/etc/ncp-ascii.txt
 EOF
-       cat > '/etc/update-motd.d/20updates' <<'EOF'
+        cat > '/etc/update-motd.d/20updates' <<'EOF'
 #!/bin/sh
 /usr/local/bin/ncp-check-updates
 EOF
-       chmod a+x /etc/update-motd.d/*
+        chmod a+x /etc/update-motd.d/*
 
-       ## HOSTNAME AND mDNS
-       if [[ ! -f '/.docker-image' ]]
-       then install_package avahi-daemon
+        ## HOSTNAME AND mDNS
+        if [[ ! -f '/.docker-image' ]]; then
+            install_package avahi-daemon
             sed -i '/^127.0.1.1/d'                        '/etc/hosts'
             sed -i "\$a127.0.1.1 nextcloudpi $(hostname)" '/etc/hosts'
-       fi
-       println 'nextcloudpi' > '/etc/hostname'
+        fi
+        println 'nextcloudpi' > '/etc/hostname'
        
-       ## tag image
-       is_docker && { local DOCKER_TAG="_docker"; }
-       is_lxc    && { local DOCKER_TAG="_lxc"; }
-       println "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > '/usr/local/etc/ncp-baseimage'
-       
-       ## SSH hardening
-       if [[ -f '/etc/ssh/sshd_config' ]]
-       then sed -i 's|^#AllowTcpForwarding .*|AllowTcpForwarding no|'     '/etc/ssh/sshd_config'
-            sed -i 's|^#ClientAliveCountMax .*|ClientAliveCountMax 2|'    '/etc/ssh/sshd_config'
-            sed -i 's|^MaxAuthTries .*|MaxAuthTries 1|'                   '/etc/ssh/sshd_config'
-            sed -i 's|^#MaxSessions .*|MaxSessions 2|'                    '/etc/ssh/sshd_config'
-            sed -i 's|^#TCPKeepAlive .*|TCPKeepAlive no|'                 '/etc/ssh/sshd_config'
-            sed -i 's|^X11Forwarding .*|X11Forwarding no|'                '/etc/ssh/sshd_config'
-            sed -i 's|^#LogLevel .*|LogLevel VERBOSE|'                    '/etc/ssh/sshd_config'
-            sed -i 's|^#Compression .*|Compression no|'                   '/etc/ssh/sshd_config'
-            sed -i 's|^#AllowAgentForwarding .*|AllowAgentForwarding no|' '/etc/ssh/sshd_config'
-       fi
-       
-       ## kernel hardening
-       cat >> '/etc/sysctl.conf' <<EOF
+        ## tag image
+        is_docker && { local DOCKER_TAG="_docker"; }
+        is_lxc    && { local DOCKER_TAG="_lxc"; }
+        println "NextcloudPi${DOCKER_TAG}_$( date  "+%m-%d-%y" )" > '/usr/local/etc/ncp-baseimage'
+        
+        ## SSH hardening
+         if [[ -f '/etc/ssh/sshd_config' ]]; then
+             sed -i 's|^#AllowTcpForwarding .*|AllowTcpForwarding no|'     '/etc/ssh/sshd_config'
+             sed -i 's|^#ClientAliveCountMax .*|ClientAliveCountMax 2|'    '/etc/ssh/sshd_config'
+             sed -i 's|^MaxAuthTries .*|MaxAuthTries 1|'                   '/etc/ssh/sshd_config'
+             sed -i 's|^#MaxSessions .*|MaxSessions 2|'                    '/etc/ssh/sshd_config'
+             sed -i 's|^#TCPKeepAlive .*|TCPKeepAlive no|'                 '/etc/ssh/sshd_config'
+             sed -i 's|^X11Forwarding .*|X11Forwarding no|'                '/etc/ssh/sshd_config'
+             sed -i 's|^#LogLevel .*|LogLevel VERBOSE|'                    '/etc/ssh/sshd_config'
+             sed -i 's|^#Compression .*|Compression no|'                   '/etc/ssh/sshd_config'
+             sed -i 's|^#AllowAgentForwarding .*|AllowAgentForwarding no|' '/etc/ssh/sshd_config'
+        fi
+        
+        ## kernel hardening
+        cat >> '/etc/sysctl.conf' <<EOF
 fs.protected_hardlinks=1
 fs.protected_symlinks=1
 kernel.core_uses_pid=1

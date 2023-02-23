@@ -193,16 +193,16 @@ systemctl enable haveged.service
 sed -i 's|^#PermitRootLogin .*|PermitRootLogin no|' /etc/ssh/sshd_config
 
 # cleanup
-if [[ -f 'etc/library.sh' ]]
-then source etc/library.sh && run_app_unsafe post-inst.sh
+if [[ -f 'etc/library.sh' ]]; then
+    source etc/library.sh && run_app_unsafe post-inst.sh
 fi
 
-if [[ -f '/etc/resolv.conf' ]]
-then rm /etc/resolv.conf
+if [[ -f '/etc/resolv.conf' ]]; then
+    rm /etc/resolv.conf
 fi
 
-if [[ -d '/tmp/ncp-build' ]]
-then rm --recursive --force '/tmp/ncp-build'
+if [[ -d '/tmp/ncp-build' ]]; then
+    rm --recursive --force '/tmp/ncp-build'
 fi
 
 EOFCHROOT
